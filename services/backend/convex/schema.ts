@@ -95,4 +95,18 @@ export default defineSchema({
     createdAt: v.number(), // When the code was created
     expiresAt: v.number(), // When the code expires (1 minute after creation)
   }).index('by_code', ['code']),
+
+  // Chat-related tables
+  chats: defineTable({
+    createdAt: v.number(), // When the chat was created
+    updatedAt: v.number(), // When the chat was last updated
+    userId: v.id('users'), // Required user ID (authentication required)
+  }),
+
+  chatMessages: defineTable({
+    chatId: v.id('chats'), // The chat this message belongs to
+    content: v.string(), // The message content
+    role: v.union(v.literal('user'), v.literal('assistant')), // Who sent the message
+    timestamp: v.number(), // When the message was sent
+  }).index('by_chat', ['chatId']),
 });
