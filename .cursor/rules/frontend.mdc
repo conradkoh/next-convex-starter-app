@@ -9,6 +9,7 @@ This location of the frontend project is in `apps/webapp`.
 
 ## IMPORTANT RULES
 - NEVER run the `dev` command to start the dev server unless explicitly told to do so.
+- NEVER run the `build` command on a NextJS application unless explicitly told to do so.
 
 ## UI Design - Components & Icons
 
