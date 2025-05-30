@@ -17,6 +17,7 @@ This is a starter application using NextJS and Convex, managed with NX for monor
    - Initialize the Convex backend using `npx convex dev --once`
    - Extract the CONVEX_URL from the backend's .env.local file
    - Create/update the webapp's .env.local file with the NEXT_PUBLIC_CONVEX_URL
+   - Set up NEXT_PUBLIC_CONVEX_SITE_URL for HTTP actions (streaming chat)
 
 3. Run `pnpm dev` in the root directory to start the NextJS application and Convex backend
 
@@ -27,6 +28,7 @@ If you prefer to set up manually:
 2. Create a `.env.local` file in the `apps/webapp` directory and add the following:
    ```sh
    NEXT_PUBLIC_CONVEX_URL=<your-convex-project-url> # copy this from the backend .env.local file
+   NEXT_PUBLIC_CONVEX_SITE_URL=<your-convex-project-url> # same URL, needed for HTTP actions
    ```
 3. Run `pnpm dev` in the root directory to start both services
 
@@ -95,16 +97,18 @@ To deploy your NextJS frontend to Vercel:
 1. Navigate to your Convex dashboard:
    - Go to [Convex dashboard](https://dashboard.convex.dev)
    - Navigate to Settings > URL & Deploy Key
-   - Copy the Deployment URL
+   - Copy the Deployment URL & HTTP Actions URL
 
 2. Set up the Vercel deployment
    - Go to the Vercel dashboard
    - Navigate to Project Settings > Build and Deployment > Root Directory
       - Set the Root Directory to `apps/webapp`
    - Navigate to Project Settings > Environment Variables
-      - Add a new variable:
+      - Add these variables:
       - Name: `NEXT_PUBLIC_CONVEX_URL`
       - Value: Paste the Deployment URL you copied from Convex
+      - Name: `NEXT_PUBLIC_CONVEX_SITE_URL`
+      - Value: Paste the HTTP Actions URL
 
 3. Deploy your NextJS application to Vercel as usual.
 

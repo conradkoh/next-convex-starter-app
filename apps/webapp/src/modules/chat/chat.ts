@@ -1,6 +1,6 @@
 import { api } from '@workspace/backend/convex/_generated/api';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
-import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
+import { useSessionId, useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -9,6 +9,7 @@ export interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   timestamp: number;
+  isStreaming?: boolean;
 }
 
 export interface Chat {
@@ -21,30 +22,108 @@ export interface Chat {
 export function useChat() {
   const [currentChatId, setCurrentChatId] = useState<Id<'chats'> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingAbortController, setStreamingAbortController] = useState<AbortController | null>(
+    null
+  );
+
+  // Get session ID from convex-helpers
+  const [sessionId] = useSessionId();
 
   // Get the latest chat for the user
-  const latestChat = useSessionQuery(api.chat.getLatestChat);
+  const latestChatResult = useSessionQuery(api.chat.getLatestChat);
 
   // Get messages for the current chat
-  const messages = useSessionQuery(
+  const messagesResult = useSessionQuery(
     api.chat.getChatMessages,
     currentChatId ? { chatId: currentChatId } : 'skip'
   );
 
+  // Get API key status
+  const apiKeyResult = useSessionQuery(api.apiKeys.getUserApiKey, { provider: 'openrouter' });
+
   // Mutations
   const createChatMutation = useSessionMutation(api.chat.createChat);
-  const sendMessageMutation = useSessionMutation(api.chat.sendMessage);
+  const loginAnonMutation = useSessionMutation(api.auth.loginAnon);
+
+  // Extract data from results, handling errors
+  const latestChat = latestChatResult?.success ? latestChatResult.data : null;
+  const messages = messagesResult?.success ? messagesResult.data : [];
+
+  // Handle authentication errors from queries
+  useEffect(() => {
+    if (latestChatResult && !latestChatResult.success) {
+      if (
+        latestChatResult.error === 'session_not_found' ||
+        latestChatResult.error === 'user_not_found'
+      ) {
+        // Don't show error toast for auth issues - the UI will handle this
+        console.log('Authentication required for chat');
+      }
+    }
+  }, [latestChatResult]);
+
+  useEffect(() => {
+    if (messagesResult && !messagesResult.success) {
+      if (
+        messagesResult.error === 'session_not_found' ||
+        messagesResult.error === 'user_not_found'
+      ) {
+        // Don't show error toast for auth issues - the UI will handle this
+        console.log('Authentication required for messages');
+      } else if (messagesResult.error === 'unauthorized') {
+        toast.error('You can only access your own chats');
+      } else if (messagesResult.error === 'chat_not_found') {
+        toast.error('Chat not found');
+      }
+    }
+  }, [messagesResult]);
 
   // Set current chat when latest chat is loaded
   useEffect(() => {
     if (latestChat && !currentChatId) {
-      setCurrentChatId(latestChat._id);
+      setCurrentChatId(latestChat._id as Id<'chats'>);
     }
   }, [latestChat, currentChatId]);
+
+  // Auto-login anonymously if user is not authenticated
+  const performAutoLogin = useCallback(async () => {
+    if (!sessionId) {
+      console.log('No session ID available for auto-login');
+      return false;
+    }
+
+    try {
+      console.log('Attempting automatic anonymous login...');
+      await loginAnonMutation();
+      console.log('Automatic anonymous login successful');
+      return true;
+    } catch (error) {
+      console.error('Automatic anonymous login failed:', error);
+      return false;
+    }
+  }, [sessionId, loginAnonMutation]);
 
   const createNewChat = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      // Check if we need to auto-login first
+      const hasAuthError =
+        latestChatResult &&
+        !latestChatResult.success &&
+        (latestChatResult.error === 'session_not_found' ||
+          latestChatResult.error === 'user_not_found');
+
+      if (hasAuthError) {
+        const loginSuccess = await performAutoLogin();
+        if (!loginSuccess) {
+          throw new Error('Authentication required. Please refresh the page and try again.');
+        }
+        // Wait a moment for the auth state to update
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
       const chatId = await createChatMutation({});
       setCurrentChatId(chatId);
       return chatId;
@@ -52,7 +131,7 @@ export function useChat() {
       console.error('Failed to create chat:', error);
       const errorMessage = (error as Error).message;
       if (errorMessage.includes('Session not found') || errorMessage.includes('User not found')) {
-        toast.error('Please log in to use chat');
+        toast.error('Please refresh the page and try again');
       } else {
         toast.error('Failed to create chat');
       }
@@ -60,12 +139,44 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [createChatMutation]);
+  }, [createChatMutation, latestChatResult, performAutoLogin]);
 
-  const sendMessage = useCallback(
+  const sendStreamingMessage = useCallback(
     async (content: string) => {
+      // Check if user has API key configured
+      if (!apiKeyResult || !apiKeyResult.hasKey) {
+        toast.error('Please configure your OpenRouter API key in settings');
+        return;
+      }
+
+      // Check if session ID is available
+      if (!sessionId) {
+        toast.error('Session not initialized. Please refresh the page.');
+        return;
+      }
+
+      // Create abort controller for this request
+      const abortController = new AbortController();
+      setStreamingAbortController(abortController);
+
       try {
-        setIsLoading(true);
+        setIsStreaming(true);
+
+        // Check if we need to auto-login first
+        const hasAuthError =
+          latestChatResult &&
+          !latestChatResult.success &&
+          (latestChatResult.error === 'session_not_found' ||
+            latestChatResult.error === 'user_not_found');
+
+        if (hasAuthError) {
+          const loginSuccess = await performAutoLogin();
+          if (!loginSuccess) {
+            throw new Error('Authentication required. Please refresh the page and try again.');
+          }
+          // Wait a moment for the auth state to update
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
 
         // Create a new chat if none exists
         let chatId = currentChatId;
@@ -77,33 +188,133 @@ export function useChat() {
           throw new Error('Failed to get or create chat');
         }
 
-        await sendMessageMutation({
-          chatId,
-          content,
+        // Check if CONVEX_SITE_URL is configured for HTTP actions
+        if (!process.env.NEXT_PUBLIC_CONVEX_SITE_URL) {
+          throw new Error(
+            'NEXT_PUBLIC_CONVEX_SITE_URL environment variable is required for streaming chat. Please add it to your .env.local file.'
+          );
+        }
+
+        // Call the streaming endpoint
+        const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chatId,
+            message: content,
+            sessionId,
+          }),
+          signal: abortController.signal,
         });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        if (!response.body) {
+          throw new Error('No response body');
+        }
+
+        // Handle Server-Sent Events
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+
+                  if (data.type === 'chunk') {
+                    // Handle streaming chunk - the database is updated automatically
+                    // The UI will update via the Convex query reactivity
+                  } else if (data.type === 'complete') {
+                    // Streaming complete
+                    // console.log('Streaming complete');
+                  } else if (data.type === 'error') {
+                    throw new Error(data.error);
+                  }
+                } catch (parseError) {
+                  console.error('Failed to parse SSE data:', parseError);
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
       } catch (error) {
-        console.error('Failed to send message:', error);
+        // Check if the error is due to abort
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Streaming was stopped by user');
+          return;
+        }
+
+        console.error('Failed to send streaming message:', error);
         const errorMessage = (error as Error).message;
-        if (errorMessage.includes('Session not found') || errorMessage.includes('User not found')) {
-          toast.error('Please log in to send messages');
-        } else if (errorMessage.includes('Unauthorized')) {
-          toast.error('You can only access your own chats');
+
+        if (errorMessage.includes('API key not configured')) {
+          toast.error('Please configure your OpenRouter API key in settings');
+        } else if (
+          errorMessage.includes('Session not found') ||
+          errorMessage.includes('User not found')
+        ) {
+          toast.error('Please refresh the page and try again');
+        } else if (errorMessage.includes('Chat not found')) {
+          toast.error('Chat not found or access denied');
         } else {
           toast.error('Failed to send message');
         }
       } finally {
-        setIsLoading(false);
+        setIsStreaming(false);
+        setStreamingAbortController(null);
       }
     },
-    [currentChatId, createNewChat, sendMessageMutation]
+    [currentChatId, createNewChat, apiKeyResult, sessionId, latestChatResult, performAutoLogin]
   );
+
+  const stopStreaming = useCallback(() => {
+    if (streamingAbortController) {
+      streamingAbortController.abort();
+      setStreamingAbortController(null);
+      setIsStreaming(false);
+    }
+  }, [streamingAbortController]);
+
+  // Check if we have authentication errors
+  const hasAuthError =
+    (latestChatResult &&
+      !latestChatResult.success &&
+      (latestChatResult.error === 'session_not_found' ||
+        latestChatResult.error === 'user_not_found')) ||
+    (messagesResult &&
+      !messagesResult.success &&
+      (messagesResult.error === 'session_not_found' || messagesResult.error === 'user_not_found'));
+
+  // Check if messages query is loading (undefined means still loading)
+  const isMessagesLoading = Boolean(currentChatId && messagesResult === undefined);
 
   return {
     currentChatId,
     messages: messages || [],
-    isLoading,
-    sendMessage,
+    isLoading: isLoading || isStreaming,
     createNewChat,
     setCurrentChatId,
+    hasAuthError: Boolean(hasAuthError),
+    sendStreamingMessage,
+    stopStreaming,
+    isStreaming,
+    hasApiKey: Boolean(apiKeyResult?.hasKey),
+    isMessagesLoading,
   };
 }

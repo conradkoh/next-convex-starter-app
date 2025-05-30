@@ -101,12 +101,27 @@ export default defineSchema({
     createdAt: v.number(), // When the chat was created
     updatedAt: v.number(), // When the chat was last updated
     userId: v.id('users'), // Required user ID (authentication required)
-  }),
+    isDeleted: v.boolean(), // Soft delete flag (mandatory)
+    deletedAt: v.optional(v.number()), // When the chat was deleted
+    messageCount: v.number(), // Number of messages in this chat (maintained on insert)
+  }).index('by_user_active', ['userId', 'isDeleted']),
 
   chatMessages: defineTable({
     chatId: v.id('chats'), // The chat this message belongs to
     content: v.string(), // The message content
     role: v.union(v.literal('user'), v.literal('assistant')), // Who sent the message
     timestamp: v.number(), // When the message was sent
+    isStreaming: v.optional(v.boolean()), // Whether this message is currently being streamed
   }).index('by_chat', ['chatId']),
+
+  // API Keys for AI providers
+  userApiKeys: defineTable({
+    userId: v.id('users'), // The user who owns this API key
+    provider: v.union(v.literal('openrouter')),
+    apiKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_provider', ['userId', 'provider']),
 });

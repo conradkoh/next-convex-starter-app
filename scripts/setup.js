@@ -62,16 +62,17 @@ function getConvexUrl() {
 }
 
 /**
- * Create or update the webapp's .env.local file with the CONVEX_URL
+ * Create or update the webapp's .env.local file with the CONVEX_URL and CONVEX_SITE_URL
  */
 function setupWebappEnv(convexUrl) {
-  // Create the webapp directory if it doesn't exist
+  let envContent = '';
   const webappEnvDir = path.dirname(webappEnvPath);
   if (!fs.existsSync(webappEnvDir)) {
     fs.mkdirSync(webappEnvDir, { recursive: true });
   }
 
-  let envContent = '';
+  // Create the site URL by replacing "cloud" with "site"
+  const convexSiteUrl = convexUrl.replace(/cloud/g, 'site');
 
   // If the webapp .env.local already exists, read its content
   if (fs.existsSync(webappEnvPath)) {
@@ -86,9 +87,19 @@ function setupWebappEnv(convexUrl) {
     } else {
       envContent += `\nNEXT_PUBLIC_CONVEX_URL=${convexUrl}\n`;
     }
+
+    // Update or add the NEXT_PUBLIC_CONVEX_SITE_URL
+    if (envContent.includes('NEXT_PUBLIC_CONVEX_SITE_URL=')) {
+      envContent = envContent.replace(
+        /NEXT_PUBLIC_CONVEX_SITE_URL=.+/,
+        `NEXT_PUBLIC_CONVEX_SITE_URL=${convexSiteUrl}`
+      );
+    } else {
+      envContent += `NEXT_PUBLIC_CONVEX_SITE_URL=${convexSiteUrl}\n`;
+    }
   } else {
-    // Create a new .env.local file with just the CONVEX_URL
-    envContent = `NEXT_PUBLIC_CONVEX_URL=${convexUrl}\n`;
+    // Create a new .env.local file with both URLs
+    envContent = `NEXT_PUBLIC_CONVEX_URL=${convexUrl}\nNEXT_PUBLIC_CONVEX_SITE_URL=${convexSiteUrl}\n`;
   }
 
   // Write the content to the webapp .env.local file
@@ -158,9 +169,13 @@ function continueSetup() {
   console.log(`✅ Found CONVEX_URL: ${convexUrl}`);
 
   // Set up the webapp .env.local file
-  console.log('📄 Setting up webapp .env.local file...');
+  console.log(
+    '📄 Setting up webapp .env.local file with CONVEX_URL and derived CONVEX_SITE_URL...'
+  );
   setupWebappEnv(convexUrl);
-  console.log('✅ Webapp .env.local file created/updated successfully.');
+  console.log('✅ Webapp .env.local file created/updated successfully with both URLs.');
+  console.log('   - CONVEX_URL: Uses the original URL');
+  console.log('   - CONVEX_SITE_URL: Derived by replacing "cloud" with "site"');
 
   console.log('\n🎉 Setup completed successfully!');
   console.log('You can now run "pnpm run dev" to start both the frontend and backend services.');
