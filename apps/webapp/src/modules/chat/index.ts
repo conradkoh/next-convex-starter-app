@@ -12,6 +12,7 @@ export { ChatMessage } from './components/chat-message';
 export { ChatSidebar } from './components/chat-sidebar';
 export { ChatHistoryView } from './components/chat-history-view';
 export { ApiKeyDialog } from './components/api-key-dialog';
+export { ModelSelector } from './components/model-selector';
 
 // Hooks
 export { useAutoScroll } from './hooks/use-auto-scroll';

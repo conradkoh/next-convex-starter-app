@@ -3,6 +3,7 @@ import { streamText } from 'ai';
 import { httpRouter } from 'convex/server';
 import { api } from './_generated/api';
 import { httpAction } from './_generated/server';
+import { DEFAULT_MODEL_ID, isValidModelId } from './models';
 
 const http = httpRouter();
 
@@ -40,7 +41,7 @@ http.route({
         return new Response('Missing required fields', { status: 400 });
       }
 
-      // Verify the chat belongs to the authenticated user
+      // Verify the chat belongs to the authenticated user and get chat details
       const chatResult = await ctx.runQuery(api.chat.getChatSummary, {
         chatId,
         sessionId,
@@ -50,6 +51,8 @@ http.route({
         return new Response('Chat not found or access denied', { status: 404 });
       }
 
+      const chat = chatResult.data;
+
       // Get user's OpenRouter API key
       const apiKey = await ctx.runQuery(api.apiKeys.getDecryptedApiKey, {
         provider: 'openrouter',
@@ -58,6 +61,17 @@ http.route({
 
       if (!apiKey) {
         return new Response('OpenRouter API key not configured', { status: 400 });
+      }
+
+      // Determine which model to use
+      let modelToUse = chat.selectedModel || DEFAULT_MODEL_ID;
+
+      // Validate the model ID and fallback to default if invalid
+      if (!isValidModelId(modelToUse)) {
+        console.warn(
+          `Invalid model ID: ${modelToUse}, falling back to default: ${DEFAULT_MODEL_ID}`
+        );
+        modelToUse = DEFAULT_MODEL_ID;
       }
 
       // Add user message to chat (this will handle auth internally)
@@ -103,9 +117,9 @@ http.route({
         apiKey,
       });
 
-      // Stream response
+      // Stream response using the selected model
       const result = await streamText({
-        model: openrouter('google/gemini-2.5-flash-preview-05-20'),
+        model: openrouter(modelToUse),
         messages: aiMessages,
       });
 
@@ -137,12 +151,24 @@ http.route({
               }
             }
 
-            // Finalize the message
+            // Finalize the message with the model used
             await ctx.runMutation(api.chat.finalizeStreamingMessage, {
               messageId,
               finalContent: fullContent,
+              modelUsed: modelToUse,
               sessionId,
             });
+
+            // Track model usage for custom models
+            try {
+              await ctx.runMutation(api.models.incrementModelUsage, {
+                modelId: modelToUse,
+                sessionId,
+              });
+            } catch (error) {
+              // Ignore errors for model usage tracking (non-critical)
+              console.log('Model usage tracking failed (non-critical):', error);
+            }
 
             // Send completion signal
             const completeData = JSON.stringify({

@@ -17,6 +17,10 @@ interface ChatProps {
   onChatChange?: (chatId: string | null) => void;
   /** Optional callback function called when a new chat is created */
   onNewChatCreated?: (chatId: string) => void;
+  /** Whether thinking mode is enabled */
+  thinkingMode?: boolean;
+  /** Callback for thinking mode toggle */
+  onThinkingModeChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -48,7 +52,14 @@ interface ChatProps {
  * @param props - The component props
  * @returns JSX element representing the complete chat interface
  */
-export function Chat({ className = '', initialChatId, onChatChange, onNewChatCreated }: ChatProps) {
+export function Chat({
+  className = '',
+  initialChatId,
+  onChatChange,
+  onNewChatCreated,
+  thinkingMode,
+  onThinkingModeChange,
+}: ChatProps) {
   const {
     messages,
     isLoading,
@@ -61,6 +72,10 @@ export function Chat({ className = '', initialChatId, onChatChange, onNewChatCre
     hasAuthError,
     hasApiKey,
     isMessagesLoading,
+    selectedModel,
+    setSelectedModel,
+    availableModels,
+    isModelDataReady,
   } = useChat();
 
   /**
@@ -109,6 +124,17 @@ export function Chat({ className = '', initialChatId, onChatChange, onNewChatCre
     return sendStreamingMessage;
   }, [sendStreamingMessage]);
 
+  // Don't render until model data is ready
+  if (!isModelDataReady) {
+    return (
+      <div className={`flex items-center justify-center h-full ${className}`}>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">Loading chat...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ChatPanel
       messages={messages}
@@ -123,6 +149,11 @@ export function Chat({ className = '', initialChatId, onChatChange, onNewChatCre
       onCreateNewChat={handleCreateNewChat}
       hasAuthError={hasAuthError}
       hasApiKey={hasApiKey}
+      selectedModel={selectedModel as string}
+      onModelChange={setSelectedModel}
+      availableModels={availableModels as NonNullable<typeof availableModels>}
+      thinkingMode={thinkingMode}
+      onThinkingModeChange={onThinkingModeChange}
     />
   );
 }

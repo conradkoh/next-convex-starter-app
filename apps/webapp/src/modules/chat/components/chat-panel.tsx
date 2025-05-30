@@ -20,6 +20,18 @@ interface Message {
   role: 'user' | 'assistant';
   timestamp: number;
   isStreaming?: boolean;
+  modelUsed: string; // Required for all messages
+}
+
+/**
+ * Model interface matching the backend ChatModel type
+ */
+interface ChatModel {
+  id: string;
+  name: string;
+  category: 'fast' | 'smart';
+  provider: string;
+  description?: string;
 }
 
 /**
@@ -50,6 +62,22 @@ interface ChatPanelProps {
   hasAuthError?: boolean;
   /** Whether the user has configured an API key */
   hasApiKey?: boolean;
+  /** Currently selected model ID (required) */
+  selectedModel: string;
+  /** Callback function called when model selection changes (required) */
+  onModelChange: (modelId: string) => void;
+  /** Available models organized by category (required) */
+  availableModels: {
+    defaultModels: ChatModel[];
+    defaultCategories: { [K in 'fast' | 'smart']: ChatModel[] };
+    extendedModels: ChatModel[];
+    extendedCategories: { [K in 'fast' | 'smart']: ChatModel[] };
+    defaultModelId: string;
+  };
+  /** Whether thinking mode is enabled */
+  thinkingMode?: boolean;
+  /** Callback for thinking mode toggle */
+  onThinkingModeChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -73,6 +101,11 @@ export function ChatPanel({
   onCreateNewChat,
   hasAuthError = false,
   hasApiKey = false,
+  selectedModel,
+  onModelChange,
+  availableModels,
+  thinkingMode,
+  onThinkingModeChange,
 }: ChatPanelProps) {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
@@ -146,6 +179,7 @@ export function ChatPanel({
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
           <h3 className="font-semibold">AI Chat</h3>
+
           {isAuthenticated && !hasAuthError && (
             <div className="flex items-center gap-1">
               <Button
@@ -271,6 +305,7 @@ export function ChatPanel({
                     role={message.role}
                     timestamp={message.timestamp}
                     isStreaming={message.isStreaming}
+                    modelUsed={message.modelUsed}
                   />
                 ))}
               </div>
@@ -308,6 +343,11 @@ export function ChatPanel({
               placeholder={
                 isStreaming ? 'AI is responding...' : isLoading ? 'Sending...' : 'Type a message...'
               }
+              selectedModel={selectedModel}
+              availableModels={availableModels}
+              onModelChange={onModelChange}
+              thinkingMode={thinkingMode}
+              onThinkingModeChange={onThinkingModeChange}
             />
           </div>
         )}

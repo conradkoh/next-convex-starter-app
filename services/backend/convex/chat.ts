@@ -11,6 +11,7 @@ import { mutation, query } from './_generated/server';
 // Create a new chat session
 export const createChat = mutation({
   args: {
+    selectedModel: v.string(),
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
@@ -25,6 +26,7 @@ export const createChat = mutation({
       userId: user._id,
       isDeleted: false,
       messageCount: 0,
+      selectedModel: args.selectedModel,
     });
 
     return chatId;
@@ -49,6 +51,7 @@ export const getChatMessages = query({
         role: 'user' | 'assistant';
         timestamp: number;
         isStreaming?: boolean;
+        modelUsed: string;
       }>
     >
   > => {
@@ -107,6 +110,7 @@ export const sendMessage = mutation({
       content: args.content,
       role: 'user',
       timestamp: now,
+      modelUsed: 'user', // User messages don't use AI models
     });
 
     // Update chat's updatedAt timestamp and increment message count
@@ -133,6 +137,7 @@ export const getLatestChat = query({
       createdAt: number;
       updatedAt: number;
       userId: string;
+      selectedModel: string;
     } | null>
   > => {
     // Get authenticated user safely
@@ -233,6 +238,7 @@ export const getChatSummary = query({
       userId: string;
       summary: string;
       messageCount: number;
+      selectedModel: string;
       firstMessage?: {
         _id: string;
         content: string;
@@ -270,6 +276,7 @@ export const getChatSummary = query({
       userId: chat.userId,
       summary: firstMessage?.content || 'New chat',
       messageCount: chat.messageCount,
+      selectedModel: chat.selectedModel,
       firstMessage: firstMessage
         ? {
             _id: firstMessage._id,
@@ -311,6 +318,7 @@ export const createStreamingMessage = mutation({
       role: 'assistant',
       timestamp: now,
       isStreaming: true,
+      modelUsed: chat.selectedModel,
     });
 
     // Increment message count for the new streaming message
@@ -359,6 +367,7 @@ export const finalizeStreamingMessage = mutation({
   args: {
     messageId: v.id('chatMessages'),
     finalContent: v.string(),
+    modelUsed: v.string(),
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
@@ -381,6 +390,7 @@ export const finalizeStreamingMessage = mutation({
     await ctx.db.patch(args.messageId, {
       content: args.finalContent,
       isStreaming: false,
+      modelUsed: args.modelUsed,
     });
 
     // Update chat's updatedAt timestamp
@@ -419,6 +429,37 @@ export const softDeleteChat = mutation({
       isDeleted: true,
       deletedAt: now,
       updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+// Update the selected model for a chat
+export const updateChatModel = mutation({
+  args: {
+    chatId: v.id('chats'),
+    selectedModel: v.string(),
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args) => {
+    // Get authenticated user - this will throw if not authenticated
+    const user = await getAuthUser(ctx, args);
+
+    // Verify the chat belongs to the authenticated user
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat) {
+      throw new Error('Chat not found');
+    }
+
+    if (chat.userId !== user._id) {
+      throw new Error('Unauthorized: Chat does not belong to user');
+    }
+
+    // Update the chat's selected model
+    await ctx.db.patch(args.chatId, {
+      selectedModel: args.selectedModel,
+      updatedAt: Date.now(),
     });
 
     return { success: true };

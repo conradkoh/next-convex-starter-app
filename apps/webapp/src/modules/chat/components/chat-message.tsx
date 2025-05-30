@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { memo } from 'react';
 import { StreamingMessage } from './streaming-message';
@@ -14,12 +15,15 @@ interface ChatMessageProps {
   timestamp: number;
   /** Whether the message is currently being streamed (for assistant messages) */
   isStreaming?: boolean;
+  /** The AI model used to generate this message (required for assistant messages) */
+  modelUsed: string;
 }
 
 /**
  * ChatMessage component displays a single message in the chat interface.
  * Handles both user and assistant messages with appropriate styling.
  * For streaming assistant messages, delegates to the StreamingMessage component.
+ * Shows model indicator for assistant messages when modelUsed is provided.
  * Memoized to prevent unnecessary re-renders when props haven't changed.
  *
  * @param props - The component props
@@ -30,13 +34,48 @@ export const ChatMessage = memo<ChatMessageProps>(function ChatMessage({
   role,
   timestamp,
   isStreaming = false,
+  modelUsed,
 }) {
   const isUser = role === 'user';
 
   // Use streaming component for streaming assistant messages
   if (isStreaming && role === 'assistant') {
-    return <StreamingMessage content={content} timestamp={timestamp} />;
+    return <StreamingMessage content={content} timestamp={timestamp} modelUsed={modelUsed} />;
   }
+
+  // Helper function to get abbreviated model display name
+  const getModelDisplayName = (modelId: string) => {
+    // Extract and format model name for compact display
+    const parts = modelId.split('/');
+    const modelPart = parts[parts.length - 1];
+
+    // Handle specific model patterns
+    if (modelPart.includes('gemini')) {
+      if (modelPart.includes('flash')) {
+        if (modelPart.includes('2.5')) return 'Gemini 2.5 Flash';
+        if (modelPart.includes('2.0')) return 'Gemini 2.0 Flash';
+        return 'Gemini Flash';
+      }
+      if (modelPart.includes('pro')) return 'Gemini Pro';
+      return 'Gemini';
+    }
+
+    if (modelPart.includes('gpt-4o')) {
+      if (modelPart.includes('mini')) return 'GPT-4o Mini';
+      return 'GPT-4o';
+    }
+
+    if (modelPart.includes('gpt-4')) return 'GPT-4.1';
+    if (modelPart.includes('claude')) return 'Claude Sonnet';
+
+    // Fallback to formatted version
+    return modelPart
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
+      .substring(0, 20);
+  };
+
+  const modelDisplayName = !isUser ? getModelDisplayName(modelUsed) : null;
 
   return (
     <div className="w-full mb-4">
@@ -47,11 +86,22 @@ export const ChatMessage = memo<ChatMessageProps>(function ChatMessage({
         )}
       >
         <div className="whitespace-pre-wrap">{content}</div>
-        <div className={cn('text-xs mt-2 opacity-70')}>
-          {new Date(timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+        <div className={cn('flex items-center justify-between mt-2')}>
+          <div className={cn('text-xs opacity-70')}>
+            {new Date(timestamp).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </div>
+          {/* Model indicator for assistant messages */}
+          {!isUser && modelDisplayName && (
+            <Badge
+              variant="outline"
+              className="text-xs h-5 px-2 py-0 text-muted-foreground border-muted-foreground/20"
+            >
+              {modelDisplayName}
+            </Badge>
+          )}
         </div>
       </div>
     </div>

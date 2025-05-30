@@ -1,6 +1,7 @@
 import { api } from '@workspace/backend/convex/_generated/api';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { useSessionId, useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
+import { useQuery } from 'convex/react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -10,6 +11,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   timestamp: number;
   isStreaming?: boolean;
+  modelUsed: string;
 }
 
 export interface Chat {
@@ -42,13 +44,42 @@ export function useChat() {
   // Get API key status
   const apiKeyResult = useSessionQuery(api.apiKeys.getUserApiKey, { provider: 'openrouter' });
 
+  // Get available models
+  const availableModelsResult = useQuery(api.models.getAvailableModels);
+
+  // Get user's preferred model
+  const userPreferencesResult = useSessionQuery(api.models.getUserPreferredModel);
+
+  // Get current chat details (including selected model)
+  const currentChatResult = useSessionQuery(
+    api.chat.getChatSummary,
+    currentChatId ? { chatId: currentChatId } : 'skip'
+  );
+
   // Mutations
   const createChatMutation = useSessionMutation(api.chat.createChat);
+  const updateChatModelMutation = useSessionMutation(api.chat.updateChatModel);
+  const setUserPreferredModelMutation = useSessionMutation(api.models.setUserPreferredModel);
   const loginAnonMutation = useSessionMutation(api.auth.loginAnon);
 
   // Extract data from results, handling errors
   const latestChat = latestChatResult?.success ? latestChatResult.data : null;
   const messages = messagesResult?.success ? messagesResult.data : [];
+  const currentChat = currentChatResult?.success ? currentChatResult.data : null;
+
+  // User preferences are returned directly when successful, null when auth fails
+  const userPreferences = userPreferencesResult || null;
+
+  // Ensure we have required model data before rendering
+  const availableModels = availableModelsResult;
+  const defaultModelId = availableModels?.defaultModelId || 'google/gemini-2.5-flash-preview-05-20';
+
+  // Get the selected model for the current chat, falling back to user preference, then default
+  const selectedModel =
+    currentChat?.selectedModel || userPreferences?.preferredModelId || defaultModelId;
+
+  // Don't render until we have essential model data
+  const isModelDataReady = Boolean(availableModels && selectedModel);
 
   // Handle authentication errors from queries
   useEffect(() => {
@@ -104,42 +135,73 @@ export function useChat() {
     }
   }, [sessionId, loginAnonMutation]);
 
-  const createNewChat = useCallback(async () => {
-    try {
-      setIsLoading(true);
+  const setSelectedModel = useCallback(
+    async (modelId: string) => {
+      try {
+        // Always save as user preference for future chats
+        await setUserPreferredModelMutation({
+          modelId: modelId,
+        });
 
-      // Check if we need to auto-login first
-      const hasAuthError =
-        latestChatResult &&
-        !latestChatResult.success &&
-        (latestChatResult.error === 'session_not_found' ||
-          latestChatResult.error === 'user_not_found');
-
-      if (hasAuthError) {
-        const loginSuccess = await performAutoLogin();
-        if (!loginSuccess) {
-          throw new Error('Authentication required. Please refresh the page and try again.');
+        // If there's a current chat, also update the chat's selected model
+        if (currentChatId) {
+          await updateChatModelMutation({
+            chatId: currentChatId,
+            selectedModel: modelId,
+          });
         }
-        // Wait a moment for the auth state to update
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error('Failed to update model selection:', error);
+        toast.error('Failed to update model selection');
       }
+    },
+    [currentChatId, updateChatModelMutation, setUserPreferredModelMutation]
+  );
 
-      const chatId = await createChatMutation({});
-      setCurrentChatId(chatId);
-      return chatId;
-    } catch (error) {
-      console.error('Failed to create chat:', error);
-      const errorMessage = (error as Error).message;
-      if (errorMessage.includes('Session not found') || errorMessage.includes('User not found')) {
-        toast.error('Please refresh the page and try again');
-      } else {
-        toast.error('Failed to create chat');
+  const createNewChat = useCallback(
+    async (withModel?: string) => {
+      try {
+        setIsLoading(true);
+
+        // Check if we need to auto-login first
+        const hasAuthError =
+          latestChatResult &&
+          !latestChatResult.success &&
+          (latestChatResult.error === 'session_not_found' ||
+            latestChatResult.error === 'user_not_found');
+
+        if (hasAuthError) {
+          const loginSuccess = await performAutoLogin();
+          if (!loginSuccess) {
+            throw new Error('Authentication required. Please refresh the page and try again.');
+          }
+          // Wait a moment for the auth state to update
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        // Use the provided model, current selected model, or default
+        const modelToUse = withModel || selectedModel;
+
+        const chatId = await createChatMutation({
+          selectedModel: modelToUse,
+        });
+        setCurrentChatId(chatId);
+        return chatId;
+      } catch (error) {
+        console.error('Failed to create chat:', error);
+        const errorMessage = (error as Error).message;
+        if (errorMessage.includes('Session not found') || errorMessage.includes('User not found')) {
+          toast.error('Please refresh the page and try again');
+        } else {
+          toast.error('Failed to create chat');
+        }
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [createChatMutation, latestChatResult, performAutoLogin]);
+    },
+    [createChatMutation, latestChatResult, performAutoLogin, selectedModel]
+  );
 
   const sendStreamingMessage = useCallback(
     async (content: string) => {
@@ -316,5 +378,9 @@ export function useChat() {
     isStreaming,
     hasApiKey: Boolean(apiKeyResult?.hasKey),
     isMessagesLoading,
+    selectedModel,
+    setSelectedModel,
+    availableModels,
+    isModelDataReady,
   };
 }
