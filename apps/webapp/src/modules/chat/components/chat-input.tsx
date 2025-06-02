@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { FileAttachmentList } from './file-attachment-list';
+import { type FileAttachment, FileUpload } from './file-upload';
 import { ModelSelector } from './model-selector';
 
 /**
@@ -20,7 +22,7 @@ interface ChatModel {
  */
 interface ChatInputProps {
   /** Callback function called when a message is sent */
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, files?: FileAttachment[]) => void;
   /** Optional callback function called when streaming should be stopped */
   onStopStreaming?: () => void;
   /** Whether the input is disabled */
@@ -49,7 +51,7 @@ interface ChatInputProps {
 
 /**
  * ChatInput component provides a text input area for sending messages in a chat interface.
- * Features auto-resizing textarea, keyboard shortcuts, streaming controls, and model selection.
+ * Features auto-resizing textarea, keyboard shortcuts, streaming controls, file uploads, and model selection.
  *
  * @param props - The component props
  * @returns JSX element representing the chat input interface
@@ -59,7 +61,7 @@ export function ChatInput({
   onStopStreaming,
   disabled = false,
   isStreaming = false,
-  placeholder = 'Type a message...',
+  placeholder = 'Type a message or attach files...',
   selectedModel,
   availableModels,
   onModelChange,
@@ -67,6 +69,8 @@ export function ChatInput({
   onThinkingModeChange,
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<FileAttachment[]>([]);
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea function
@@ -85,21 +89,27 @@ export function ChatInput({
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (message.trim() && !disabled && !isStreaming) {
-        onSendMessage(message.trim());
+      if ((message.trim() || selectedFiles.length > 0) && !disabled && !isStreaming) {
+        onSendMessage(message.trim(), selectedFiles.length > 0 ? selectedFiles : undefined);
         setMessage('');
+        setSelectedFiles([]);
+        setPasteError(null); // Clear any paste errors on successful send
       }
     },
-    [message, disabled, isStreaming, onSendMessage]
+    [message, selectedFiles, disabled, isStreaming, onSendMessage]
   );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setMessage(e.target.value);
+      // Clear paste error when user starts typing
+      if (pasteError) {
+        setPasteError(null);
+      }
       // Trigger resize on next tick
       setTimeout(resizeTextarea, 0);
     },
-    [resizeTextarea]
+    [resizeTextarea, pasteError]
   );
 
   const handleKeyDown = useCallback(
@@ -118,8 +128,65 @@ export function ChatInput({
     }
   }, [onStopStreaming, isStreaming]);
 
+  const handleFilesSelect = useCallback((files: FileAttachment[]) => {
+    setSelectedFiles(files);
+    setPasteError(null); // Clear paste error when files are selected
+  }, []);
+
+  const handleRemoveFile = useCallback((fileId: string) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  }, []);
+
+  /**
+   * Handles paste events to support pasting images from clipboard
+   */
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    // Don't interfere with normal text pasting if no image is in clipboard
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find((item) => item.type.startsWith('image/'));
+
+    if (imageItem && imageItem.kind === 'file') {
+      e.preventDefault(); // Prevent default paste behavior for images
+
+      const file = imageItem.getAsFile();
+      if (file) {
+        // Validate the pasted image
+        const maxSize = 10 * 1024 * 1024; // 10MB for images
+        if (file.size > maxSize) {
+          setPasteError('Pasted image exceeds 10MB limit');
+          return;
+        }
+
+        // Create a new File object with a proper name
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const extension = file.type.split('/')[1] || 'png';
+        const fileName = `pasted-image-${timestamp}.${extension}`;
+
+        const namedFile = new File([file], fileName, {
+          type: file.type,
+          lastModified: Date.now(),
+        });
+
+        const newAttachment: FileAttachment = {
+          file: namedFile,
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        };
+
+        setSelectedFiles((prev) => [...prev, newAttachment]);
+        setPasteError(null); // Clear any previous errors
+      }
+    }
+  }, []);
+
   return (
     <div className="border-t">
+      {/* File Attachment List */}
+      <FileAttachmentList
+        files={selectedFiles}
+        onRemoveFile={handleRemoveFile}
+        disabled={disabled || isStreaming}
+      />
+
       {/* Input Row */}
       <form onSubmit={handleSubmit} className="flex gap-2 p-4">
         <div className="flex-1 relative">
@@ -128,12 +195,27 @@ export function ChatInput({
             value={message}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={placeholder}
             disabled={disabled && !isStreaming}
             className="min-h-[40px] max-h-[120px] resize-none pr-2"
             rows={1}
           />
+
+          {/* Paste Error Message */}
+          {pasteError && (
+            <div className="absolute top-full left-0 mt-1 text-xs text-destructive">
+              {pasteError}
+            </div>
+          )}
         </div>
+
+        {/* File Upload Button */}
+        <FileUpload
+          onFilesSelect={handleFilesSelect}
+          selectedFiles={selectedFiles}
+          disabled={disabled || isStreaming}
+        />
 
         {/* Send/Stop Button */}
         {isStreaming ? (
@@ -150,7 +232,7 @@ export function ChatInput({
         ) : (
           <Button
             type="submit"
-            disabled={disabled || !message.trim()}
+            disabled={disabled || (!message.trim() && selectedFiles.length === 0)}
             size="icon"
             className="h-8 w-8"
           >

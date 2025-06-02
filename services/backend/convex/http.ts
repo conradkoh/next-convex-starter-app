@@ -1,7 +1,8 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { streamText } from 'ai';
+import { type CoreMessage, streamText } from 'ai';
 import { httpRouter } from 'convex/server';
 import { api } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
 import { DEFAULT_MODEL_ID, isValidModelId } from './models';
 
@@ -33,10 +34,9 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
     try {
-      const body = await request.json();
-      const { chatId, message, sessionId } = body;
+      const { chatId, message, sessionId, attachments } = await request.json();
 
-      // Validate input
+      // Validate required fields
       if (!chatId || !message || !sessionId) {
         return new Response('Missing required fields', { status: 400 });
       }
@@ -74,12 +74,21 @@ http.route({
         modelToUse = DEFAULT_MODEL_ID;
       }
 
-      // Add user message to chat (this will handle auth internally)
-      await ctx.runMutation(api.chat.sendMessage, {
-        chatId,
-        content: message,
-        sessionId,
-      });
+      // Send user message with attachments (if any)
+      if (attachments && attachments.length > 0) {
+        await ctx.runMutation(api.chat.sendMessageWithAttachments, {
+          chatId,
+          content: message,
+          attachments,
+          sessionId,
+        });
+      } else {
+        await ctx.runMutation(api.chat.sendMessage, {
+          chatId,
+          content: message,
+          sessionId,
+        });
+      }
 
       // Create initial streaming message
       const messageId = await ctx.runMutation(api.chat.createStreamingMessage, {
@@ -99,18 +108,127 @@ http.route({
       }
 
       // Convert to format expected by AI SDK
-      const aiMessages = messagesResult.data
-        .filter((m) => !m.isStreaming) // Exclude the current streaming message
-        .map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        }));
+      const aiMessages: CoreMessage[] = await Promise.all(
+        messagesResult.data
+          .filter((m) => !m.isStreaming) // Exclude the current streaming message
+          .map(async (m): Promise<CoreMessage> => {
+            // If message has attachments, process them for AI models
+            if (m.attachments && m.attachments.length > 0) {
+              try {
+                // Process attachments - for now, focus on the first attachment
+                const firstAttachment = m.attachments[0];
 
-      // Add the current user message
-      aiMessages.push({
-        role: 'user',
-        content: message,
-      });
+                // Handle images for vision-capable models
+                if (firstAttachment.metadata.type.startsWith('image/')) {
+                  const fileUrl = await ctx.runQuery(api.chat.getFileUrl, {
+                    storageId: firstAttachment.storageId as Id<'_storage'>,
+                    sessionId,
+                  });
+
+                  if (fileUrl && m.role === 'user') {
+                    return {
+                      role: 'user',
+                      content: [
+                        {
+                          type: 'text' as const,
+                          text: m.content,
+                        },
+                        {
+                          type: 'image' as const,
+                          image: fileUrl,
+                        },
+                      ],
+                    };
+                  }
+                }
+
+                // Handle text files by including their content
+                if (firstAttachment.metadata.type.startsWith('text/')) {
+                  // For text files, we would need to read the content from storage
+                  // For now, just include the filename in the message
+                  const textContent = `${m.content}\n\n[Attached file: ${firstAttachment.metadata.name}]`;
+                  return {
+                    role: m.role,
+                    content: textContent,
+                  };
+                }
+
+                // For other file types, just mention the attachment
+                const contentWithAttachment = `${m.content}\n\n[Attached file: ${firstAttachment.metadata.name} (${firstAttachment.metadata.type})]`;
+                return {
+                  role: m.role,
+                  content: contentWithAttachment,
+                };
+              } catch (error) {
+                console.warn('Failed to process attachment for message:', error);
+                // Fall back to text-only message
+              }
+            }
+
+            // Text-only message
+            return {
+              role: m.role,
+              content: m.content,
+            };
+          })
+      );
+
+      // Add the current user message with attachments if present
+      if (attachments && attachments.length > 0) {
+        try {
+          const firstAttachment = attachments[0];
+
+          // Handle images for vision-capable models
+          if (firstAttachment.metadata.type.startsWith('image/')) {
+            const fileUrl = await ctx.runQuery(api.chat.getFileUrl, {
+              storageId: firstAttachment.storageId as Id<'_storage'>,
+              sessionId,
+            });
+
+            if (fileUrl) {
+              aiMessages.push({
+                role: 'user',
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: message,
+                  },
+                  {
+                    type: 'image' as const,
+                    image: fileUrl,
+                  },
+                ],
+              });
+            } else {
+              // Fall back to text-only if file URL generation fails
+              aiMessages.push({
+                role: 'user',
+                content: message,
+              });
+            }
+          } else {
+            // For non-image files, include filename in the message
+            const messageWithAttachment = `${message}\n\n[Attached file: ${firstAttachment.metadata.name} (${firstAttachment.metadata.type})]`;
+            aiMessages.push({
+              role: 'user',
+              content: messageWithAttachment,
+            });
+          }
+        } catch (error) {
+          console.warn('Failed to process attachment for current message:', error);
+          // Fall back to text-only message
+          aiMessages.push({
+            role: 'user',
+            content: message,
+          });
+        }
+      } else {
+        // Text-only message
+        aiMessages.push({
+          role: 'user',
+          content: message,
+        });
+      }
 
       // Initialize OpenRouter provider
       const openrouter = createOpenRouter({

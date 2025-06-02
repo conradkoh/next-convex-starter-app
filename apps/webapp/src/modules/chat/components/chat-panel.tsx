@@ -1,7 +1,9 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAuthState } from '@/modules/auth/AuthProvider';
+import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { ChevronDown, History, LogIn, Plus, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
@@ -10,6 +12,7 @@ import { ApiKeyDialog } from './api-key-dialog';
 import { ChatInput } from './chat-input';
 import { ChatMessage } from './chat-message';
 import { ChatSidebar } from './chat-sidebar';
+import type { FileAttachment } from './file-upload';
 
 /**
  * Message interface for chat messages
@@ -21,6 +24,15 @@ interface Message {
   timestamp: number;
   isStreaming?: boolean;
   modelUsed: string; // Required for all messages
+  attachments?: Array<{
+    storageId: Id<'_storage'>;
+    metadata: {
+      name: string;
+      size: number;
+      type: string;
+      uploadedAt: number;
+    };
+  }>;
 }
 
 /**
@@ -41,7 +53,7 @@ interface ChatPanelProps {
   /** Array of chat messages to display */
   messages: Message[];
   /** Callback function called when a message is sent */
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, files?: FileAttachment[]) => void;
   /** Optional callback function called when streaming should be stopped */
   onStopStreaming?: () => void;
   /** Whether the chat is in a loading state */
@@ -306,6 +318,7 @@ export function ChatPanel({
                     timestamp={message.timestamp}
                     isStreaming={message.isStreaming}
                     modelUsed={message.modelUsed}
+                    attachments={message.attachments}
                   />
                 ))}
               </div>

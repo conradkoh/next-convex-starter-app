@@ -114,7 +114,37 @@ export default defineSchema({
     timestamp: v.number(), // When the message was sent
     isStreaming: v.optional(v.boolean()), // Whether this message is currently being streamed
     modelUsed: v.string(), // AI model used to generate this message (required)
+    // File attachments (replaces imageStorageId and imageMetadata)
+    attachments: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id('_storage'), // File storage ID
+          metadata: v.object({
+            name: v.string(), // Original filename
+            size: v.number(), // File size in bytes
+            type: v.string(), // MIME type (e.g., 'image/jpeg', 'text/plain')
+            uploadedAt: v.number(), // When the file was uploaded
+          }),
+        })
+      )
+    ),
   }).index('by_chat', ['chatId']),
+
+  // File attachments tracking for expiry and cleanup
+  chatFileAttachments: defineTable({
+    storageId: v.id('_storage'), // Reference to the file in storage
+    userId: v.id('users'), // User who uploaded the file
+    messageId: v.optional(v.id('chatMessages')), // Message this file is attached to (optional for orphaned files)
+    metadata: v.object({
+      name: v.string(), // Original filename
+      size: v.number(), // File size in bytes
+      type: v.string(), // MIME type
+    }),
+    uploadedAt: v.number(), // When the file was uploaded
+  })
+    .index('by_user', ['userId'])
+    .index('by_storage_id', ['storageId'])
+    .index('by_message', ['messageId']),
 
   // API Keys for AI providers
   userApiKeys: defineTable({

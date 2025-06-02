@@ -4,6 +4,7 @@ import { useSessionId, useSessionMutation, useSessionQuery } from 'convex-helper
 import { useQuery } from 'convex/react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import type { FileAttachment } from './components/file-upload';
 
 export interface ChatMessage {
   _id: string;
@@ -12,6 +13,15 @@ export interface ChatMessage {
   timestamp: number;
   isStreaming?: boolean;
   modelUsed: string;
+  attachments?: Array<{
+    storageId: Id<'_storage'>;
+    metadata: {
+      name: string;
+      size: number;
+      type: string;
+      uploadedAt: number;
+    };
+  }>;
 }
 
 export interface Chat {
@@ -61,6 +71,11 @@ export function useChat() {
   const updateChatModelMutation = useSessionMutation(api.chat.updateChatModel);
   const setUserPreferredModelMutation = useSessionMutation(api.models.setUserPreferredModel);
   const loginAnonMutation = useSessionMutation(api.auth.loginAnon);
+  const generateFileUploadUrlMutation = useSessionMutation(api.chat.generateFileUploadUrl);
+  const sendMessageWithAttachmentsMutation = useSessionMutation(
+    api.chat.sendMessageWithAttachments
+  );
+  const sendMessageMutation = useSessionMutation(api.chat.sendMessage);
 
   // Extract data from results, handling errors
   const latestChat = latestChatResult?.success ? latestChatResult.data : null;
@@ -204,7 +219,7 @@ export function useChat() {
   );
 
   const sendStreamingMessage = useCallback(
-    async (content: string) => {
+    async (content: string, files?: FileAttachment[]) => {
       // Check if user has API key configured
       if (!apiKeyResult || !apiKeyResult.hasKey) {
         toast.error('Please configure your OpenRouter API key in settings');
@@ -250,6 +265,58 @@ export function useChat() {
           throw new Error('Failed to get or create chat');
         }
 
+        // Handle file uploads if provided
+        let attachments:
+          | Array<{
+              storageId: Id<'_storage'>;
+              metadata: {
+                name: string;
+                size: number;
+                type: string;
+              };
+            }>
+          | undefined;
+
+        if (files && files.length > 0) {
+          try {
+            // Upload all files in parallel
+            const uploadPromises = files.map(async (fileAttachment) => {
+              // Generate upload URL
+              const uploadUrl = await generateFileUploadUrlMutation();
+
+              // Upload the file
+              const uploadResponse = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': fileAttachment.file.type },
+                body: fileAttachment.file,
+              });
+
+              if (!uploadResponse.ok) {
+                throw new Error(`Failed to upload file: ${fileAttachment.file.name}`);
+              }
+
+              const uploadResult = await uploadResponse.json();
+              return {
+                storageId: uploadResult.storageId as Id<'_storage'>,
+                metadata: {
+                  name: fileAttachment.file.name,
+                  size: fileAttachment.file.size,
+                  type: fileAttachment.file.type,
+                },
+              };
+            });
+
+            attachments = await Promise.all(uploadPromises);
+          } catch (uploadError) {
+            console.error('File upload failed:', uploadError);
+            toast.error('Failed to upload files');
+            return;
+          }
+        }
+
+        // Note: We don't send the message via mutation here because the streaming endpoint
+        // will handle creating the user message in the database. This prevents double messages.
+
         // Check if CONVEX_SITE_URL is configured for HTTP actions
         if (!process.env.NEXT_PUBLIC_CONVEX_SITE_URL) {
           throw new Error(
@@ -267,6 +334,7 @@ export function useChat() {
             chatId,
             message: content,
             sessionId,
+            attachments, // Include file attachments for AI
           }),
           signal: abortController.signal,
         });
@@ -342,7 +410,15 @@ export function useChat() {
         setStreamingAbortController(null);
       }
     },
-    [currentChatId, createNewChat, apiKeyResult, sessionId, latestChatResult, performAutoLogin]
+    [
+      currentChatId,
+      createNewChat,
+      apiKeyResult,
+      sessionId,
+      latestChatResult,
+      performAutoLogin,
+      generateFileUploadUrlMutation,
+    ]
   );
 
   const stopStreaming = useCallback(() => {

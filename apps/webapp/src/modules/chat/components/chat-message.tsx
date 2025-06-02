@@ -17,6 +17,14 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   /** The AI model used to generate this message (required for assistant messages) */
   modelUsed: string;
+  /** Optional file attachments metadata */
+  attachments?: Array<{
+    metadata: {
+      name: string;
+      size: number;
+      type: string;
+    };
+  }>;
 }
 
 /**
@@ -24,6 +32,7 @@ interface ChatMessageProps {
  * Handles both user and assistant messages with appropriate styling.
  * For streaming assistant messages, delegates to the StreamingMessage component.
  * Shows model indicator for assistant messages when modelUsed is provided.
+ * Shows file names when attachments are present (files are sent directly to AI, not stored).
  * Memoized to prevent unnecessary re-renders when props haven't changed.
  *
  * @param props - The component props
@@ -35,6 +44,7 @@ export const ChatMessage = memo<ChatMessageProps>(function ChatMessage({
   timestamp,
   isStreaming = false,
   modelUsed,
+  attachments,
 }) {
   const isUser = role === 'user';
 
@@ -85,7 +95,25 @@ export const ChatMessage = memo<ChatMessageProps>(function ChatMessage({
           isUser ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'
         )}
       >
+        {/* File Attachments Metadata */}
+        {attachments && attachments.length > 0 && (
+          <div className="mb-3">
+            <div className="text-xs opacity-70 mb-1">Attached files ({attachments.length}):</div>
+            <div className="text-xs opacity-80">
+              {attachments.map((attachment, index) => (
+                <span key={attachment.metadata.name}>
+                  {attachment.metadata.name}
+                  {index < attachments.length - 1 && ', '}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Text Content */}
         <div className="whitespace-pre-wrap">{content}</div>
+
+        {/* Footer with timestamp and model info */}
         <div className={cn('flex items-center justify-between mt-2')}>
           <div className={cn('text-xs opacity-70')}>
             {new Date(timestamp).toLocaleTimeString([], {
