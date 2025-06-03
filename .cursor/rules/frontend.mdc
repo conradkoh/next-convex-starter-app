@@ -3,13 +3,12 @@ description:
 globs: 
 alwaysApply: true
 ---
-
 # Frontend Development
 This location of the frontend project is in `apps/webapp`.
 
 ## IMPORTANT RULES
 - NEVER run the `dev` command to start the dev server unless explicitly told to do so.
-- NEVER run the `build` command on a NextJS application unless explicitly told to do so.
+- NEVER run the `build` command to to test the app and prefer to rely on running tests and typechecks instead.
 
 ## UI Design - Components & Icons
 

@@ -36,6 +36,9 @@
     "@radix-ui/react-tooltip": "^1.1.8"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "nx", "sharp"]
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "nx", "sharp"],
+    "overrides": {
+      "@radix-ui/react-dismissable-layer": "1.1.10"
+    }
   }
 }
