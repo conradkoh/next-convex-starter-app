@@ -2,19 +2,14 @@
 
 import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { useAuthState } from '@/modules/auth/AuthProvider';
+import { featureFlags } from '@workspace/backend/config/featureFlags';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
 export function Navigation() {
-  const pathname = usePathname();
   const authState = useAuthState();
   const isAuthenticated = authState?.state === 'authenticated';
   const isLoading = authState === undefined;
-
-  // Get session ID from local storage
-  const sessionId = typeof window !== 'undefined' ? localStorage.getItem('sessionId') : null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -31,11 +26,13 @@ export function Navigation() {
               (isAuthenticated ? (
                 <UserMenu />
               ) : (
-                <Link href="/login">
-                  <Button size="sm" variant="outline">
-                    Login
-                  </Button>
-                </Link>
+                !featureFlags.disableLogin && (
+                  <Link href="/login">
+                    <Button size="sm" variant="outline">
+                      Login
+                    </Button>
+                  </Link>
+                )
               ))}
           </div>
         </nav>
