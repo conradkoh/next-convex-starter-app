@@ -3,7 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
-
 # Frontend Development
 This location of the frontend project is in `apps/webapp`.
 
