@@ -97,7 +97,7 @@ export function UserMenu() {
           {authState.user.accessLevel === 'system_admin' && (
             <Link href="/app/admin">
               <DropdownMenuItem className="cursor-pointer">
-                <Settings className="mr-1 h-4 w-4" />
+                <Settings className="h-4 w-4" />
                 System Admin
               </DropdownMenuItem>
             </Link>

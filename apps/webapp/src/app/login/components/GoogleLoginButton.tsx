@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useAction } from 'convex/react';
+import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -11,12 +12,14 @@ interface GoogleLoginButtonProps {
   className?: string;
   variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
   redirectUri?: string;
+  showChevron?: boolean;
 }
 
 export const GoogleLoginButton = ({
   className = 'w-full',
   variant = 'outline',
   redirectUri = `${window.location.origin}/login/google/callback`,
+  showChevron = false,
 }: GoogleLoginButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const googleAuthAvailable = useGoogleAuthAvailable();
@@ -57,6 +60,38 @@ export const GoogleLoginButton = ({
     }
   };
 
+  // List-style layout
+  if (variant === 'ghost' && showChevron) {
+    return (
+      <button
+        type="button"
+        className="flex items-center justify-between w-full h-16 px-6 hover:bg-muted/50 transition-colors cursor-pointer group border-0 bg-transparent text-left disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={handleGoogleLogin}
+        disabled={isLoading || !googleAuthAvailable}
+        aria-label="Sign in with Google"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-8 h-8">
+            <GoogleIcon className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium text-left">
+              {isLoading ? 'Connecting to Google...' : 'Continue with Google'}
+            </span>
+            <span className="text-sm text-muted-foreground text-left">
+              Sign in with your Google account
+            </span>
+          </div>
+        </div>
+        {isLoading ? (
+          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        )}
+      </button>
+    );
+  }
+
   return (
     <Button
       variant={variant}
@@ -81,8 +116,7 @@ export const GoogleLoginButton = ({
 
 // Google icon component
 const GoogleIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <title>Google</title>
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Google">
     <path
       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
       fill="#4285F4"

@@ -4,11 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
+import { ChevronRight, Loader2, UserCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export const AnonymousLoginButton = ({ sessionId }: { sessionId: string }) => {
+interface AnonymousLoginButtonProps {
+  sessionId: string;
+  variant?: 'list' | 'button';
+  className?: string;
+}
+
+export const AnonymousLoginButton = ({
+  sessionId,
+  variant = 'button',
+  className = 'w-full',
+}: AnonymousLoginButtonProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const loginAnon = useSessionMutation(api.auth.loginAnon);
@@ -27,11 +38,54 @@ export const AnonymousLoginButton = ({ sessionId }: { sessionId: string }) => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+  // List-style layout
+  if (variant === 'list') {
+    return (
+      <button
+        type="button"
+        className="flex items-center justify-between w-full h-16 px-6 hover:bg-muted/50 transition-colors cursor-pointer group border-0 bg-transparent text-left disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={handleClick}
+        disabled={isLoading}
+        aria-label="Continue anonymously without creating an account"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-8 h-8">
+            <UserCheck className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium text-left">
+              {isLoading ? 'Signing in...' : 'Continue Anonymously'}
+            </span>
+            <span className="text-sm text-muted-foreground text-left">No account required</span>
+          </div>
+        </div>
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        )}
+      </button>
+    );
+  }
+
+  // Button layout (original)
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" onClick={handleClick} disabled={isLoading} className="w-full">
+          <Button
+            variant="outline"
+            onClick={handleClick}
+            disabled={isLoading}
+            className={className}
+          >
             {isLoading ? 'Logging in...' : 'Login Anonymously'}
           </Button>
         </TooltipTrigger>

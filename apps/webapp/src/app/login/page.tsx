@@ -1,11 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useAuthState } from '@/lib/auth/AuthProvider';
 import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
-import { AlertCircle, KeyRound, KeySquare, Loader2 } from 'lucide-react';
+import { AlertCircle, ChevronRight, KeyRound, KeySquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -47,7 +46,7 @@ export default function LoginPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
         <div className="w-full max-w-md space-y-6">
-          <Card className="p-8">
+          <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
             <div className="space-y-6 text-center">
               <div className="space-y-2">
                 <AlertCircle className="mx-auto h-16 w-16 text-muted-foreground/60" />
@@ -59,13 +58,13 @@ export default function LoginPage() {
 
               <div className="pt-4">
                 <Link href="/">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full cursor-pointer">
                     Return to Home
                   </Button>
                 </Link>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       </main>
     );
@@ -74,61 +73,61 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
       <div className="w-full max-w-md space-y-6">
+        {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-sm text-muted-foreground">Choose a login method to continue</p>
+          <p className="text-sm text-muted-foreground">Choose how you'd like to sign in</p>
         </div>
 
-        <div className="space-y-4">
-          {/* Google Login */}
-          {googleAuthAvailable && (
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div className="text-center mb-2">
-                  <h3 className="text-lg font-semibold">Sign in with Google</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Use your Google account to continue
-                  </p>
+        {/* Login Options List */}
+        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <div className="divide-y divide-border">
+            {/* Google Login */}
+            {googleAuthAvailable && <GoogleLoginButton variant="ghost" showChevron={true} />}
+
+            {/* Login with Code */}
+            <Link href="/login/code" className="block">
+              <div className="flex items-center justify-between h-16 px-6 hover:bg-muted/50 transition-colors cursor-pointer group">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-8 h-8">
+                    <KeyRound className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-left">Enter Login Code</span>
+                    <span className="text-sm text-muted-foreground text-left">
+                      Use a code from your other device
+                    </span>
+                  </div>
                 </div>
-                <GoogleLoginButton />
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </div>
-            </Card>
-          )}
+            </Link>
 
-          {/* Login with Code */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="text-center mb-2">
-                <h3 className="text-lg font-semibold">Login with Code</h3>
-                <p className="text-sm text-muted-foreground">Use a code from your other device</p>
+            {/* Anonymous Login */}
+            {sessionId && <AnonymousLoginButton sessionId={sessionId} variant="list" />}
+          </div>
+
+          {/* Recovery Section */}
+          <div className="border-t border-border">
+            <Link href="/recover" className="block">
+              <div className="flex items-center justify-between h-14 px-6 hover:bg-muted/30 transition-colors cursor-pointer group">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-8 h-8">
+                    <KeySquare className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                  <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                    Lost access to your account?
+                  </span>
+                </div>
+                <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
               </div>
-              <Link href="/login/code">
-                <Button className="w-full" aria-label="Go to login with code page">
-                  <KeyRound className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Enter Login Code
-                </Button>
-              </Link>
-            </div>
-          </Card>
-
-          {/* Anonymous Login */}
-          {sessionId && (
-            <div className="pt-2">
-              <AnonymousLoginButton sessionId={sessionId} />
-            </div>
-          )}
-
-          {/* Recovery link - subtle version */}
-          <div className="pt-6 text-center">
-            <Link
-              href="/recover"
-              className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Recover your anonymous account"
-            >
-              <KeySquare className="mr-1 h-3 w-3" aria-hidden="true" />
-              Lost access to your anonymous account?
             </Link>
           </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="text-center text-xs text-muted-foreground">
+          <p>By signing in, you agree to our terms of service</p>
         </div>
       </div>
     </main>
