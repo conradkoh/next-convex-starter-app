@@ -1,13 +1,13 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useAuthState } from '@/lib/auth/AuthProvider';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { formatLoginCode } from '@workspace/backend/modules/auth/codeUtils';
 import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
 import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { useAuthState } from './AuthProvider';
 
 export function LoginCodeGenerator() {
   const authState = useAuthState();

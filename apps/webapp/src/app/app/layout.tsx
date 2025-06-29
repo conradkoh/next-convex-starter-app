@@ -1,6 +1,6 @@
 'use client';
 
-import { RequireLogin } from '@/modules/auth/RequireLogin';
+import { RequireLogin } from '@/lib/auth/RequireLogin';
 
 export default function AppLayout({
   children,

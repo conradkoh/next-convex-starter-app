@@ -1,7 +1,8 @@
 'use client';
 
 import { api } from '@workspace/backend/convex/_generated/api';
-import { useSessionAction, useSessionMutation } from 'convex-helpers/react/sessions';
+import { useSessionMutation } from 'convex-helpers/react/sessions';
+import { useAction } from 'convex/react';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -17,7 +18,7 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const exchangeGoogleCode = useSessionAction(api.googleAuth.exchangeGoogleCode);
+  const exchangeGoogleCode = useAction(api.googleAuth.exchangeGoogleCode);
   const loginWithGoogle = useSessionMutation(api.googleAuth.loginWithGoogle);
 
   useEffect(() => {
@@ -47,8 +48,24 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
           return;
         }
 
-        // Validate CSRF state
-        const storedState = sessionStorage.getItem('google_oauth_state');
+        // Validate CSRF state with retry mechanism to handle timing issues
+        let storedState: string | null = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        // Retry sessionStorage access to handle potential timing issues
+        while (retryCount < maxRetries) {
+          storedState = sessionStorage.getItem('google_oauth_state');
+          if (storedState) {
+            break;
+          }
+          // Wait a bit before retrying (only if we don't have the state yet)
+          if (retryCount < maxRetries - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          retryCount++;
+        }
+
         if (!storedState || storedState !== state) {
           setError('Invalid state parameter - possible CSRF attack');
           toast.error('Security validation failed');
@@ -59,6 +76,7 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
         // Clean up stored state
         sessionStorage.removeItem('google_oauth_state');
 
+        console.log('Starting Google OAuth token exchange...');
         // Exchange code for profile
         const redirectUri = `${window.location.origin}/login/google/callback`;
         const exchangeResult = await exchangeGoogleCode({
@@ -71,6 +89,7 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
           throw new Error('Failed to exchange code for profile');
         }
 
+        console.log('Token exchange successful, logging in with Google profile...');
         // Login with Google profile
         const loginResult = await loginWithGoogle({
           profile: exchangeResult.profile,
@@ -80,6 +99,7 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
           throw new Error('Failed to complete Google login');
         }
 
+        console.log('Google login successful, redirecting...');
         // Success!
         toast.success(`Welcome, ${exchangeResult.profile.name}!`);
         router.push(redirectPath);
@@ -94,7 +114,13 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
       }
     };
 
-    processCallback();
+    // Add a small delay before processing to ensure the component is fully mounted
+    // This helps prevent race conditions with sessionStorage access
+    const timer = setTimeout(() => {
+      processCallback();
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [searchParams, exchangeGoogleCode, loginWithGoogle, router, redirectPath]);
 
   if (error) {

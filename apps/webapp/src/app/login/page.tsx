@@ -2,18 +2,20 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { AnonymousLoginButton } from '@/modules/auth/AnonymousLoginButton';
-import { useAuthState } from '@/modules/auth/AuthProvider';
-import { GoogleLoginButton } from '@/modules/auth/GoogleLoginButton';
+import { useAuthState } from '@/lib/auth/AuthProvider';
+import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
 import { AlertCircle, KeyRound, KeySquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { AnonymousLoginButton } from './components/AnonymousLoginButton';
+import { GoogleLoginButton } from './components/GoogleLoginButton';
 
 export default function LoginPage() {
   const router = useRouter();
   const authState = useAuthState();
+  const googleAuthAvailable = useGoogleAuthAvailable();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const isLoading = authState === undefined;
 
@@ -79,7 +81,7 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           {/* Google Login */}
-          {featureFlags.enableGoogleAuth && (
+          {googleAuthAvailable && (
             <Card className="p-6">
               <div className="space-y-4">
                 <div className="text-center mb-2">

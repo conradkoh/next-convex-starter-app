@@ -2,7 +2,7 @@
 
 import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
-import { useAuthState } from '@/modules/auth/AuthProvider';
+import { useAuthState } from '@/lib/auth/AuthProvider';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
 import Link from 'next/link';
 

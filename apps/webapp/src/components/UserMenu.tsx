@@ -19,9 +19,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuthState } from '@/modules/auth/AuthProvider';
+import { useAuthState } from '@/lib/auth/AuthProvider';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
+import { Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -93,6 +94,14 @@ export function UserMenu() {
           <Link href="/app">
             <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
           </Link>
+          {authState.user.accessLevel === 'system_admin' && (
+            <Link href="/app/admin">
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                System Admin
+              </DropdownMenuItem>
+            </Link>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"

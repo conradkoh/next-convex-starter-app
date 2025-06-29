@@ -13,8 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuthState } from '@/modules/auth/AuthProvider';
-import { LoginCodeGenerator } from '@/modules/auth/LoginCodeGenerator';
+import { useAuthState } from '@/lib/auth/AuthProvider';
 import { NameEditForm } from '@/modules/profile/NameEditForm';
 import { ThemeSettings } from '@/modules/theme/ThemeSettings';
 import { api } from '@workspace/backend/convex/_generated/api';
@@ -24,6 +23,7 @@ import { CopyIcon, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { LoginCodeGenerator } from '../../login/components/LoginCodeGenerator';
 
 // Recovery Code Component
 function RecoveryCodeSection() {

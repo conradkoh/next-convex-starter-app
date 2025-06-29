@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAuthState } from '@/modules/auth/AuthProvider';
-import { RequireLogin } from '@/modules/auth/RequireLogin';
+import { useAuthState } from '@/lib/auth/AuthProvider';
+import { RequireLogin } from '@/lib/auth/RequireLogin';
 import Link from 'next/link';
 
 export default function AppPage() {

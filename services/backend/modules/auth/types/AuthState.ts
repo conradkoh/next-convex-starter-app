@@ -1,4 +1,5 @@
 import type { Doc } from '../../../convex/_generated/dataModel';
+import type { AccessLevel } from '../accessControl';
 
 export type AuthState =
   | {
@@ -10,6 +11,8 @@ export type AuthState =
       sessionId: string;
       state: 'authenticated';
       user: Doc<'users'>;
+      accessLevel: AccessLevel;
+      isSystemAdmin: boolean;
     };
 
 // Google-specific user profile type for frontend components

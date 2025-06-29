@@ -52,3 +52,72 @@ export const getSessionsBatch = internalQuery({
     return await ctx.db.query('sessions').paginate(args.paginationOpts);
   },
 });
+
+// ========================================
+// USER ACCESS LEVEL MIGRATION
+// ========================================
+
+// Internal mutation to set accessLevel to 'user' for a single user if undefined
+export const setUserAccessLevelDefault = internalMutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return; // User doesn't exist, skip
+    }
+
+    // Only update if accessLevel is undefined
+    if (user.accessLevel === undefined) {
+      await ctx.db.patch(args.userId, {
+        accessLevel: 'user',
+      });
+    }
+  },
+});
+
+// Internal action to migrate all users to have accessLevel set to 'user' if undefined
+export const migrateUserAccessLevels = internalAction({
+  args: { cursor: v.optional(v.string()) }, // Convex cursor for pagination
+  handler: async (ctx, args) => {
+    const paginationOpts = {
+      numItems: BATCH_SIZE,
+      cursor: args.cursor ?? null,
+    };
+
+    // Fetch a batch of users
+    const results = await ctx.runQuery(internal.migration.getUsersBatch, {
+      paginationOpts,
+    });
+
+    let updatedCount = 0;
+
+    // Schedule mutations to update each user in the batch if needed
+    for (const user of results.page) {
+      if (user.accessLevel === undefined) {
+        await ctx.runMutation(internal.migration.setUserAccessLevelDefault, {
+          userId: user._id,
+        });
+        updatedCount++;
+      }
+    }
+
+    console.log(`Processed batch: ${results.page.length} users, updated: ${updatedCount}`);
+
+    // If there are more users, schedule the next batch
+    if (!results.isDone) {
+      await ctx.runAction(internal.migration.migrateUserAccessLevels, {
+        cursor: results.continueCursor,
+      });
+    } else {
+      console.log('User access level migration completed');
+    }
+  },
+});
+
+// Helper query to get users with pagination (used by the migration action)
+export const getUsersBatch = internalQuery({
+  args: { paginationOpts: v.any() }, // Using v.any() for simplicity, consider a stricter type
+  handler: async (ctx, args) => {
+    return await ctx.db.query('users').paginate(args.paginationOpts);
+  },
+});

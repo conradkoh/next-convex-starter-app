@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AuthProvider } from '@/modules/auth/AuthProvider';
+import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { useAction } from 'convex/react';

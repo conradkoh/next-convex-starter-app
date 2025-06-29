@@ -1,9 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { featureFlags } from '@workspace/backend/config/featureFlags';
+import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
 import { api } from '@workspace/backend/convex/_generated/api';
-import { useSessionAction } from 'convex-helpers/react/sessions';
+import { useAction } from 'convex/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -19,7 +19,8 @@ export const GoogleLoginButton = ({
   redirectUri = `${window.location.origin}/login/google/callback`,
 }: GoogleLoginButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const generateGoogleAuthUrl = useSessionAction(api.googleAuth.generateGoogleAuthUrl);
+  const googleAuthAvailable = useGoogleAuthAvailable();
+  const generateGoogleAuthUrl = useAction(api.googleAuth.generateGoogleAuthUrl);
 
   // Generate CSRF state parameter
   const generateState = (): string => {
@@ -30,8 +31,8 @@ export const GoogleLoginButton = ({
 
   const handleGoogleLogin = async () => {
     // Check if Google auth is enabled
-    if (!featureFlags.enableGoogleAuth) {
-      toast.error('Google authentication is currently disabled');
+    if (!googleAuthAvailable) {
+      toast.error('Google authentication is currently disabled or not configured');
       return;
     }
 
@@ -60,7 +61,7 @@ export const GoogleLoginButton = ({
     <Button
       variant={variant}
       onClick={handleGoogleLogin}
-      disabled={isLoading || !featureFlags.enableGoogleAuth}
+      disabled={isLoading || !googleAuthAvailable}
       className={className}
     >
       {isLoading ? (

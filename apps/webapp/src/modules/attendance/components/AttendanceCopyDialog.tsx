@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useCurrentUser } from '@/modules/auth/AuthProvider';
+import { useCurrentUser } from '@/lib/auth/AuthProvider';
 import type { Doc } from '@workspace/backend/convex/_generated/dataModel';
 import { Check, Copy } from 'lucide-react';
 import { useCallback, useState } from 'react';

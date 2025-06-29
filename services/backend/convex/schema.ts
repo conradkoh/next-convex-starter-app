@@ -125,11 +125,13 @@ export default defineSchema({
         username: v.string(),
         email: v.string(),
         recoveryCode: v.optional(v.string()),
+        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
       }),
       v.object({
         type: v.literal('anonymous'),
         name: v.string(), //system generated name
         recoveryCode: v.optional(v.string()),
+        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
       }),
       v.object({
         type: v.literal('google'),
@@ -150,6 +152,7 @@ export default defineSchema({
           hd: v.optional(v.string()), // Hosted domain for Google Workspace users
         }),
         recoveryCode: v.optional(v.string()),
+        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
       })
     )
   )
@@ -180,4 +183,18 @@ export default defineSchema({
     createdAt: v.number(), // When the code was created
     expiresAt: v.number(), // When the code expires (1 minute after creation)
   }).index('by_code', ['code']),
+
+  /**
+   * Third-party authentication configuration for dynamic auth provider setup.
+   * Supports multiple auth providers (Google, GitHub, etc.) with unified structure.
+   */
+  thirdPartyAuthConfig: defineTable({
+    type: v.union(v.literal('google')), // Auth provider type (extensible for future providers)
+    enabled: v.boolean(), // Whether this auth provider is enabled
+    clientId: v.optional(v.string()), // OAuth client ID
+    clientSecret: v.optional(v.string()), // OAuth client secret (encrypted storage recommended)
+    redirectUris: v.array(v.string()), // Allowed redirect URIs for OAuth
+    configuredBy: v.id('users'), // User who configured this (must be system_admin)
+    configuredAt: v.number(), // When this configuration was created/updated
+  }).index('by_type', ['type']),
 });

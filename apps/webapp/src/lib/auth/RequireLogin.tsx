@@ -1,6 +1,6 @@
 'use client';
 import { UnauthorizedPage } from '@/components/UnauthorizedPage';
-import { useAuthState } from '@/modules/auth/AuthProvider';
+import { useAuthState } from '@/lib/auth/AuthProvider';
 import { Loader2 } from 'lucide-react';
 
 export const RequireLogin = ({ children }: { children: React.ReactNode }) => {

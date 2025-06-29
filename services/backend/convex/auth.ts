@@ -2,6 +2,7 @@ import { SessionIdArg } from 'convex-helpers/server/sessions';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { featureFlags } from '../config/featureFlags';
+import { getAccessLevel, isSystemAdmin } from '../modules/auth/accessControl';
 import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
 import type { AuthState } from '../modules/auth/types/AuthState';
 import { api, internal } from './_generated/api';
@@ -100,6 +101,8 @@ export const getState = query({
       sessionId: args.sessionId,
       state: 'authenticated' as const,
       user,
+      accessLevel: getAccessLevel(user),
+      isSystemAdmin: isSystemAdmin(user),
     };
   },
 });
@@ -129,6 +132,7 @@ export const loginAnon = mutation({
     const userId = await ctx.db.insert('users', {
       type: 'anonymous',
       name: anonName,
+      // accessLevel defaults to 'user' via getAccessLevel helper
     });
 
     // Create a new session if it doesn't exist

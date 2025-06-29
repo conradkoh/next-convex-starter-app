@@ -4,7 +4,8 @@ import './globals.css';
 import { ConvexClientProvider } from '@/app/ConvexClientProvider';
 import { Navigation } from '@/components/Navigation';
 import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/modules/auth/AuthProvider';
+import { AuthProvider } from '@/lib/auth/AuthProvider';
+import { AppInfoProvider } from '@/modules/app/AppInfoProvider';
 import { ThemeProvider } from '@/modules/theme/ThemeProvider';
 import type { Theme } from '@/modules/theme/theme-utils';
 
@@ -56,14 +57,16 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ConvexClientProvider>
-          <AuthProvider>
-            <ThemeProvider>
-              <div className="flex flex-col h-screen overflow-hidden">
-                <Navigation />
-                <main className="flex-1 flex flex-col overflow-scroll">{children}</main>
-              </div>
-            </ThemeProvider>
-          </AuthProvider>
+          <AppInfoProvider>
+            <AuthProvider>
+              <ThemeProvider>
+                <div className="flex flex-col h-screen overflow-hidden">
+                  <Navigation />
+                  <main className="flex-1 flex flex-col overflow-scroll">{children}</main>
+                </div>
+              </ThemeProvider>
+            </AuthProvider>
+          </AppInfoProvider>
         </ConvexClientProvider>
         <Toaster />
       </body>
