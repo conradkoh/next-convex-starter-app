@@ -114,7 +114,7 @@ export default defineSchema({
     .index('by_user_attendance', ['attendanceKey', 'userId']),
 
   /**
-   * User accounts supporting both authenticated and anonymous users.
+   * User accounts supporting authenticated, anonymous, and Google OAuth users.
    * Stores user credentials, names, and recovery information.
    */
   users: defineTable(
@@ -130,12 +130,33 @@ export default defineSchema({
         type: v.literal('anonymous'),
         name: v.string(), //system generated name
         recoveryCode: v.optional(v.string()),
+      }),
+      v.object({
+        type: v.literal('google'),
+        name: v.string(), // Display name from Google profile
+        email: v.string(), // Email from Google profile
+        googleId: v.string(), // Google's unique user ID
+        picture: v.optional(v.string()), // Google profile picture URL
+        google: v.object({
+          // Full Google profile object for forward compatibility
+          id: v.string(),
+          email: v.string(),
+          verified_email: v.optional(v.boolean()),
+          name: v.string(),
+          given_name: v.optional(v.string()),
+          family_name: v.optional(v.string()),
+          picture: v.optional(v.string()),
+          locale: v.optional(v.string()),
+          hd: v.optional(v.string()), // Hosted domain for Google Workspace users
+        }),
+        recoveryCode: v.optional(v.string()),
       })
     )
   )
     .index('by_username', ['username'])
     .index('by_email', ['email'])
-    .index('by_name', ['name']),
+    .index('by_name', ['name'])
+    .index('by_googleId', ['googleId']),
 
   /**
    * User sessions for authentication and state management.

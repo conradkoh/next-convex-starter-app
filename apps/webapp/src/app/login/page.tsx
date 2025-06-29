@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AnonymousLoginButton } from '@/modules/auth/AnonymousLoginButton';
 import { useAuthState } from '@/modules/auth/AuthProvider';
+import { GoogleLoginButton } from '@/modules/auth/GoogleLoginButton';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
 import { AlertCircle, KeyRound, KeySquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -77,6 +78,22 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-4">
+          {/* Google Login */}
+          {featureFlags.enableGoogleAuth && (
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="text-center mb-2">
+                  <h3 className="text-lg font-semibold">Sign in with Google</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use your Google account to continue
+                  </p>
+                </div>
+                <GoogleLoginButton />
+              </div>
+            </Card>
+          )}
+
+          {/* Login with Code */}
           <Card className="p-6">
             <div className="space-y-4">
               <div className="text-center mb-2">
@@ -92,6 +109,7 @@ export default function LoginPage() {
             </div>
           </Card>
 
+          {/* Anonymous Login */}
           {sessionId && (
             <div className="pt-2">
               <AnonymousLoginButton sessionId={sessionId} />
