@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { useAppInfo } from '@/modules/app/useAppInfo';
 import { api } from '@workspace/backend/convex/_generated/api';
@@ -13,6 +14,7 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
+  Loader2,
   RefreshCw,
   Save,
   TestTube,
@@ -55,6 +57,10 @@ export default function GoogleAuthConfigPage() {
   const toggleEnabled = useSessionMutation(api.system.thirdPartyAuthConfig.toggleGoogleAuthEnabled);
   const testConfig = useSessionMutation(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
   const resetConfig = useSessionMutation(api.system.thirdPartyAuthConfig.resetGoogleAuthConfig);
+
+  // Loading states
+  const isConfigLoading = configData === undefined;
+  const isPageLoading = appInfoLoading || isConfigLoading;
 
   // Load existing configuration
   useEffect(() => {
@@ -200,6 +206,155 @@ export default function GoogleAuthConfigPage() {
   };
 
   const isFullyConfigured = isConfigured && enabled;
+
+  // Show loading state while data is being fetched
+  if (isPageLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Google Authentication Configuration</h1>
+          <p className="text-muted-foreground">Configure Google OAuth for user authentication</p>
+        </div>
+
+        {/* Enable/Disable Control Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-6 w-64" />
+            </CardTitle>
+            <CardDescription>
+              <Skeleton className="h-4 w-96" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <Skeleton className="h-6 w-11" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Status Overview Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-6 w-48" />
+            </CardTitle>
+            <CardDescription>
+              <Skeleton className="h-4 w-80" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-24" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Configuration Form Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-6 w-56" />
+            </CardTitle>
+            <CardDescription>
+              <Skeleton className="h-4 w-72" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Client ID Skeleton */}
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-3 w-80" />
+            </div>
+
+            {/* Client Secret Skeleton */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-36" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-3 w-96" />
+            </div>
+
+            <Separator />
+
+            {/* Redirect URIs Skeleton */}
+            <div className="space-y-4">
+              <div>
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-full mt-1" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 w-16" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 w-16" />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Action Buttons Skeleton */}
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-40" />
+              <Skeleton className="h-10 w-36" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Setup Instructions Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-6 w-40" />
+            </CardTitle>
+            <CardDescription>
+              <Skeleton className="h-4 w-64" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i}>
+                  <Skeleton className="h-5 w-48 mb-2" />
+                  <Skeleton className="h-4 w-full mb-1" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
