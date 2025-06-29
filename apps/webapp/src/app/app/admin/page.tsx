@@ -1,18 +1,16 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthState } from '@/lib/auth/AuthProvider';
 import { useAppInfo } from '@/modules/app/useAppInfo';
-import { ExternalLink, Settings, Shield, Users } from 'lucide-react';
-import Link from 'next/link';
+import { Settings, Shield, Users } from 'lucide-react';
 
 export default function AdminDashboard() {
   const authState = useAuthState();
   const { appInfo, isLoading } = useAppInfo();
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="pt-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
@@ -71,42 +69,6 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground">Access level</p>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="space-y-3 md:space-y-4">
-        <h2 className="text-lg md:text-xl font-semibold">Quick Actions</h2>
-        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                <Shield className="h-4 w-4 md:h-5 md:w-5" />
-                Google Authentication Setup
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Configure Google OAuth for user authentication
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Status:{' '}
-                  {isLoading
-                    ? 'Loading...'
-                    : appInfo?.googleAuthAvailable
-                      ? 'Configured and ready'
-                      : 'Configuration needed'}
-                </p>
-                <Link href="/app/admin/google-auth">
-                  <Button className="w-full">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    <span className="text-sm md:text-base">Configure Google Auth</span>
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* System Information */}
