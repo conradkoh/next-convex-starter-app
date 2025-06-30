@@ -216,25 +216,8 @@ export const GoogleConnectCallback = () => {
     );
   }
 
-  // Success state (shouldn't normally be reached as we redirect)
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-50">
-            <CheckCircle2 className="h-8 w-8 text-green-600" />
-          </div>
-          <CardTitle className="text-green-900">Connection Successful</CardTitle>
-          <CardDescription>Your Google account has been connected successfully.</CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <Button onClick={handleReturnToProfile} className="w-full">
-            Continue to Profile
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
-  );
+  // If not processing and no error, render nothing (redirect will happen on success)
+  return null;
 };
 
 /**
