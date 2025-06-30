@@ -42,6 +42,23 @@ To create a system administrator:
 
 System admins can configure Google OAuth, manage authentication providers, and access system settings.
 
+## Google Auth Setup
+
+To enable Google OAuth authentication:
+
+1. **Configure Google OAuth** in your app's admin dashboard:
+   - Login with your system admin account
+   - Go to your username → "System Admin" → "Google Auth Config"
+   - Follow the instructions to set up Google OAuth credentials
+   
+2. **Transfer admin role to Google account** (Recommended):
+   - After Google Auth is configured, sign in with your Google account
+   - In [Convex Dashboard](https://dashboard.convex.dev), go to Data > `users` table
+   - Find your Google account user record and set `accessLevel` to `"system_admin"`
+   - Remove the `system_admin` access level from the temporary anonymous account
+
+This ensures your system admin access is tied to a verified Google account for better security.
+
 ## Project Structure
 
 - `apps/webapp`: The frontend NextJS application
