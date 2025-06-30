@@ -136,10 +136,14 @@ function _renderDisplayView(
 /**
  * Renders the user avatar if available (for Google accounts).
  */
-function _renderUserAvatar(user: { type: string; picture?: string; name: string }) {
-  if (user.type === 'google' && user.picture) {
+function _renderUserAvatar(user: { type: string; google?: { picture?: string }; name: string }) {
+  if (user.type === 'full' && user.google?.picture) {
     return (
-      <img src={user.picture} alt={`${user.name}'s profile`} className="w-12 h-12 rounded-full" />
+      <img
+        src={user.google.picture}
+        alt={`${user.name}'s profile`}
+        className="w-12 h-12 rounded-full"
+      />
     );
   }
   return null;
@@ -148,12 +152,12 @@ function _renderUserAvatar(user: { type: string; picture?: string; name: string 
 /**
  * Renders user type-specific information.
  */
-function _renderUserTypeInfo(user: { type: string; email?: string }) {
+function _renderUserTypeInfo(user: { type: string; email?: string; google?: { email?: string } }) {
   const authState = useAuthState();
   const authMethod = authState?.state === 'authenticated' ? authState.authMethod : undefined;
 
   // Show authentication method-specific information
-  if (user.type === 'google') {
+  if (user.type === 'full' && user.google) {
     return (
       <div className="mt-1 text-sm text-muted-foreground">
         <p>Google Account: {user.email}</p>

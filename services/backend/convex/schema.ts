@@ -126,31 +126,23 @@ export default defineSchema({
         email: v.string(),
         recoveryCode: v.optional(v.string()),
         accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
+        google: v.optional(
+          v.object({
+            id: v.string(),
+            email: v.string(),
+            verified_email: v.optional(v.boolean()),
+            name: v.string(),
+            given_name: v.optional(v.string()),
+            family_name: v.optional(v.string()),
+            picture: v.optional(v.string()),
+            locale: v.optional(v.string()),
+            hd: v.optional(v.string()),
+          })
+        ),
       }),
       v.object({
         type: v.literal('anonymous'),
         name: v.string(), //system generated name
-        recoveryCode: v.optional(v.string()),
-        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
-      }),
-      v.object({
-        type: v.literal('google'),
-        name: v.string(), // Display name from Google profile
-        email: v.string(), // Email from Google profile
-        googleId: v.string(), // Google's unique user ID
-        picture: v.optional(v.string()), // Google profile picture URL
-        google: v.object({
-          // Full Google profile object for forward compatibility
-          id: v.string(),
-          email: v.string(),
-          verified_email: v.optional(v.boolean()),
-          name: v.string(),
-          given_name: v.optional(v.string()),
-          family_name: v.optional(v.string()),
-          picture: v.optional(v.string()),
-          locale: v.optional(v.string()),
-          hd: v.optional(v.string()), // Hosted domain for Google Workspace users
-        }),
         recoveryCode: v.optional(v.string()),
         accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
       })
@@ -159,7 +151,7 @@ export default defineSchema({
     .index('by_username', ['username'])
     .index('by_email', ['email'])
     .index('by_name', ['name'])
-    .index('by_googleId', ['googleId']),
+    .index('by_googleId', ['google.id']),
 
   /**
    * User sessions for authentication and state management.

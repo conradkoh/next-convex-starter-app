@@ -157,13 +157,13 @@ export const loginWithGoogle = mutation({
       // Check if user already exists by Google ID
       const existingUser = await ctx.db
         .query('users')
-        .withIndex('by_googleId', (q) => q.eq('googleId', profile.id))
+        .withIndex('by_googleId', (q) => q.eq('google.id', profile.id))
         .first();
 
       const userId: Id<'users'> = existingUser
         ? await (async () => {
             // Update existing user with latest profile information
-            if (existingUser.type !== 'google') {
+            if (existingUser.type !== 'full') {
               throw new ConvexError({
                 code: 'USER_TYPE_MISMATCH',
                 message: 'User exists with different authentication type',
@@ -173,7 +173,6 @@ export const loginWithGoogle = mutation({
             await ctx.db.patch(existingUser._id, {
               name: profile.name,
               email: profile.email,
-              picture: profile.picture,
               google: profile,
             });
 
@@ -194,13 +193,15 @@ export const loginWithGoogle = mutation({
               });
             }
 
-            // Create new Google user
+            // Generate username from email for the full user account
+            const username = profile.email.replace('@', '_').replace(/\./g, '_').toLowerCase();
+
+            // Create new full user with Google profile
             return await ctx.db.insert('users', {
-              type: 'google',
+              type: 'full',
               name: profile.name,
+              username: username,
               email: profile.email,
-              googleId: profile.id,
-              picture: profile.picture,
               google: profile,
               accessLevel: 'user', // Default access level for new Google users
             });
@@ -231,7 +232,7 @@ export const loginWithGoogle = mutation({
       return {
         success: true,
         userId,
-        userType: 'google' as const,
+        userType: 'full' as const,
       };
     } catch (error) {
       console.error('Google login error:', error);
@@ -265,14 +266,14 @@ export const getGoogleProfile = query({
 
     const user = await ctx.db.get(session.userId);
 
-    if (!user || user.type !== 'google') {
+    if (!user || user.type !== 'full' || !user.google) {
       return null;
     }
 
     return {
       name: user.name,
       email: user.email,
-      picture: user.picture,
+      picture: user.google.picture,
       googleProfile: user.google,
     };
   },
