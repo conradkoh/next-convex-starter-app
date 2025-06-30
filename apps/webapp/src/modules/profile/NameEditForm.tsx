@@ -17,11 +17,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
 import { useAuthState } from '@/modules/auth/AuthProvider';
-import { GoogleConnectButton } from '@/modules/auth/GoogleConnectButton';
+import { ConnectButton, GoogleIcon } from '@/modules/auth/ConnectButton';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
+import { useAction } from 'convex/react';
 import { X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -31,6 +33,15 @@ interface _DisconnectDialogState {
   providerId: string;
   providerName: string;
   isDisconnecting: boolean;
+}
+
+/**
+ * Generates a cryptographically secure random state for CSRF protection.
+ */
+function _generateState(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -46,6 +57,7 @@ export function NameEditForm() {
   const [name, setName] = useState(authState?.state === 'authenticated' ? authState.user.name : '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
 
   // State for disconnect confirmation dialog
   const [disconnectDialog, setDisconnectDialog] = useState<_DisconnectDialogState>({
@@ -54,6 +66,47 @@ export function NameEditForm() {
     providerName: '',
     isDisconnecting: false,
   });
+
+  const googleAuthAvailable = useGoogleAuthAvailable();
+  const generateGoogleAuthUrl = useAction(api.googleAuth.generateGoogleAuthUrl);
+
+  /**
+   * Handles Google connect button click and initiates OAuth flow.
+   */
+  const handleGoogleConnect = useCallback(async () => {
+    // Check if Google auth is enabled
+    if (!googleAuthAvailable) {
+      toast.error('Google authentication is currently disabled or not configured');
+      return;
+    }
+
+    setIsConnectingGoogle(true);
+
+    try {
+      // Clean up any previous state/flags
+      sessionStorage.removeItem('google_oauth_connect_state');
+      sessionStorage.removeItem('google_oauth_connect_processed');
+      sessionStorage.removeItem('google_oauth_connect_in_progress');
+
+      // Generate CSRF state and store it with a different key than login
+      const state = _generateState();
+      sessionStorage.setItem('google_oauth_connect_state', state);
+
+      // Generate Google auth URL with connect-specific redirect URI
+      const redirectUri = `${window.location.origin}/app/profile/connect/google/callback`;
+      const result = await generateGoogleAuthUrl({
+        redirectUri,
+        state,
+      });
+
+      // Redirect to Google
+      window.location.href = result.authUrl;
+    } catch (error) {
+      console.error('Failed to initiate Google connect:', error);
+      toast.error('Failed to start Google connection. Please try again.');
+      setIsConnectingGoogle(false);
+    }
+  }, [googleAuthAvailable, generateGoogleAuthUrl]);
 
   /**
    * Memoized user data to prevent unnecessary re-renders.
@@ -198,7 +251,13 @@ export function NameEditForm() {
       {_renderHeader(isEditing, startEditing)}
       {isEditing
         ? _renderEditForm(name, error, isLoading, handleNameChange, handleSubmit, handleCancel)
-        : _renderDisplayView(currentUser, showDisconnectConfirmation)}
+        : _renderDisplayView(
+            currentUser,
+            showDisconnectConfirmation,
+            handleGoogleConnect,
+            isConnectingGoogle,
+            !!googleAuthAvailable
+          )}
 
       {/* Disconnect confirmation dialog */}
       <AlertDialog open={disconnectDialog.isOpen} onOpenChange={handleDialogOpenChange}>
@@ -252,7 +311,10 @@ function _renderDisplayView(
   user: NonNullable<
     Extract<NonNullable<ReturnType<typeof useAuthState>>, { state: 'authenticated' }>['user']
   >,
-  showDisconnectConfirmation: (providerId: string, providerName: string) => void
+  showDisconnectConfirmation: (providerId: string, providerName: string) => void,
+  handleGoogleConnect: () => Promise<void>,
+  isConnectingGoogle: boolean,
+  googleAuthAvailable: boolean
 ) {
   return (
     <div className="p-4 bg-secondary/50 rounded-md">
@@ -260,7 +322,13 @@ function _renderDisplayView(
         {_renderUserAvatar(user)}
         <div className="flex-1">
           <p className="font-medium">{user.name}</p>
-          {_renderUserTypeInfo(user, showDisconnectConfirmation)}
+          {_renderUserTypeInfo(
+            user,
+            showDisconnectConfirmation,
+            handleGoogleConnect,
+            isConnectingGoogle,
+            googleAuthAvailable
+          )}
         </div>
       </div>
     </div>
@@ -287,7 +355,10 @@ function _renderUserAvatar(user: { type: string; google?: { picture?: string }; 
  */
 function _renderUserTypeInfo(
   user: { type: string; email?: string; google?: { email?: string } },
-  showDisconnectConfirmation: (providerId: string, providerName: string) => void
+  showDisconnectConfirmation: (providerId: string, providerName: string) => void,
+  handleGoogleConnect: () => Promise<void>,
+  isConnectingGoogle: boolean,
+  googleAuthAvailable: boolean
 ) {
   const authState = useAuthState();
   const authMethod = authState?.state === 'authenticated' ? authState.authMethod : undefined;
@@ -305,7 +376,13 @@ function _renderUserTypeInfo(
       {authMethod && _renderSessionInfo(authMethod)}
 
       {/* Third-party accounts section */}
-      {_renderThirdPartyAccounts(user, showDisconnectConfirmation)}
+      {_renderThirdPartyAccounts(
+        user,
+        showDisconnectConfirmation,
+        handleGoogleConnect,
+        isConnectingGoogle,
+        googleAuthAvailable
+      )}
 
       {/* Show user type specific info */}
       {_renderUserTypeSpecificInfo(user)}
@@ -337,13 +414,16 @@ function _renderSessionInfo(authMethod: string) {
  */
 function _renderThirdPartyAccounts(
   user: { google?: { email?: string } },
-  showDisconnectConfirmation: (providerId: string, providerName: string) => void
+  showDisconnectConfirmation: (providerId: string, providerName: string) => void,
+  handleGoogleConnect: () => Promise<void>,
+  isConnectingGoogle: boolean,
+  googleAuthAvailable: boolean
 ) {
   const googleProvider = useMemo(
     () => ({
       id: 'google',
       name: 'Google',
-      icon: _renderGoogleIcon(),
+      icon: <GoogleIcon className="mr-2 h-4 w-4" />,
       isConnected: !!user.google,
       connectedEmail: user.google?.email,
     }),
@@ -393,13 +473,13 @@ function _renderThirdPartyAccounts(
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-muted-foreground/30 rounded-full" />
-                  <span className="text-xs text-muted-foreground">Not connected</span>
-                </div>
-                <GoogleConnectButton variant="outline" className="text-xs h-auto px-3 py-1" />
-              </>
+              <ConnectButton
+                onClick={handleGoogleConnect}
+                isLoading={isConnectingGoogle}
+                isDisabled={!googleAuthAvailable}
+                variant="outline"
+                className="text-xs h-auto px-3 py-1"
+              />
             )}
           </div>
         </div>
@@ -421,33 +501,6 @@ function _renderUserTypeSpecificInfo(user: { type: string }) {
   }
 
   return null;
-}
-
-/**
- * Renders the Google brand icon with improved styling.
- */
-function _renderGoogleIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <title>Google</title>
-      <path
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-        fill="#34A853"
-      />
-      <path
-        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-        fill="#EA4335"
-      />
-    </svg>
-  );
 }
 
 /**

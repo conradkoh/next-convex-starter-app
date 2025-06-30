@@ -84,7 +84,6 @@ export const GoogleConnectCallback = () => {
           stateValidation.error === 'Already processing'
         ) {
           // Silently ignore duplicate executions in React StrictMode
-          console.log('Ignoring duplicate OAuth callback execution:', stateValidation.error);
           setIsProcessing(false);
           return;
         }
@@ -96,7 +95,6 @@ export const GoogleConnectCallback = () => {
         return;
       }
 
-      console.log('Starting Google OAuth token exchange for connect...');
       // Exchange code for profile
       const redirectUri = `${window.location.origin}/app/profile/connect/google/callback`;
       const exchangeResult = await exchangeGoogleCode({
@@ -109,7 +107,6 @@ export const GoogleConnectCallback = () => {
         throw new Error('Failed to exchange code for profile');
       }
 
-      console.log('Token exchange successful, connecting Google profile...');
       // Connect Google profile to current user
       const connectResult = await connectGoogle({
         profile: exchangeResult.profile,
@@ -119,7 +116,6 @@ export const GoogleConnectCallback = () => {
         throw new Error('Failed to connect Google account');
       }
 
-      console.log('Google connect successful, redirecting...');
       // Clean up session storage and mark as successfully processed
       sessionStorage.removeItem('google_oauth_connect_in_progress');
       sessionStorage.setItem('google_oauth_connect_processed', 'true');
@@ -131,8 +127,6 @@ export const GoogleConnectCallback = () => {
       setIsProcessing(false); // Only set to false on success
       router.push('/app/profile');
     } catch (error) {
-      console.error('Google connect callback error:', error);
-
       // Handle specific error cases
       let errorMessage = 'Failed to connect Google account';
 
@@ -263,7 +257,6 @@ async function _validateCSRFState(state: string): Promise<boolean> {
     const storedState = sessionStorage.getItem('google_oauth_connect_state');
     return storedState === state;
   } catch (error) {
-    console.error('Failed to validate CSRF state:', error);
     return false;
   }
 }
@@ -298,7 +291,6 @@ async function _validateCSRFStateRobust(state: string): Promise<_CSRFValidationR
 
     return { isValid: false, error: 'Invalid CSRF state' };
   } catch (error) {
-    console.error('Failed to validate CSRF state:', error);
     return { isValid: false, error: 'Failed to validate CSRF state' };
   }
 }
@@ -311,8 +303,6 @@ function _handleError(
   setError: (error: string) => void,
   setIsProcessing: (processing: boolean) => void
 ): void {
-  console.error('Google connect error:', message);
-
   // Clean up all session storage flags
   sessionStorage.removeItem('google_oauth_connect_state');
   sessionStorage.removeItem('google_oauth_connect_processed');
