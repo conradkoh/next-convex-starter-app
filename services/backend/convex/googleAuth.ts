@@ -453,6 +453,24 @@ export const connectGoogle = mutation({
       });
     }
 
+    // Handle anonymous users by converting them to full users
+    if (currentUser.type === 'anonymous') {
+      // Convert anonymous user to full user with Google profile
+      const convertedUser = await _convertAnonymousToFullUser(ctx, currentUser, profile);
+
+      // Update session auth method to Google
+      await ctx.db.patch(session._id, {
+        authMethod: 'google',
+      });
+
+      return {
+        success: true,
+        message: 'Anonymous account converted and Google account connected successfully',
+        connectedEmail: profile.email,
+        converted: true,
+      };
+    }
+
     // Ensure current user is a full user (not anonymous)
     if (currentUser.type !== 'full') {
       throw new ConvexError({
@@ -523,6 +541,88 @@ export const connectGoogle = mutation({
 
 const _GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const _GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
+
+/**
+ * Converts an anonymous user to a full user with Google profile data.
+ * This is used when an anonymous user connects their Google account.
+ */
+async function _convertAnonymousToFullUser(
+  ctx: MutationCtx,
+  anonymousUser: Doc<'users'>,
+  googleProfile: _GoogleProfile
+): Promise<void> {
+  if (anonymousUser.type !== 'anonymous') {
+    throw new ConvexError({
+      code: 'INVALID_CONVERSION',
+      message: 'Only anonymous users can be converted to full users',
+    });
+  }
+
+  // Check if this Google account is already linked to another user
+  const existingGoogleUser = await ctx.db
+    .query('users')
+    .withIndex('by_googleId', (q) => q.eq('google.id', googleProfile.id))
+    .first();
+
+  if (existingGoogleUser) {
+    throw new ConvexError({
+      code: 'GOOGLE_ACCOUNT_IN_USE',
+      message: 'This Google account is already connected to another user',
+    });
+  }
+
+  // Check if another user has the same email
+  const existingEmailUser = await ctx.db
+    .query('users')
+    .withIndex('by_email', (q) => q.eq('email', googleProfile.email))
+    .first();
+
+  if (existingEmailUser) {
+    throw new ConvexError({
+      code: 'EMAIL_ALREADY_EXISTS',
+      message: 'Another user account already uses this email address',
+    });
+  }
+
+  // Generate username from email
+  const username = googleProfile.email.replace('@', '_').replace(/\./g, '_').toLowerCase();
+
+  // Check if username is already taken
+  const existingUsernameUser = await ctx.db
+    .query('users')
+    .withIndex('by_username', (q) => q.eq('username', username))
+    .first();
+
+  if (existingUsernameUser) {
+    // Add a random suffix to make it unique
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    const uniqueUsername = `${username}_${randomSuffix}`;
+
+    // Convert anonymous user to full user
+    await ctx.db.patch(anonymousUser._id, {
+      type: 'full',
+      username: uniqueUsername,
+      email: googleProfile.email,
+      google: googleProfile,
+      // Preserve existing fields
+      name: anonymousUser.name,
+      recoveryCode: anonymousUser.recoveryCode,
+      accessLevel: anonymousUser.accessLevel,
+    });
+  } else {
+    // Convert anonymous user to full user
+    await ctx.db.patch(anonymousUser._id, {
+      type: 'full',
+      username: username,
+      email: googleProfile.email,
+      google: googleProfile,
+      // Preserve existing fields
+      name: anonymousUser.name,
+      recoveryCode: anonymousUser.recoveryCode,
+      accessLevel: anonymousUser.accessLevel,
+    });
+  }
+}
 
 /**
  * Checks if Google Auth is dynamically enabled for mutations and queries.

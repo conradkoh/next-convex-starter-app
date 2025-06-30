@@ -1,9 +1,19 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { useAuthState } from '@/modules/auth/AuthProvider';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
 import { useAction } from 'convex/react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -41,14 +51,18 @@ export const GoogleConnectCallback = () => {
     try {
       // Check if user is logged in
       if (authState?.state !== 'authenticated') {
-        _handleError('You must be logged in to connect a Google account', router);
+        _handleError(
+          'You must be logged in to connect a Google account',
+          setError,
+          setIsProcessing
+        );
         return;
       }
 
       // Validate OAuth parameters
       const validation = _validateOAuthParameters(searchParams);
       if (!validation.isValid) {
-        _handleError(validation.error || 'Validation failed', router);
+        _handleError(validation.error || 'Validation failed', setError, setIsProcessing);
         return;
       }
 
@@ -57,7 +71,7 @@ export const GoogleConnectCallback = () => {
 
       // These should be valid at this point due to validation above
       if (!code || !state) {
-        _handleError('Missing required parameters after validation', router);
+        _handleError('Missing required parameters after validation', setError, setIsProcessing);
         return;
       }
 
@@ -76,7 +90,8 @@ export const GoogleConnectCallback = () => {
         }
         _handleError(
           stateValidation.error || 'Invalid state parameter - possible CSRF attack',
-          router
+          setError,
+          setIsProcessing
         );
         return;
       }
@@ -109,7 +124,10 @@ export const GoogleConnectCallback = () => {
       sessionStorage.removeItem('google_oauth_connect_in_progress');
       sessionStorage.setItem('google_oauth_connect_processed', 'true');
       // Success!
-      toast.success('Google account connected successfully!');
+      const successMessage = connectResult.converted
+        ? 'Your anonymous account has been upgraded and Google account connected successfully!'
+        : 'Google account connected successfully!';
+      toast.success(successMessage);
       setIsProcessing(false); // Only set to false on success
       router.push('/app/profile');
     } catch (error) {
@@ -125,13 +143,16 @@ export const GoogleConnectCallback = () => {
         } else if (error.message.includes('GOOGLE_ACCOUNT_IN_USE')) {
           errorMessage = 'This Google account is already connected to another user';
         } else if (error.message.includes('EMAIL_ALREADY_EXISTS')) {
-          errorMessage = 'Another user account already uses this email address';
+          errorMessage =
+            'Another user account already uses this email address. Please use a different Google account or contact support.';
+        } else if (error.message.includes('INVALID_CONVERSION')) {
+          errorMessage = 'Unable to convert your account. Please try again or contact support.';
         } else {
           errorMessage = error.message;
         }
       }
 
-      _handleError(errorMessage, router);
+      _handleError(errorMessage, setError, setIsProcessing);
     }
   }, [searchParams, exchangeGoogleCode, connectGoogle, router, authState]);
 
@@ -150,49 +171,70 @@ export const GoogleConnectCallback = () => {
   // Show loading state while processing
   if (isProcessing) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6 text-center">
-          <div className="space-y-4">
-            <div className="mx-auto h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             </div>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold text-gray-900">Connecting Google Account</h1>
-              <p className="text-gray-600">Please wait while we link your Google account...</p>
-            </div>
-          </div>
-        </div>
+            <CardTitle>Connecting Google Account</CardTitle>
+            <CardDescription>
+              Please wait while we link your Google account to your profile...
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
-  // Show error state if processing failed
+  // Show error state
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6 text-center">
-          <div className="space-y-4">
-            <div className="mx-auto h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
-              <div className="h-8 w-8 text-red-600">✕</div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold text-red-900">Connection Failed</h1>
-              <p className="text-red-600">{error}</p>
-              <button
-                type="button"
-                onClick={handleReturnToProfile}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Return to Profile
-              </button>
+            <CardTitle className="text-red-900">Connection Failed</CardTitle>
+            <CardDescription>
+              We encountered an issue while connecting your Google account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg bg-red-50 p-4">
+              <p className="text-sm text-red-800 leading-relaxed">{error}</p>
             </div>
-          </div>
-        </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleReturnToProfile} className="w-full">
+              Return to Profile
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  return null;
+  // Success state (shouldn't normally be reached as we redirect)
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-50">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </div>
+          <CardTitle className="text-green-900">Connection Successful</CardTitle>
+          <CardDescription>Your Google account has been connected successfully.</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button onClick={handleReturnToProfile} className="w-full">
+            Continue to Profile
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
 };
 
 /**
@@ -279,19 +321,21 @@ async function _validateCSRFStateRobust(state: string): Promise<_CSRFValidationR
 }
 
 /**
- * Handles errors with user feedback and navigation cleanup.
+ * Handles errors by setting error state and stopping processing.
  */
-function _handleError(message: string, router: ReturnType<typeof useRouter>): void {
+function _handleError(
+  message: string,
+  setError: (error: string) => void,
+  setIsProcessing: (processing: boolean) => void
+): void {
   console.error('Google connect error:', message);
-  toast.error(message);
 
   // Clean up all session storage flags
   sessionStorage.removeItem('google_oauth_connect_state');
   sessionStorage.removeItem('google_oauth_connect_processed');
   sessionStorage.removeItem('google_oauth_connect_in_progress');
 
-  // Navigate back to profile page after a short delay
-  setTimeout(() => {
-    router.push('/app/profile');
-  }, 2000);
+  // Stop processing and set error state
+  setIsProcessing(false);
+  setError(message);
 }
