@@ -1,8 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthState } from '@/lib/auth/AuthProvider';
 import { useAppInfo } from '@/modules/app/useAppInfo';
+import { useAuthState } from '@/modules/auth/AuthProvider';
 import { Settings, Shield, Users } from 'lucide-react';
 import { useMemo } from 'react';
 

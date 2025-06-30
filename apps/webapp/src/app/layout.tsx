@@ -4,8 +4,8 @@ import './globals.css';
 import { ConvexClientProvider } from '@/app/ConvexClientProvider';
 import { Navigation } from '@/components/Navigation';
 import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { AppInfoProvider } from '@/modules/app/AppInfoProvider';
+import { AuthProvider } from '@/modules/auth/AuthProvider';
 import { ThemeProvider } from '@/modules/theme/ThemeProvider';
 import type { Theme } from '@/modules/theme/theme-utils';
 

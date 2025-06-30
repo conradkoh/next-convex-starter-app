@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useAuthState } from '@/lib/auth/AuthProvider';
+import { useAuthState } from '@/modules/auth/AuthProvider';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

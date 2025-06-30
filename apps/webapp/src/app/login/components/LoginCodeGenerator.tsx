@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAuthState } from '@/lib/auth/AuthProvider';
+import { useAuthState } from '@/modules/auth/AuthProvider';
 import { api } from '@workspace/backend/convex/_generated/api';
 import { formatLoginCode } from '@workspace/backend/modules/auth/codeUtils';
 import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';

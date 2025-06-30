@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAuthState } from '@/lib/auth/AuthProvider';
 import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
+import { useAuthState } from '@/modules/auth/AuthProvider';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
 import { AlertCircle, ChevronRight, KeyRound, KeySquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
