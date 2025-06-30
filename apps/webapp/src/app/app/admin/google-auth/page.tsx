@@ -376,14 +376,34 @@ export default function GoogleAuthConfigPage() {
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Optional: Enables convenience links to Google Cloud Console for easier setup
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Optional: Provides project-specific links to Google Cloud Console
+              </p>
+              <Link
+                href={googleCloudLinks.console}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+              >
+                Open Console
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
 
           {/* Client ID */}
           <div className="space-y-2">
-            <Label htmlFor="clientId">Google Client ID</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="clientId">Google Client ID</Label>
+              <Link
+                href={googleCloudLinks.credentials}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+              >
+                Manage Credentials
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
             <Input
               id="clientId"
               placeholder="e.g., 123456789012-abcdefghijklmnop.apps.googleusercontent.com"
@@ -520,85 +540,58 @@ export default function GoogleAuthConfigPage() {
       {/* Setup Instructions */}
       <Card>
         <CardHeader>
-          <CardTitle>Setup Instructions</CardTitle>
-          <CardDescription>Step-by-step guide to configure Google OAuth</CardDescription>
+          <CardTitle>Setup Guide</CardTitle>
+          <CardDescription>Configure Google OAuth for your application</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-medium mb-2">1. Setup Google Cloud Project</h4>
-              <p className="text-muted-foreground mb-2">
-                Go to the Google Cloud Console and create a new project or select an existing one.
-                {googleCloudLinks.hasProjectId && (
-                  <span className="text-green-600 font-medium">
-                    {' '}
-                    Project ID provided - using direct links below!
-                  </span>
-                )}
+              <h4 className="font-medium mb-2">1. Create Google Cloud Project</h4>
+              <p className="text-muted-foreground">
+                Create or select a project in Google Cloud Console. Add the Project ID above for
+                easier navigation.
               </p>
-              <Link
-                href={googleCloudLinks.console}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-              >
-                Google Cloud Console
-                {googleCloudLinks.hasProjectId && <span className="text-xs">(Direct Link)</span>}
-                <ExternalLink className="h-3 w-3" />
-              </Link>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">2. Go to Google Auth Platform</h4>
+              <h4 className="font-medium mb-2">2. Configure OAuth Consent Screen</h4>
               <p className="text-muted-foreground mb-2">
-                Navigate to the Google Auth Platform to configure OAuth settings.
+                Set up your app information including name, support email, and authorized domains.
               </p>
               <Link
                 href={googleCloudLinks.authPlatform}
                 target="_blank"
                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
               >
-                Google Auth Platform
-                {googleCloudLinks.hasProjectId && <span className="text-xs">(Direct Link)</span>}
+                OAuth Consent Screen
                 <ExternalLink className="h-3 w-3" />
               </Link>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">3. Setup App Information</h4>
-              <p className="text-muted-foreground">
-                In the overview page, set up any necessary app information such as app name and
-                support email.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">4. Create OAuth Client</h4>
+              <h4 className="font-medium mb-2">3. Create OAuth Credentials</h4>
               <p className="text-muted-foreground mb-2">
-                Click on "Clients" in the sidebar and choose "+ Create Client".
+                Create a new OAuth 2.0 Client ID with these settings:
               </p>
               <div className="ml-4 space-y-1 text-muted-foreground">
                 <p>
                   • <strong>Application Type:</strong> Web Application
                 </p>
                 <p>
-                  • <strong>Name:</strong> Your project name
+                  • <strong>Authorized JavaScript origins:</strong> Your domain(s)
                 </p>
                 <p>
-                  • <strong>Authorized JavaScript origins:</strong> Your domain names (including
-                  development environment)
-                </p>
-                <p>
-                  • <strong>Authorized redirect URIs:</strong> Copy and paste the redirect URIs
-                  shown above
+                  • <strong>Authorized redirect URIs:</strong> Copy from the redirect URIs section
+                  above
                 </p>
               </div>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">5. Complete This Form</h4>
+              <h4 className="font-medium mb-2">4. Configure Application</h4>
               <p className="text-muted-foreground">
-                Copy your Client ID and Client Secret from the OAuth client you created and paste
-                them into the form above, then save and enable the service.
+                Copy the Client ID and Secret from your OAuth credentials and enter them in the
+                configuration form above.
               </p>
             </div>
           </div>
