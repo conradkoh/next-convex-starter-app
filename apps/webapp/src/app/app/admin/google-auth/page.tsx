@@ -58,6 +58,7 @@ export default function GoogleAuthConfigPage() {
   useEffect(() => {
     if (configData) {
       setEnabled(configData.enabled);
+      setProjectId(configData.projectId || '');
       setClientId(configData.clientId || '');
       setClientSecret(''); // Never load the actual secret for security
       setIsConfigured(configData.isConfigured);
