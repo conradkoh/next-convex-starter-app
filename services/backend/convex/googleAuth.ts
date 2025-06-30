@@ -326,6 +326,201 @@ export const getGoogleAuthConfigInternal = query({
   },
 });
 
+/**
+ * Disconnects Google authentication from the current user's account.
+ * Removes Google profile data while preserving the user account.
+ */
+export const disconnectGoogle = mutation({
+  args: {
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args) => {
+    // Get the current session and user
+    const session = await ctx.db
+      .query('sessions')
+      .withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
+      .first();
+
+    if (!session || !session.userId) {
+      throw new ConvexError({
+        code: 'UNAUTHORIZED',
+        message: 'You must be logged in to disconnect Google account',
+      });
+    }
+
+    const user = await ctx.db.get(session.userId);
+
+    if (!user) {
+      throw new ConvexError({
+        code: 'USER_NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
+    // Check if user has Google authentication linked
+    if (user.type !== 'full' || !user.google) {
+      throw new ConvexError({
+        code: 'NO_GOOGLE_ACCOUNT',
+        message: 'No Google account is linked to this user',
+      });
+    }
+
+    // Ensure user has other authentication methods or recovery options
+    // For now, we'll allow disconnection but this could be enhanced to prevent
+    // users from locking themselves out
+    const hasRecoveryCode = !!user.recoveryCode;
+    const hasEmail = !!user.email;
+
+    if (!hasRecoveryCode && !hasEmail) {
+      throw new ConvexError({
+        code: 'UNSAFE_DISCONNECT',
+        message:
+          'Cannot disconnect Google account without recovery options. Please set up a recovery code first.',
+      });
+    }
+
+    // Remove Google data from user
+    await ctx.db.patch(user._id, {
+      google: undefined,
+    });
+
+    // If the current session was authenticated via Google, we might want to
+    // keep the session active but change the auth method to indicate it's no longer Google
+    if (session.authMethod === 'google') {
+      await ctx.db.patch(session._id, {
+        authMethod: undefined, // Or could be 'disconnected' or similar
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Google account disconnected successfully',
+    };
+  },
+});
+
+/**
+ * Connects/links a Google account to the current logged-in user.
+ * This is different from loginWithGoogle as it preserves the current session
+ * and only adds Google profile data to the existing user.
+ */
+export const connectGoogle = mutation({
+  args: {
+    profile: v.object({
+      id: v.string(),
+      email: v.string(),
+      verified_email: v.optional(v.boolean()),
+      name: v.string(),
+      given_name: v.optional(v.string()),
+      family_name: v.optional(v.string()),
+      picture: v.optional(v.string()),
+      locale: v.optional(v.string()),
+      hd: v.optional(v.string()),
+    }),
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args) => {
+    // Check if Google auth is enabled dynamically
+    const isEnabled = await _isGoogleAuthEnabled(ctx);
+    if (!isEnabled) {
+      throw new ConvexError({
+        code: 'FEATURE_DISABLED',
+        message: 'Google authentication is currently disabled or not configured',
+      });
+    }
+
+    const { profile, sessionId } = args;
+
+    // Get the current session and user
+    const session = await ctx.db
+      .query('sessions')
+      .withIndex('by_sessionId', (q) => q.eq('sessionId', sessionId))
+      .first();
+
+    if (!session || !session.userId) {
+      throw new ConvexError({
+        code: 'UNAUTHORIZED',
+        message: 'You must be logged in to connect a Google account',
+      });
+    }
+
+    const currentUser = await ctx.db.get(session.userId);
+
+    if (!currentUser) {
+      throw new ConvexError({
+        code: 'USER_NOT_FOUND',
+        message: 'Current user not found',
+      });
+    }
+
+    // Ensure current user is a full user (not anonymous)
+    if (currentUser.type !== 'full') {
+      throw new ConvexError({
+        code: 'INVALID_USER_TYPE',
+        message: 'Only full user accounts can connect Google accounts',
+      });
+    }
+
+    // Check if user already has Google connected
+    if (currentUser.google) {
+      throw new ConvexError({
+        code: 'ALREADY_CONNECTED',
+        message: 'A Google account is already connected to this user',
+      });
+    }
+
+    try {
+      // Check if this Google account is already linked to another user
+      const existingGoogleUser = await ctx.db
+        .query('users')
+        .withIndex('by_googleId', (q) => q.eq('google.id', profile.id))
+        .first();
+
+      if (existingGoogleUser && existingGoogleUser._id !== currentUser._id) {
+        throw new ConvexError({
+          code: 'GOOGLE_ACCOUNT_IN_USE',
+          message: 'This Google account is already connected to another user',
+        });
+      }
+
+      // Check if another user has the same email
+      const existingEmailUser = await ctx.db
+        .query('users')
+        .withIndex('by_email', (q) => q.eq('email', profile.email))
+        .first();
+
+      if (existingEmailUser && existingEmailUser._id !== currentUser._id) {
+        throw new ConvexError({
+          code: 'EMAIL_ALREADY_EXISTS',
+          message: 'Another user account already uses this email address',
+        });
+      }
+
+      // Connect Google account to current user
+      await ctx.db.patch(currentUser._id, {
+        google: profile,
+        // Update email if current user doesn't have one or if Google email is different
+        email: currentUser.email || profile.email,
+      });
+
+      return {
+        success: true,
+        message: 'Google account connected successfully',
+        connectedEmail: profile.email,
+      };
+    } catch (error) {
+      console.error('Google connect error:', error);
+      if (error instanceof ConvexError) {
+        throw error;
+      }
+      throw new ConvexError({
+        code: 'CONNECT_ERROR',
+        message: 'Failed to connect Google account',
+      });
+    }
+  },
+});
+
 const _GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const _GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 

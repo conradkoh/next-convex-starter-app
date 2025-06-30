@@ -612,8 +612,14 @@ function _getRedirectUris(): string[] {
 
   return [
     `${baseUrl}/login/google/callback`,
+    `${baseUrl}/app/profile/connect/google/callback`,
     // Add localhost for development if not already localhost
-    ...(host.includes('localhost') ? [] : ['http://localhost:3000/login/google/callback']),
+    ...(host.includes('localhost')
+      ? []
+      : [
+          'http://localhost:3000/login/google/callback',
+          'http://localhost:3000/app/profile/connect/google/callback',
+        ]),
   ];
 }
 
