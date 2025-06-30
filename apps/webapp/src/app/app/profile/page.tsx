@@ -23,7 +23,7 @@ import { CopyIcon, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { LoginCodeGenerator } from '../../login/components/LoginCodeGenerator';
+import { LoginCodeGenerator } from '../../../modules/auth/LoginCodeGenerator';
 
 /**
  * Displays the user profile page with account management, theme settings, and recovery options.

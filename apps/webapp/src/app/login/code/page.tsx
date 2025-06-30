@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
-import { LoginWithCode } from '../components/LoginWithCode';
+import { LoginWithCode } from '../../../modules/auth/LoginWithCode';
 
 /**
  * Login code page that allows users to enter a code from another device for authentication.

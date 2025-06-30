@@ -8,8 +8,8 @@ import { AlertCircle, ChevronRight, KeyRound, KeySquare, Loader2 } from 'lucide-
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { AnonymousLoginButton } from './components/AnonymousLoginButton';
-import { GoogleLoginButton } from './components/GoogleLoginButton';
+import { AnonymousLoginButton } from '../../modules/auth/AnonymousLoginButton';
+import { GoogleLoginButton } from '../../modules/auth/GoogleLoginButton';
 
 /**
  * Login page component providing multiple authentication options.
