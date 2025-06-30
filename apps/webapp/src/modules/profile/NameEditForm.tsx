@@ -434,55 +434,64 @@ function _renderThirdPartyAccounts(
     showDisconnectConfirmation(googleProvider.id, googleProvider.name);
   }, [showDisconnectConfirmation, googleProvider.id, googleProvider.name]);
 
+  // Only show Google row if available or already connected
+  const showGoogleRow = googleAuthAvailable || googleProvider.isConnected;
+
+  if (!showGoogleRow) {
+    // No third-party providers to show
+    return null;
+  }
+
   return (
     <div className="border-t pt-4">
       <h3 className="text-sm font-medium text-foreground mb-3">Connected Accounts</h3>
       <div className="space-y-3">
-        <div className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-2">
-            {googleProvider.icon}
-            <span className="text-sm font-medium">{googleProvider.name}</span>
+        {showGoogleRow && (
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-2">
+              {googleProvider.icon}
+              <span className="text-sm font-medium">{googleProvider.name}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {googleProvider.isConnected ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>
+                        Connected
+                        {googleProvider.connectedEmail && (
+                          <span className="ml-1">({googleProvider.connectedEmail})</span>
+                        )}
+                      </span>
+                      <ChevronDownIcon className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={handleDisconnectClick}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <X className="h-3 w-3" />
+                      Disconnect
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <ConnectButton
+                  onClick={handleGoogleConnect}
+                  isLoading={isConnectingGoogle}
+                  isDisabled={!googleAuthAvailable}
+                  variant="outline"
+                  className="text-xs h-auto px-3 py-1"
+                />
+              )}
+            </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            {googleProvider.isConnected ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    <span>
-                      Connected
-                      {googleProvider.connectedEmail && (
-                        <span className="ml-1">({googleProvider.connectedEmail})</span>
-                      )}
-                    </span>
-                    <ChevronDownIcon className="h-3 w-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={handleDisconnectClick}
-                    className="text-destructive focus:text-destructive cursor-pointer"
-                  >
-                    <X className="h-3 w-3" />
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <ConnectButton
-                onClick={handleGoogleConnect}
-                isLoading={isConnectingGoogle}
-                isDisabled={!googleAuthAvailable}
-                variant="outline"
-                className="text-xs h-auto px-3 py-1"
-              />
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
