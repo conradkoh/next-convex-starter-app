@@ -18,6 +18,8 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
+  Eye,
+  EyeOff,
   RefreshCw,
   Save,
   TestTube,
@@ -41,6 +43,7 @@ export default function GoogleAuthConfigPage() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [clientSecretFocused, setClientSecretFocused] = useState(false);
+  const [showClientSecret, setShowClientSecret] = useState(false);
 
   // Convex queries and mutations
   const configData = useSessionQuery(api.system.thirdPartyAuthConfig.getGoogleAuthConfig);
@@ -411,19 +414,39 @@ export default function GoogleAuthConfigPage() {
                 </div>
               )}
             </div>
-            <Input
-              id="clientSecret"
-              type="password"
-              placeholder={
-                configData?.hasClientSecret
-                  ? 'Enter new client secret (leave empty to keep current)'
-                  : 'Enter your Google Client Secret'
-              }
-              value={clientSecretDisplayValue}
-              onChange={(e) => setClientSecret(e.target.value)}
-              onFocus={handleClientSecretFocus}
-              onBlur={handleClientSecretBlur}
-            />
+            <div className="relative">
+              <Input
+                id="clientSecret"
+                type={showClientSecret ? 'text' : 'password'}
+                placeholder={
+                  configData?.hasClientSecret
+                    ? 'Enter new client secret (leave empty to keep current)'
+                    : 'Enter your Google Client Secret'
+                }
+                value={clientSecretDisplayValue}
+                onChange={(e) => setClientSecret(e.target.value)}
+                onFocus={handleClientSecretFocus}
+                onBlur={handleClientSecretBlur}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowClientSecret(!showClientSecret)}
+                tabIndex={-1}
+              >
+                {showClientSecret ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="sr-only">
+                  {showClientSecret ? 'Hide password' : 'Show password'}
+                </span>
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
               {configData?.hasClientSecret ? (
                 <>
