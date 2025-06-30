@@ -21,6 +21,7 @@ import { mutation, query } from '../_generated/server';
 export interface GoogleAuthConfigData {
   type: 'google';
   enabled: boolean;
+  projectId?: string;
   clientId?: string;
   clientSecret?: string;
   hasClientSecret: boolean;
@@ -64,6 +65,7 @@ export const getGoogleAuthConfig = query({
     return {
       type: config.type,
       enabled: config.enabled,
+      projectId: config.projectId,
       clientId: config.clientId,
       clientSecret: undefined, // Never return the secret
       hasClientSecret,
@@ -81,6 +83,7 @@ export const getGoogleAuthConfig = query({
 export const updateGoogleAuthConfig = mutation({
   args: {
     enabled: v.boolean(),
+    projectId: v.optional(v.string()),
     clientId: v.string(),
     clientSecret: v.string(),
     redirectUris: v.array(v.string()),
@@ -146,6 +149,7 @@ export const updateGoogleAuthConfig = mutation({
     const configData = {
       type: 'google' as const,
       enabled: args.enabled,
+      projectId: args.projectId?.trim() || undefined,
       clientId: args.clientId.trim(),
       clientSecret: clientSecretToUse,
       redirectUris: args.redirectUris,

@@ -31,6 +31,7 @@ export default function GoogleAuthConfigPage() {
 
   // State for form inputs
   const [enabled, setEnabled] = useState(false);
+  const [projectId, setProjectId] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [isConfigured, setIsConfigured] = useState(false);
@@ -53,6 +54,7 @@ export default function GoogleAuthConfigPage() {
     () => _getClientSecretDisplayValue(configData || undefined, clientSecretFocused, clientSecret),
     [configData, clientSecretFocused, clientSecret]
   );
+  const googleCloudLinks = useMemo(() => _getGoogleCloudLinks(projectId), [projectId]);
 
   // Load existing configuration
   useEffect(() => {
@@ -86,6 +88,7 @@ export default function GoogleAuthConfigPage() {
       isFormLoading,
       setIsFormLoading,
       redirectUris,
+      projectId,
       clientId,
       clientSecret,
       configData: configData || undefined,
@@ -93,14 +96,23 @@ export default function GoogleAuthConfigPage() {
       updateConfig,
       setIsConfigured,
     });
-  }, [isFormLoading, redirectUris, clientId, clientSecret, configData, enabled, updateConfig]);
+  }, [
+    isFormLoading,
+    redirectUris,
+    projectId,
+    clientId,
+    clientSecret,
+    configData,
+    enabled,
+    updateConfig,
+  ]);
 
   const handleTest = useCallback(async () => {
     await _handleTest(clientId, clientSecret, testConfig);
   }, [clientId, clientSecret, testConfig]);
 
   const handleReset = useCallback(async () => {
-    await _handleReset(resetConfig, setClientId, setClientSecret, setIsConfigured);
+    await _handleReset(resetConfig, setProjectId, setClientId, setClientSecret, setIsConfigured);
   }, [resetConfig]);
 
   const handleCopyToClipboard = useCallback(async (text: string) => {
@@ -179,6 +191,13 @@ export default function GoogleAuthConfigPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Project ID Skeleton */}
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-3 w-96" />
+            </div>
+
             {/* Client ID Skeleton */}
             <div className="space-y-2">
               <Skeleton className="h-4 w-32" />
@@ -222,7 +241,7 @@ export default function GoogleAuthConfigPage() {
             <Separator />
 
             {/* Action Buttons Skeleton */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Skeleton className="h-10 w-40" />
               <Skeleton className="h-10 w-36" />
               <Skeleton className="h-10 w-32" />
@@ -341,6 +360,20 @@ export default function GoogleAuthConfigPage() {
           <CardDescription>Configure your Google OAuth application settings</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Project ID */}
+          <div className="space-y-2">
+            <Label htmlFor="projectId">Google Cloud Project ID (Optional)</Label>
+            <Input
+              id="projectId"
+              placeholder="e.g., my-awesome-project"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional: Enables convenience links to Google Cloud Console for easier setup
+            </p>
+          </div>
+
           {/* Client ID */}
           <div className="space-y-2">
             <Label htmlFor="clientId">Google Client ID</Label>
@@ -432,7 +465,7 @@ export default function GoogleAuthConfigPage() {
           <Separator />
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={handleSave} disabled={isFormLoading}>
               {isFormLoading ? (
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -467,49 +500,81 @@ export default function GoogleAuthConfigPage() {
         <CardContent>
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-medium mb-2">1. Create Google Cloud Project</h4>
+              <h4 className="font-medium mb-2">1. Create or Select Google Cloud Project</h4>
               <p className="text-muted-foreground mb-2">
                 Go to the Google Cloud Console and create a new project or select an existing one.
+                {googleCloudLinks.hasProjectId && (
+                  <span className="text-green-600 font-medium">
+                    {' '}
+                    Project ID provided - using direct links below!
+                  </span>
+                )}
               </p>
               <Link
-                href="https://console.cloud.google.com"
+                href={googleCloudLinks.console}
                 target="_blank"
                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
               >
                 Google Cloud Console
+                {googleCloudLinks.hasProjectId && <span className="text-xs">(Direct Link)</span>}
                 <ExternalLink className="h-3 w-3" />
               </Link>
             </div>
 
             <div>
               <h4 className="font-medium mb-2">2. Enable Google+ API</h4>
-              <p className="text-muted-foreground">
-                In the Google Cloud Console, navigate to APIs & Services → Library and enable the
-                Google+ API.
+              <p className="text-muted-foreground mb-2">
+                Navigate to APIs & Services → Library and enable the Google+ API.
               </p>
+              <Link
+                href={googleCloudLinks.apisLibrary}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+              >
+                APIs & Services → Library
+                {googleCloudLinks.hasProjectId && <span className="text-xs">(Direct Link)</span>}
+                <ExternalLink className="h-3 w-3" />
+              </Link>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">3. Create OAuth 2.0 Credentials</h4>
-              <p className="text-muted-foreground">
-                Go to APIs & Services → Credentials and create OAuth 2.0 Client IDs for a web
-                application.
+              <h4 className="font-medium mb-2">3. Configure OAuth Consent Screen</h4>
+              <p className="text-muted-foreground mb-2">
+                Set up your OAuth consent screen with your app information.
               </p>
+              <Link
+                href={googleCloudLinks.oauth}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+              >
+                OAuth Consent Screen
+                {googleCloudLinks.hasProjectId && <span className="text-xs">(Direct Link)</span>}
+                <ExternalLink className="h-3 w-3" />
+              </Link>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">4. Add Redirect URIs</h4>
-              <p className="text-muted-foreground">
-                Copy the redirect URIs shown above and paste them into the "Authorized redirect
-                URIs" section in Google Cloud Console.
+              <h4 className="font-medium mb-2">4. Create OAuth 2.0 Credentials</h4>
+              <p className="text-muted-foreground mb-2">
+                Create OAuth 2.0 Client IDs for a web application and add the redirect URIs shown
+                above.
               </p>
+              <Link
+                href={googleCloudLinks.credentials}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+              >
+                APIs & Services → Credentials
+                {googleCloudLinks.hasProjectId && <span className="text-xs">(Direct Link)</span>}
+                <ExternalLink className="h-3 w-3" />
+              </Link>
             </div>
 
             <div>
               <h4 className="font-medium mb-2">5. Complete This Form</h4>
               <p className="text-muted-foreground">
-                Copy your Client ID and Client Secret from Google Cloud Console and paste them into
-                the form above, then enable the service.
+                Copy your Client ID and Client Secret from the credentials you created and paste
+                them into the form above, then save and enable the service.
               </p>
             </div>
           </div>
@@ -546,6 +611,28 @@ async function _copyToClipboard(text: string): Promise<void> {
     console.error('Failed to copy to clipboard:', error);
     toast.error('Failed to copy to clipboard');
   }
+}
+
+/**
+ * Generates Google Cloud Console convenience links based on project ID.
+ */
+function _getGoogleCloudLinks(projectId: string) {
+  const hasProjectId = projectId.trim().length > 0;
+  const baseUrl = 'https://console.cloud.google.com';
+
+  return {
+    hasProjectId,
+    console: hasProjectId ? `${baseUrl}?project=${encodeURIComponent(projectId.trim())}` : baseUrl,
+    credentials: hasProjectId
+      ? `${baseUrl}/apis/credentials?project=${encodeURIComponent(projectId.trim())}`
+      : `${baseUrl}/apis/credentials`,
+    apisLibrary: hasProjectId
+      ? `${baseUrl}/apis/library?project=${encodeURIComponent(projectId.trim())}`
+      : `${baseUrl}/apis/library`,
+    oauth: hasProjectId
+      ? `${baseUrl}/apis/credentials/oauthconsent?project=${encodeURIComponent(projectId.trim())}`
+      : `${baseUrl}/apis/credentials/oauthconsent`,
+  };
 }
 
 /**
@@ -604,12 +691,14 @@ interface _SaveConfigParams {
   isFormLoading: boolean;
   setIsFormLoading: (loading: boolean) => void;
   redirectUris: string[];
+  projectId: string;
   clientId: string;
   clientSecret: string;
   configData: { hasClientSecret?: boolean } | undefined;
   enabled: boolean;
   updateConfig: (params: {
     enabled: boolean;
+    projectId?: string;
     clientId: string;
     clientSecret: string;
     redirectUris: string[];
@@ -625,6 +714,7 @@ async function _handleSave(params: _SaveConfigParams): Promise<void> {
     isFormLoading,
     setIsFormLoading,
     redirectUris,
+    projectId,
     clientId,
     clientSecret,
     configData,
@@ -656,6 +746,7 @@ async function _handleSave(params: _SaveConfigParams): Promise<void> {
 
     await updateConfig({
       enabled, // Keep current enabled state
+      projectId: projectId.trim() || undefined,
       clientId: clientId.trim(),
       clientSecret: clientSecret.trim(), // Backend will preserve existing if empty and one exists
       redirectUris: redirectUris,
@@ -711,6 +802,7 @@ async function _handleTest(
  */
 async function _handleReset(
   resetConfig: (params: Record<string, never>) => Promise<{ success: boolean; message: string }>,
+  setProjectId: (id: string) => void,
   setClientId: (id: string) => void,
   setClientSecret: (secret: string) => void,
   setIsConfigured: (configured: boolean) => void
@@ -727,6 +819,7 @@ async function _handleReset(
     await resetConfig({});
     toast.success('Google Auth configuration has been reset');
     // Note: enabled state is preserved and handled separately
+    setProjectId('');
     setClientId('');
     setClientSecret('');
     setIsConfigured(false);

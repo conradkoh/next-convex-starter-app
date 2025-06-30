@@ -191,6 +191,7 @@ export default defineSchema({
   thirdPartyAuthConfig: defineTable({
     type: v.union(v.literal('google')), // Auth provider type (extensible for future providers)
     enabled: v.boolean(), // Whether this auth provider is enabled
+    projectId: v.optional(v.string()), // Google Cloud Project ID (optional, for convenience links)
     clientId: v.optional(v.string()), // OAuth client ID
     clientSecret: v.optional(v.string()), // OAuth client secret (encrypted storage recommended)
     redirectUris: v.array(v.string()), // Allowed redirect URIs for OAuth
