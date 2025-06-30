@@ -25,10 +25,27 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const exchangeGoogleCode = useAction(api.googleAuth.exchangeGoogleCode);
   const loginWithGoogle = useSessionMutation(api.googleAuth.loginWithGoogle);
+
+  // Check for immediate errors (like cancellation) and redirect without showing loading
+  const hasError = searchParams.get('error');
+  if (hasError) {
+    // Don't show loading state for errors - redirect immediately
+    useEffect(() => {
+      const error = searchParams.get('error');
+      if (error === 'access_denied') {
+        console.error('OAuth cancelled by user');
+      } else {
+        console.error('OAuth error:', error, searchParams.get('error_description'));
+      }
+      router.push('/login');
+    }, [router, searchParams]);
+
+    // Return null to avoid any flash of loading content
+    return null;
+  }
 
   /**
    * Processes the OAuth callback with comprehensive error handling.
@@ -87,13 +104,12 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
       console.log('Google login successful, redirecting...');
       // Success!
       toast.success(`Welcome, ${exchangeResult.profile.name}!`);
+      setIsProcessing(false); // Only set to false on success
       router.push(redirectPath);
     } catch (error) {
       console.error('Google callback error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       _handleError(errorMessage, router);
-    } finally {
-      setIsProcessing(false);
     }
   }, [searchParams, exchangeGoogleCode, loginWithGoogle, router, redirectPath]);
 
@@ -107,10 +123,6 @@ export const GoogleCallback = ({ redirectPath = '/app' }: GoogleCallbackProps) =
     return () => clearTimeout(timer);
   }, [processCallback]);
 
-  if (error) {
-    return _renderErrorState(error);
-  }
-
   return _renderLoadingState(isProcessing);
 };
 
@@ -123,6 +135,15 @@ function _validateOAuthParameters(searchParams: URLSearchParams): _ValidationRes
   // Handle OAuth error
   if (error) {
     console.error('Google OAuth error:', error);
+
+    // Provide user-friendly error messages for common scenarios
+    if (error === 'access_denied') {
+      return {
+        isValid: false,
+        error: 'Google sign-in was cancelled. Please try again if you want to continue.',
+      };
+    }
+
     const errorDescription =
       searchParams.get('error_description') || 'Google authentication failed';
     return { isValid: false, error: errorDescription };
@@ -164,45 +185,12 @@ async function _validateCSRFState(state: string): Promise<boolean> {
 }
 
 /**
- * Handles errors by setting state, showing toast, and redirecting to login.
+ * Handles errors by immediately redirecting to login.
  */
 function _handleError(errorMessage: string, router: ReturnType<typeof useRouter>): void {
-  toast.error(errorMessage);
-  setTimeout(() => router.push('/login'), 2000);
-}
-
-/**
- * Renders the error state UI.
- */
-function _renderErrorState(error: string) {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 text-center">
-        <div className="space-y-2">
-          <div className="mx-auto h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
-            <svg
-              className="h-8 w-8 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <title>Error</title>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-900">Authentication Failed</h1>
-          <p className="text-gray-600">{error}</p>
-        </div>
-        <p className="text-sm text-gray-500">Redirecting you back to login...</p>
-      </div>
-    </div>
-  );
+  console.error('OAuth error:', errorMessage);
+  // Immediately redirect - no toast needed since user won't see it
+  router.push('/login');
 }
 
 /**
