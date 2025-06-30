@@ -17,6 +17,7 @@ export type AuthState =
       user: Doc<'users'>;
       accessLevel: AccessLevel;
       isSystemAdmin: boolean;
+      authMethod?: 'google' | 'login_code' | 'recovery_code' | 'anonymous' | 'username_password';
     };
 
 /**

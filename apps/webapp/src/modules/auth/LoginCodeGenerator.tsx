@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 /**
- * Displays login code generator for anonymous users to access their account on other devices.
+ * Displays login code generator for authenticated users to access their account on other devices.
  */
 export function LoginCodeGenerator() {
   const authState = useAuthState();
@@ -25,12 +25,8 @@ export function LoginCodeGenerator() {
   const getTimeRemaining = useCallback(() => _getTimeRemaining(expiresAt), [expiresAt]);
   const [timeRemaining, setTimeRemaining] = useState<string>(getTimeRemaining());
 
-  const isAnonymousUser = useMemo(() => {
-    return (
-      authState?.state === 'authenticated' &&
-      'user' in authState &&
-      authState.user.type === 'anonymous'
-    );
+  const isAuthenticatedUser = useMemo(() => {
+    return authState?.state === 'authenticated' && 'user' in authState;
   }, [authState]);
 
   const buttonText = useMemo(() => {
@@ -103,8 +99,8 @@ export function LoginCodeGenerator() {
     });
   }, [authState, isGenerating, createLoginCode, getTimeRemaining]);
 
-  // Early return if not an anonymous authenticated user
-  if (!isAnonymousUser) {
+  // Early return if not an authenticated user
+  if (!isAuthenticatedUser) {
     return null;
   }
 
@@ -113,7 +109,7 @@ export function LoginCodeGenerator() {
       <div className="p-6 border-b">
         <h3 className="text-lg font-semibold">Use Your Account on Another Device</h3>
         <p className="text-sm text-muted-foreground">
-          Generate a temporary login code to access your anonymous account from another device
+          Generate a temporary login code to access your account from another device
         </p>
       </div>
 
@@ -137,8 +133,8 @@ export function LoginCodeGenerator() {
         ) : (
           <div className="text-muted-foreground text-sm space-y-2">
             <p>
-              Generate a temporary login code that allows you to access your anonymous account from
-              another device. The code will be valid for 1 minute.
+              Generate a temporary login code that allows you to access your account from another
+              device. The code will be valid for 1 minute.
             </p>
             <p>
               <strong>Note:</strong> This will invalidate any previously generated codes.

@@ -149,13 +149,25 @@ function _renderUserAvatar(user: { type: string; picture?: string; name: string 
  * Renders user type-specific information.
  */
 function _renderUserTypeInfo(user: { type: string; email?: string }) {
+  const authState = useAuthState();
+  const authMethod = authState?.state === 'authenticated' ? authState.authMethod : undefined;
+
+  // Show authentication method-specific information
   if (user.type === 'google') {
     return (
       <div className="mt-1 text-sm text-muted-foreground">
         <p>Google Account: {user.email}</p>
         <div className="flex items-center mt-1">
           {_renderGoogleIcon()}
-          <span>Signed in with Google</span>
+          <span>
+            {authMethod === 'google'
+              ? 'Signed in with Google'
+              : authMethod === 'login_code'
+                ? 'Signed in with login code'
+                : authMethod === 'recovery_code'
+                  ? 'Signed in with recovery code'
+                  : 'Google account'}
+          </span>
         </div>
       </div>
     );
@@ -163,14 +175,30 @@ function _renderUserTypeInfo(user: { type: string; email?: string }) {
 
   if (user.type === 'anonymous') {
     return (
-      <p className="mt-2 text-sm text-muted-foreground">
-        You can personalize your anonymous account by changing your display name.
-      </p>
+      <div className="mt-2 text-sm text-muted-foreground">
+        <p>You can personalize your anonymous account by changing your display name.</p>
+        {authMethod === 'login_code' && (
+          <p className="mt-1 text-xs text-blue-600">Currently signed in with a login code</p>
+        )}
+        {authMethod === 'recovery_code' && (
+          <p className="mt-1 text-xs text-blue-600">Currently signed in with a recovery code</p>
+        )}
+      </div>
     );
   }
 
   if (user.type === 'full') {
-    return <p className="mt-1 text-sm text-muted-foreground">Email: {user.email}</p>;
+    return (
+      <div className="mt-1 text-sm text-muted-foreground">
+        <p>Email: {user.email}</p>
+        {authMethod === 'login_code' && (
+          <p className="mt-1 text-xs text-blue-600">Currently signed in with a login code</p>
+        )}
+        {authMethod === 'recovery_code' && (
+          <p className="mt-1 text-xs text-blue-600">Currently signed in with a recovery code</p>
+        )}
+      </div>
+    );
   }
 
   return null;

@@ -61,6 +61,7 @@ export const getState = query({
       user,
       accessLevel: getAccessLevel(user),
       isSystemAdmin: isSystemAdmin(user),
+      authMethod: exists.authMethod,
     };
   },
 });
@@ -103,8 +104,14 @@ export const loginAnon = mutation({
         sessionId: args.sessionId,
         userId: userId as Id<'users'>,
         createdAt: now,
+        authMethod: 'anonymous',
       });
     } else {
+      // Update existing session with the new user and auth method
+      await ctx.db.patch(existingSession._id, {
+        userId: userId as Id<'users'>,
+        authMethod: 'anonymous',
+      });
       sessionId = existingSession._id;
     }
 
@@ -388,6 +395,7 @@ export const verifyLoginCode = mutation({
       // Update existing session to point to the user
       await ctx.db.patch(existingSession._id, {
         userId: loginCode.userId,
+        authMethod: 'login_code',
       });
     } else {
       // Create a new session
@@ -395,6 +403,7 @@ export const verifyLoginCode = mutation({
         sessionId: args.sessionId,
         userId: loginCode.userId,
         createdAt: now,
+        authMethod: 'login_code',
       });
     }
 
@@ -533,6 +542,7 @@ export const verifyRecoveryCode = action({
       await ctx.runMutation(internal.auth.updateSession, {
         sessionId: existingSession._id,
         userId: user._id,
+        authMethod: 'recovery_code',
       });
     } else {
       // Create a new session
@@ -540,6 +550,7 @@ export const verifyRecoveryCode = action({
         sessionId: args.sessionId,
         userId: user._id,
         createdAt: now,
+        authMethod: 'recovery_code',
       });
     }
 
@@ -650,12 +661,22 @@ export const createSession = internalMutation({
     sessionId: v.string(),
     userId: v.id('users'),
     createdAt: v.number(),
+    authMethod: v.optional(
+      v.union(
+        v.literal('google'),
+        v.literal('login_code'),
+        v.literal('recovery_code'),
+        v.literal('anonymous'),
+        v.literal('username_password')
+      )
+    ),
   },
   handler: async (ctx, args): Promise<Id<'sessions'>> => {
     return await ctx.db.insert('sessions', {
       sessionId: args.sessionId,
       userId: args.userId,
       createdAt: args.createdAt,
+      authMethod: args.authMethod,
     });
   },
 });
@@ -667,10 +688,20 @@ export const updateSession = internalMutation({
   args: {
     sessionId: v.id('sessions'),
     userId: v.id('users'),
+    authMethod: v.optional(
+      v.union(
+        v.literal('google'),
+        v.literal('login_code'),
+        v.literal('recovery_code'),
+        v.literal('anonymous'),
+        v.literal('username_password')
+      )
+    ),
   },
   handler: async (ctx, args): Promise<void> => {
     await ctx.db.patch(args.sessionId, {
       userId: args.userId,
+      authMethod: args.authMethod,
     });
   },
 });

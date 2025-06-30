@@ -216,6 +216,7 @@ export const loginWithGoogle = mutation({
         // Update existing session to link to the Google user
         await ctx.db.patch(existingSession._id, {
           userId: userId,
+          authMethod: 'google',
         });
       } else {
         // Create new session
@@ -223,6 +224,7 @@ export const loginWithGoogle = mutation({
           sessionId: sessionId,
           userId: userId,
           createdAt: Date.now(),
+          authMethod: 'google',
         });
       }
 

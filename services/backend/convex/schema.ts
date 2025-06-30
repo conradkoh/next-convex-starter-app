@@ -169,6 +169,15 @@ export default defineSchema({
     sessionId: v.string(), //this is provided by the client
     userId: v.id('users'), // null means session exists but not authenticated
     createdAt: v.number(),
+    authMethod: v.optional(
+      v.union(
+        v.literal('google'), // Authenticated via Google OAuth
+        v.literal('login_code'), // Authenticated via login code
+        v.literal('recovery_code'), // Authenticated via recovery code
+        v.literal('anonymous'), // Anonymous session
+        v.literal('username_password') // Traditional username/password (for future use)
+      )
+    ), // How the user authenticated for this session
     expiresAt: v.optional(v.number()), // DEPRECATED: No longer used for session expiry. Kept for migration compatibility.
     expiresAtLabel: v.optional(v.string()), // DEPRECATED: No longer used for session expiry. Kept for migration compatibility.
   }).index('by_sessionId', ['sessionId']),
