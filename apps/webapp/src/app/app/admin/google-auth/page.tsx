@@ -285,7 +285,7 @@ export default function GoogleAuthConfigPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-2">
+      <div className="space-y-2 pt-6">
         <h1 className="text-3xl font-bold">Google Authentication Configuration</h1>
         <p className="text-muted-foreground">Configure Google OAuth for user authentication</p>
       </div>
@@ -654,11 +654,10 @@ function _validateClientIdFormat(clientId: string): { isValid: boolean; message?
  */
 function _getClientIdValidationClass(clientId: string): string {
   if (!clientId.trim()) {
-    return ''; // No special styling for empty
+    return '';
   }
-
   const validation = _validateClientIdFormat(clientId);
-  return validation.isValid ? 'border-green-500' : 'border-red-500';
+  return validation.isValid ? 'border-green-500' : 'border-amber-500';
 }
 
 /**
@@ -666,12 +665,11 @@ function _getClientIdValidationClass(clientId: string): string {
  */
 function _renderClientIdValidation(clientId: string) {
   const validation = _validateClientIdFormat(clientId);
-
   return (
     <div className="space-y-1">
       {!validation.isValid && validation.message && (
-        <p className="text-xs text-red-600 flex items-center gap-1">
-          <XCircle className="h-3 w-3" />
+        <p className="text-xs text-amber-600 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
           {validation.message}
         </p>
       )}
