@@ -30,6 +30,18 @@ If you prefer to set up manually:
    ```
 3. Run `pnpm dev` in the root directory to start both services
 
+## System Administration Setup
+
+To create a system administrator:
+
+1. **Login anonymously** via the login page
+2. **Set admin privileges** in [Convex Dashboard](https://dashboard.convex.dev):
+   - Go to Data > `users` table
+   - Find your user record and set `accessLevel` to `"system_admin"`
+3. **Access admin dashboard** by clicking your username → "System Admin"
+
+System admins can configure Google OAuth, manage authentication providers, and access system settings.
+
 ## Project Structure
 
 - `apps/webapp`: The frontend NextJS application
