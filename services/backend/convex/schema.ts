@@ -114,7 +114,7 @@ export default defineSchema({
     .index('by_user_attendance', ['attendanceKey', 'userId']),
 
   /**
-   * User accounts supporting both authenticated and anonymous users.
+   * User accounts supporting authenticated, anonymous, and Google OAuth users.
    * Stores user credentials, names, and recovery information.
    */
   users: defineTable(
@@ -125,17 +125,41 @@ export default defineSchema({
         username: v.string(),
         email: v.string(),
         recoveryCode: v.optional(v.string()),
+        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
       }),
       v.object({
         type: v.literal('anonymous'),
         name: v.string(), //system generated name
         recoveryCode: v.optional(v.string()),
+        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
+      }),
+      v.object({
+        type: v.literal('google'),
+        name: v.string(), // Display name from Google profile
+        email: v.string(), // Email from Google profile
+        googleId: v.string(), // Google's unique user ID
+        picture: v.optional(v.string()), // Google profile picture URL
+        google: v.object({
+          // Full Google profile object for forward compatibility
+          id: v.string(),
+          email: v.string(),
+          verified_email: v.optional(v.boolean()),
+          name: v.string(),
+          given_name: v.optional(v.string()),
+          family_name: v.optional(v.string()),
+          picture: v.optional(v.string()),
+          locale: v.optional(v.string()),
+          hd: v.optional(v.string()), // Hosted domain for Google Workspace users
+        }),
+        recoveryCode: v.optional(v.string()),
+        accessLevel: v.optional(v.union(v.literal('user'), v.literal('system_admin'))),
       })
     )
   )
     .index('by_username', ['username'])
     .index('by_email', ['email'])
-    .index('by_name', ['name']),
+    .index('by_name', ['name'])
+    .index('by_googleId', ['googleId']),
 
   /**
    * User sessions for authentication and state management.
@@ -159,4 +183,18 @@ export default defineSchema({
     createdAt: v.number(), // When the code was created
     expiresAt: v.number(), // When the code expires (1 minute after creation)
   }).index('by_code', ['code']),
+
+  /**
+   * Third-party authentication configuration for dynamic auth provider setup.
+   * Supports multiple auth providers (Google, GitHub, etc.) with unified structure.
+   */
+  thirdPartyAuthConfig: defineTable({
+    type: v.union(v.literal('google')), // Auth provider type (extensible for future providers)
+    enabled: v.boolean(), // Whether this auth provider is enabled
+    clientId: v.optional(v.string()), // OAuth client ID
+    clientSecret: v.optional(v.string()), // OAuth client secret (encrypted storage recommended)
+    redirectUris: v.array(v.string()), // Allowed redirect URIs for OAuth
+    configuredBy: v.id('users'), // User who configured this (must be system_admin)
+    configuredAt: v.number(), // When this configuration was created/updated
+  }).index('by_type', ['type']),
 });
