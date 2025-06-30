@@ -9,7 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { useAppInfo } from '@/modules/app/useAppInfo';
 import { api } from '@workspace/backend/convex/_generated/api';
-import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
+import {
+  useSessionAction,
+  useSessionMutation,
+  useSessionQuery,
+} from 'convex-helpers/react/sessions';
 import {
   AlertCircle,
   CheckCircle,
@@ -42,7 +46,7 @@ export default function GoogleAuthConfigPage() {
   const configData = useSessionQuery(api.system.thirdPartyAuthConfig.getGoogleAuthConfig);
   const updateConfig = useSessionMutation(api.system.thirdPartyAuthConfig.updateGoogleAuthConfig);
   const toggleEnabled = useSessionMutation(api.system.thirdPartyAuthConfig.toggleGoogleAuthEnabled);
-  const testConfig = useSessionMutation(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
+  const testConfig = useSessionAction(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
   const resetConfig = useSessionMutation(api.system.thirdPartyAuthConfig.resetGoogleAuthConfig);
 
   // Computed values
@@ -382,10 +386,9 @@ export default function GoogleAuthConfigPage() {
               placeholder="e.g., 123456789012-abcdefghijklmnop.apps.googleusercontent.com"
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
+              className={_getClientIdValidationClass(clientId)}
             />
-            <p className="text-xs text-muted-foreground">
-              Copy this from your Google Cloud Console OAuth 2.0 Client IDs
-            </p>
+            {_renderClientIdValidation(clientId)}
           </div>
 
           {/* Client Secret */}
@@ -612,6 +615,64 @@ async function _copyToClipboard(text: string): Promise<void> {
 }
 
 /**
+ * Validates Google Client ID format.
+ */
+function _validateClientIdFormat(clientId: string): { isValid: boolean; message?: string } {
+  if (!clientId.trim()) {
+    return { isValid: true }; // Empty is valid (not required for validation)
+  }
+
+  const pattern = /^\d+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/;
+  if (!pattern.test(clientId.trim())) {
+    return {
+      isValid: false,
+      message: 'Expected format: 123456789012-abcdefg.apps.googleusercontent.com',
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Gets CSS class for Client ID input based on validation state.
+ */
+function _getClientIdValidationClass(clientId: string): string {
+  if (!clientId.trim()) {
+    return ''; // No special styling for empty
+  }
+
+  const validation = _validateClientIdFormat(clientId);
+  return validation.isValid ? 'border-green-500' : 'border-red-500';
+}
+
+/**
+ * Renders Client ID validation message and help text.
+ */
+function _renderClientIdValidation(clientId: string) {
+  const validation = _validateClientIdFormat(clientId);
+
+  return (
+    <div className="space-y-1">
+      {!validation.isValid && validation.message && (
+        <p className="text-xs text-red-600 flex items-center gap-1">
+          <XCircle className="h-3 w-3" />
+          {validation.message}
+        </p>
+      )}
+      {validation.isValid && clientId.trim() && (
+        <p className="text-xs text-green-600 flex items-center gap-1">
+          <CheckCircle className="h-3 w-3" />
+          Client ID format looks correct
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Copy this from your Google Cloud Console OAuth 2.0 Client IDs
+      </p>
+    </div>
+  );
+}
+
+/**
  * Generates Google Cloud Console convenience links based on project ID.
  */
 function _getGoogleCloudLinks(projectId: string) {
@@ -764,30 +825,43 @@ async function _handleSave(params: _SaveConfigParams): Promise<void> {
 }
 
 /**
- * Handles configuration test to validate OAuth setup.
+ * Handles configuration test using the provided clientId and optional clientSecret.
+ * If no clientSecret is provided, the backend will use the saved one.
  */
 async function _handleTest(
   clientId: string,
   clientSecret: string,
-  testConfig: (params: Record<string, never>) => Promise<{
+  testConfig: (params: {
+    clientId: string;
+    clientSecret?: string;
+  }) => Promise<{
     success: boolean;
     message: string;
     details?: { issues?: string[] };
   }>
 ): Promise<void> {
-  // Check if there's any configuration to test
-  if (!clientId.trim() && !clientSecret.trim()) {
-    toast.error('Please enter at least a Client ID or Client Secret to test');
+  // Client ID is mandatory
+  if (!clientId.trim()) {
+    toast.error('Please enter a Client ID to test the configuration');
     return;
   }
 
   try {
-    const result = await testConfig({});
+    const params: { clientId: string; clientSecret?: string } = {
+      clientId: clientId.trim(),
+    };
+
+    // Only include clientSecret if provided
+    if (clientSecret.trim()) {
+      params.clientSecret = clientSecret.trim();
+    }
+
+    const result = await testConfig(params);
+
     if (result.success) {
-      toast.success(result.message);
+      toast.success(`✅ Configuration is valid: ${result.message}`);
     } else {
-      toast.error(result.message);
-      // Show additional details if available
+      toast.error(`❌ Configuration failed: ${result.message}`);
       if (result.details?.issues) {
         console.log('Configuration issues:', result.details.issues);
       }

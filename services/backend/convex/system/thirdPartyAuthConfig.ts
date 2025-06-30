@@ -1,10 +1,13 @@
 import { SessionIdArg } from 'convex-helpers/server/sessions';
+import type { SessionId } from 'convex-helpers/server/sessions';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { isSystemAdmin } from '../../modules/auth/accessControl';
 import { getAuthUserOptional } from '../../modules/auth/getAuthUser';
+import { api } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
-import { mutation, query } from '../_generated/server';
+import { action, mutation, query } from '../_generated/server';
+import type { ActionCtx } from '../_generated/server';
 
 /**
  * SYSTEM ADMIN ONLY: Third-Party Auth Configuration Management
@@ -232,91 +235,161 @@ export const toggleGoogleAuthEnabled = mutation({
 });
 
 /**
- * Tests Google Auth configuration by verifying OAuth setup completeness.
+ * Tests Google Auth configuration by validating credentials with Google's API.
+ * Uses the provided clientId and either the provided clientSecret or the saved one.
+ * Uses action to allow external HTTP requests to Google's API.
  */
-export const testGoogleAuthConfig = mutation({
+export const testGoogleAuthConfig = action({
   args: {
+    clientId: v.string(),
+    clientSecret: v.optional(v.string()),
     ...SessionIdArg,
   },
-  handler: async (ctx, args) => {
-    // Verify system admin access
-    const user = await getAuthUserOptional(ctx, args);
-    if (!user) {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    message: string;
+    details?: { issues?: string[] };
+  }> => {
+    // Verify system admin access by calling a query
+    const authState = await ctx.runQuery(api.auth.getState, { sessionId: args.sessionId });
+    if (authState.state !== 'authenticated') {
       throw new ConvexError({
         code: 'UNAUTHORIZED',
         message: 'You must be logged in to test Google Auth configuration',
       });
     }
 
-    if (!isSystemAdmin(user)) {
+    if (!isSystemAdmin(authState.user)) {
       throw new ConvexError({
         code: 'FORBIDDEN',
         message: 'Only system administrators can test Google Auth configuration',
       });
     }
 
-    // Get configuration
-    const config = await ctx.db
-      .query('thirdPartyAuthConfig')
-      .withIndex('by_type', (q) => q.eq('type', 'google'))
-      .first();
+    let clientSecret = args.clientSecret;
 
-    if (!config) {
-      return {
-        success: false,
-        message: 'Google Auth configuration not found',
-      };
+    // If no client secret provided, try to use the saved one
+    if (!clientSecret) {
+      const config: GoogleAuthConfigData | null = await ctx.runQuery(
+        api.system.thirdPartyAuthConfig.getGoogleAuthConfig,
+        {
+          sessionId: args.sessionId,
+        }
+      );
+
+      if (!config?.clientSecret) {
+        return {
+          success: false,
+          message: 'No client secret provided and no saved client secret found',
+          details: { issues: ['Missing Client Secret'] },
+        };
+      }
+
+      clientSecret = config.clientSecret;
     }
 
-    // Check configuration validity regardless of enabled status
-    const issues: string[] = [];
-
-    if (!config.clientId) {
-      issues.push('Missing Client ID');
-    }
-
-    if (!config.clientSecret) {
-      issues.push('Missing Client Secret');
-    }
-
-    if (config.redirectUris.length === 0) {
-      issues.push('No redirect URIs configured');
-    }
-
-    const isConfigValid = issues.length === 0;
-
-    if (!isConfigValid) {
-      return {
-        success: false,
-        message: `Configuration is incomplete: ${issues.join(', ')}`,
-        details: {
-          enabled: config.enabled,
-          hasClientId: !!config.clientId,
-          hasClientSecret: !!config.clientSecret,
-          redirectUrisCount: config.redirectUris.length,
-          issues,
-        },
-      };
-    }
-
-    // Configuration is valid
-    const statusMessage = config.enabled
-      ? 'Google Auth configuration is valid and enabled'
-      : 'Google Auth configuration is valid but currently disabled';
-
-    return {
-      success: true,
-      message: statusMessage,
-      details: {
-        enabled: config.enabled,
-        hasClientId: !!config.clientId,
-        hasClientSecret: !!config.clientSecret,
-        redirectUrisCount: config.redirectUris.length,
-        configurationStatus: 'valid',
-      },
-    };
+    // Test the credentials with Google API
+    return _testNewCredentials(args.clientId, clientSecret);
   },
 });
+
+/**
+ * Tests new credentials provided by the user by making actual Google API calls.
+ */
+async function _testNewCredentials(
+  clientId?: string,
+  clientSecret?: string
+): Promise<{
+  success: boolean;
+  message: string;
+  details?: { issues?: string[] };
+}> {
+  const issues: string[] = [];
+
+  if (!clientId?.trim()) {
+    issues.push('Missing Client ID');
+  }
+
+  if (!clientSecret?.trim()) {
+    issues.push('Missing Client Secret');
+  }
+
+  if (issues.length > 0) {
+    return {
+      success: false,
+      message: `New credentials are incomplete: ${issues.join(', ')}`,
+      details: { issues },
+    };
+  }
+
+  // Test credentials by attempting to exchange a dummy authorization code
+  // This will validate that the credentials are real and properly configured
+  try {
+    const tokenEndpoint = 'https://oauth2.googleapis.com/token';
+    const testRedirectUri = 'http://localhost:3000/login/google/callback';
+
+    // Try to exchange a dummy code - this will fail but will tell us if credentials are valid
+    const response = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId || '',
+        client_secret: clientSecret || '',
+        code: 'dummy_code_for_testing',
+        grant_type: 'authorization_code',
+        redirect_uri: testRedirectUri,
+      }),
+    });
+
+    const result = await response.json();
+
+    // Check the error type to determine if credentials are valid
+    if (result.error === 'invalid_grant') {
+      // This means the credentials are valid but the code is invalid (expected)
+      return {
+        success: true,
+        message: 'Credentials are valid! Google accepted the Client ID and Secret.',
+      };
+    }
+
+    if (result.error === 'invalid_client') {
+      // This means the Client ID or Secret is invalid
+      return {
+        success: false,
+        message: 'Invalid credentials: Google rejected the Client ID or Secret.',
+        details: { issues: ['Invalid Client ID or Secret'] },
+      };
+    }
+
+    if (result.error === 'redirect_uri_mismatch') {
+      // Credentials are valid but redirect URI isn't configured
+      return {
+        success: true,
+        message:
+          'Credentials are valid! (Note: You may need to add redirect URIs in Google Cloud Console)',
+      };
+    }
+
+    // Some other error - credentials might be valid but there's another issue
+    return {
+      success: false,
+      message: `Google API error: ${result.error_description || result.error || 'Unknown error'}`,
+      details: { issues: [result.error || 'Unknown error'] },
+    };
+  } catch (error) {
+    console.error('Error testing Google credentials:', error);
+    return {
+      success: false,
+      message: 'Failed to connect to Google API. Please check your internet connection.',
+      details: { issues: ['Network error'] },
+    };
+  }
+}
 
 /**
  * Resets Google Auth configuration by removing all stored settings.
