@@ -2,14 +2,14 @@
 
 import { Button } from '@/components/ui/button';
 import { useGoogleAuthAvailable } from '@/modules/app/useAppInfo';
+import { AnonymousLoginButton } from '@/modules/auth/AnonymousLoginButton';
 import { useAuthState } from '@/modules/auth/AuthProvider';
+import { GoogleLoginButton } from '@/modules/auth/GoogleLoginButton';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
 import { AlertCircle, ChevronRight, KeyRound, KeySquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { AnonymousLoginButton } from '../../modules/auth/AnonymousLoginButton';
-import { GoogleLoginButton } from '../../modules/auth/GoogleLoginButton';
 
 /**
  * Login page component providing multiple authentication options.

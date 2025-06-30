@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthState } from '@/modules/auth/AuthProvider';
+import { LoginCodeGenerator } from '@/modules/auth/LoginCodeGenerator';
 import { NameEditForm } from '@/modules/profile/NameEditForm';
 import { ThemeSettings } from '@/modules/theme/ThemeSettings';
 import { api } from '@workspace/backend/convex/_generated/api';
@@ -23,7 +24,6 @@ import { CopyIcon, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { LoginCodeGenerator } from '../../../modules/auth/LoginCodeGenerator';
 
 /**
  * Displays the user profile page with account management, theme settings, and recovery options.
