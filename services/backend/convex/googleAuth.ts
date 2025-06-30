@@ -15,59 +15,7 @@ import {
 } from './_generated/server';
 
 // Google OAuth endpoints
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
-
-/**
- * Helper function to check if Google Auth is dynamically enabled for mutations/queries.
- * Checks database configuration only (credentials are stored in database now).
- */
-async function isGoogleAuthEnabled(ctx: QueryCtx | MutationCtx): Promise<boolean> {
-  // Check if login is disabled globally
-  if (featureFlags.disableLogin) {
-    return false;
-  }
-
-  // Check database configuration
-  const config = await ctx.db
-    .query('thirdPartyAuthConfig')
-    .withIndex('by_type', (q) => q.eq('type', 'google'))
-    .first();
-
-  // Google Auth is enabled if it's configured, enabled, and has both client ID and secret
-  return !!(config?.enabled && config?.clientId && config?.clientSecret);
-}
-
-/**
- * Helper function to check if Google Auth is dynamically enabled for actions.
- * Actions need to query the database through internal functions.
- */
-async function isGoogleAuthEnabledForActions(ctx: ActionCtx): Promise<{
-  enabled: boolean;
-  clientId?: string;
-  clientSecret?: string;
-}> {
-  // Check if login is disabled globally
-  if (featureFlags.disableLogin) {
-    return { enabled: false };
-  }
-
-  // Get configuration from database via internal query
-  const config = await ctx.runQuery(api.googleAuth.getGoogleAuthConfigInternal);
-
-  if (!config?.enabled || !config?.clientId || !config?.clientSecret) {
-    return { enabled: false };
-  }
-
-  return {
-    enabled: true,
-    clientId: config.clientId,
-    clientSecret: config.clientSecret,
-  };
-}
-
-// Google profile interface based on Google's userinfo API response
-interface GoogleProfile {
+interface _GoogleProfile {
   id: string;
   email: string;
   verified_email?: boolean;
@@ -79,8 +27,7 @@ interface GoogleProfile {
   hd?: string; // Hosted domain for Google Workspace users
 }
 
-// OAuth token response interface
-interface GoogleTokenResponse {
+interface _GoogleTokenResponse {
   access_token: string;
   expires_in: number;
   token_type: string;
@@ -90,7 +37,6 @@ interface GoogleTokenResponse {
 
 /**
  * Exchange Google OAuth authorization code for access token and user profile.
- * This action handles the OAuth callback flow.
  */
 export const exchangeGoogleCode = action({
   args: {
@@ -98,9 +44,9 @@ export const exchangeGoogleCode = action({
     state: v.string(), // CSRF protection
     redirectUri: v.string(),
   },
-  handler: async (ctx, args): Promise<{ profile: GoogleProfile; success: boolean }> => {
+  handler: async (ctx, args): Promise<{ profile: _GoogleProfile; success: boolean }> => {
     // Check if Google auth is enabled dynamically
-    const authConfig = await isGoogleAuthEnabledForActions(ctx);
+    const authConfig = await _isGoogleAuthEnabledForActions(ctx);
     if (!authConfig.enabled || !authConfig.clientId || !authConfig.clientSecret) {
       throw new ConvexError({
         code: 'FEATURE_DISABLED',
@@ -112,7 +58,7 @@ export const exchangeGoogleCode = action({
 
     try {
       // Step 1: Exchange authorization code for access token
-      const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
+      const tokenResponse = await fetch(_GOOGLE_TOKEN_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -135,10 +81,10 @@ export const exchangeGoogleCode = action({
         });
       }
 
-      const tokenData: GoogleTokenResponse = await tokenResponse.json();
+      const tokenData: _GoogleTokenResponse = await tokenResponse.json();
 
       // Step 2: Use access token to get user profile
-      const profileResponse = await fetch(GOOGLE_USERINFO_URL, {
+      const profileResponse = await fetch(_GOOGLE_USERINFO_URL, {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
         },
@@ -153,7 +99,7 @@ export const exchangeGoogleCode = action({
         });
       }
 
-      const profile: GoogleProfile = await profileResponse.json();
+      const profile: _GoogleProfile = await profileResponse.json();
 
       // Validate required profile fields
       if (!profile.id || !profile.email || !profile.name) {
@@ -178,8 +124,7 @@ export const exchangeGoogleCode = action({
 });
 
 /**
- * Create or update a Google user and establish a session.
- * This mutation integrates with the existing session system.
+ * Creates or updates a Google user and establishes a session.
  */
 export const loginWithGoogle = mutation({
   args: {
@@ -198,7 +143,7 @@ export const loginWithGoogle = mutation({
   },
   handler: async (ctx, args) => {
     // Check if Google auth is enabled dynamically
-    const isEnabled = await isGoogleAuthEnabled(ctx);
+    const isEnabled = await _isGoogleAuthEnabled(ctx);
     if (!isEnabled) {
       throw new ConvexError({
         code: 'FEATURE_DISABLED',
@@ -300,7 +245,7 @@ export const loginWithGoogle = mutation({
 });
 
 /**
- * Get Google user profile information for authenticated Google users.
+ * Retrieves Google user profile information for authenticated Google users.
  */
 export const getGoogleProfile = query({
   args: {
@@ -332,8 +277,7 @@ export const getGoogleProfile = query({
 });
 
 /**
- * Generate Google OAuth authorization URL.
- * This is used by the frontend to redirect users to Google for authentication.
+ * Generates Google OAuth authorization URL for frontend redirection.
  */
 export const generateGoogleAuthUrl = action({
   args: {
@@ -342,7 +286,7 @@ export const generateGoogleAuthUrl = action({
   },
   handler: async (ctx, args) => {
     // Get configuration from database
-    const authConfig = await isGoogleAuthEnabledForActions(ctx);
+    const authConfig = await _isGoogleAuthEnabledForActions(ctx);
     if (!authConfig.enabled || !authConfig.clientId) {
       throw new ConvexError({
         code: 'CONFIGURATION_ERROR',
@@ -367,8 +311,7 @@ export const generateGoogleAuthUrl = action({
 });
 
 /**
- * Internal query to get Google Auth configuration.
- * Used by actions that need to access the configuration.
+ * Internal query to retrieve Google Auth configuration for actions.
  */
 export const getGoogleAuthConfigInternal = query({
   args: {},
@@ -379,3 +322,52 @@ export const getGoogleAuthConfigInternal = query({
       .first();
   },
 });
+
+const _GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const _GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
+
+/**
+ * Checks if Google Auth is dynamically enabled for mutations and queries.
+ */
+async function _isGoogleAuthEnabled(ctx: QueryCtx | MutationCtx): Promise<boolean> {
+  // Check if login is disabled globally
+  if (featureFlags.disableLogin) {
+    return false;
+  }
+
+  // Check database configuration
+  const config = await ctx.db
+    .query('thirdPartyAuthConfig')
+    .withIndex('by_type', (q) => q.eq('type', 'google'))
+    .first();
+
+  // Google Auth is enabled if it's configured, enabled, and has both client ID and secret
+  return !!(config?.enabled && config?.clientId && config?.clientSecret);
+}
+
+/**
+ * Checks if Google Auth is dynamically enabled for actions with configuration details.
+ */
+async function _isGoogleAuthEnabledForActions(ctx: ActionCtx): Promise<{
+  enabled: boolean;
+  clientId?: string;
+  clientSecret?: string;
+}> {
+  // Check if login is disabled globally
+  if (featureFlags.disableLogin) {
+    return { enabled: false };
+  }
+
+  // Get configuration from database via internal query
+  const config = await ctx.runQuery(api.googleAuth.getGoogleAuthConfigInternal);
+
+  if (!config?.enabled || !config?.clientId || !config?.clientSecret) {
+    return { enabled: false };
+  }
+
+  return {
+    enabled: true,
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+  };
+}

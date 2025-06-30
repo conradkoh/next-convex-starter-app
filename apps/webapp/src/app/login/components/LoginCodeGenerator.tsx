@@ -9,6 +9,9 @@ import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+/**
+ * Displays login code generator for anonymous users to access their account on other devices.
+ */
 export function LoginCodeGenerator() {
   const authState = useAuthState();
   const createLoginCode = useSessionMutation(api.auth.createLoginCode);
@@ -18,18 +21,29 @@ export function LoginCodeGenerator() {
   const [loginCode, setLoginCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
 
-  // Function to calculate time remaining
-  const getTimeRemaining = useCallback((): string => {
-    if (!expiresAt) return '';
-
-    const timeLeft = Math.max(0, expiresAt - Date.now());
-    const minutes = Math.floor(timeLeft / (1000 * 60));
-    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }, [expiresAt]);
-
+  // Computed values
+  const getTimeRemaining = useCallback(() => _getTimeRemaining(expiresAt), [expiresAt]);
   const [timeRemaining, setTimeRemaining] = useState<string>(getTimeRemaining());
+
+  const isAnonymousUser = useMemo(() => {
+    return (
+      authState?.state === 'authenticated' &&
+      'user' in authState &&
+      authState.user.type === 'anonymous'
+    );
+  }, [authState]);
+
+  const buttonText = useMemo(() => {
+    if (isGenerating) {
+      return (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          <span>Generating...</span>
+        </>
+      );
+    }
+    return loginCode ? 'Generate New Code' : 'Generate Login Code';
+  }, [isGenerating, loginCode]);
 
   // Keep login code synced with active code from backend
   useEffect(() => {
@@ -75,57 +89,24 @@ export function LoginCodeGenerator() {
     return () => clearInterval(interval);
   }, [expiresAt, getTimeRemaining]);
 
+  // Event handlers
   const handleGenerateCode = useCallback(async () => {
-    if (authState?.state !== 'authenticated') {
-      toast.error('You must be logged in to generate a login code');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const result = await createLoginCode();
-      if (result.success) {
-        setLoginCode(result.code);
-        setExpiresAt(result.expiresAt);
-        setTimeRemaining(getTimeRemaining());
-        toast.success('Login code generated successfully');
-      } else {
-        toast.error('Failed to generate login code');
-      }
-    } catch (error) {
-      console.error('Error generating login code:', error);
-      toast.error('An error occurred while generating login code');
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [authState?.state, createLoginCode, getTimeRemaining]);
-
-  // Conditionally render based on authentication state
-  const isAnonymousUser = useMemo(() => {
-    return (
-      authState?.state === 'authenticated' &&
-      'user' in authState &&
-      authState.user.type === 'anonymous'
-    );
-  }, [authState]);
+    await _handleGenerateCode({
+      authState,
+      isGenerating,
+      setIsGenerating,
+      createLoginCode,
+      setLoginCode,
+      setExpiresAt,
+      setTimeRemaining,
+      getTimeRemaining,
+    });
+  }, [authState, isGenerating, createLoginCode, getTimeRemaining]);
 
   // Early return if not an anonymous authenticated user
   if (!isAnonymousUser) {
     return null;
   }
-
-  // Memoize the button text
-  const buttonText = useMemo(() => {
-    if (isGenerating) {
-      return (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-          <span>Generating...</span>
-        </>
-      );
-    }
-    return loginCode ? 'Generate New Code' : 'Generate Login Code';
-  }, [isGenerating, loginCode]);
 
   return (
     <div className="w-full border rounded-lg overflow-hidden">
@@ -178,4 +159,69 @@ export function LoginCodeGenerator() {
       </div>
     </div>
   );
+}
+
+/**
+ * Calculates time remaining until code expiration in MM:SS format.
+ */
+function _getTimeRemaining(expiresAt: number | null): string {
+  if (!expiresAt) return '';
+
+  const timeLeft = Math.max(0, expiresAt - Date.now());
+  const minutes = Math.floor(timeLeft / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+interface _HandleGenerateCodeParams {
+  authState: ReturnType<typeof useAuthState>;
+  isGenerating: boolean;
+  setIsGenerating: (generating: boolean) => void;
+  createLoginCode: () => Promise<{ success: boolean; code?: string; expiresAt?: number }>;
+  setLoginCode: (code: string | null) => void;
+  setExpiresAt: (expiresAt: number | null) => void;
+  setTimeRemaining: (time: string) => void;
+  getTimeRemaining: () => string;
+}
+
+/**
+ * Handles login code generation with authentication validation and error handling.
+ */
+async function _handleGenerateCode(params: _HandleGenerateCodeParams): Promise<void> {
+  const {
+    authState,
+    isGenerating,
+    setIsGenerating,
+    createLoginCode,
+    setLoginCode,
+    setExpiresAt,
+    setTimeRemaining,
+    getTimeRemaining,
+  } = params;
+
+  if (authState?.state !== 'authenticated') {
+    toast.error('You must be logged in to generate a login code');
+    return;
+  }
+
+  if (isGenerating) return;
+
+  setIsGenerating(true);
+  try {
+    const result = await createLoginCode();
+    if (result.success && result.code && result.expiresAt) {
+      setLoginCode(result.code);
+      setExpiresAt(result.expiresAt);
+      setTimeRemaining(getTimeRemaining());
+      toast.success('Login code generated successfully');
+    } else {
+      toast.error('Failed to generate login code');
+    }
+  } catch (error) {
+    console.error('Error generating login code:', error);
+    toast.error('An error occurred while generating login code');
+  } finally {
+    setIsGenerating(false);
+  }
 }

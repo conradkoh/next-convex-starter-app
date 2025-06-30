@@ -31,8 +31,7 @@ export interface GoogleAuthConfigData {
 }
 
 /**
- * SYSTEM ADMIN ONLY: Get the current Google Auth configuration.
- * Returns null if no configuration exists.
+ * Retrieves the current Google Auth configuration for system administrators.
  */
 export const getGoogleAuthConfig = query({
   args: {
@@ -77,8 +76,7 @@ export const getGoogleAuthConfig = query({
 });
 
 /**
- * SYSTEM ADMIN ONLY: Update Google Auth configuration.
- * Only system administrators can update this configuration.
+ * Updates Google Auth configuration with validation and security checks.
  */
 export const updateGoogleAuthConfig = mutation({
   args: {
@@ -171,8 +169,7 @@ export const updateGoogleAuthConfig = mutation({
 });
 
 /**
- * SYSTEM ADMIN ONLY: Enable or disable Google Auth without changing other configuration.
- * This allows for immediate enable/disable without requiring full configuration.
+ * Toggles Google Auth enabled state without changing other configuration.
  */
 export const toggleGoogleAuthEnabled = mutation({
   args: {
@@ -231,8 +228,7 @@ export const toggleGoogleAuthEnabled = mutation({
 });
 
 /**
- * SYSTEM ADMIN ONLY: Test Google Auth configuration by verifying OAuth setup.
- * Only system administrators can test the configuration.
+ * Tests Google Auth configuration by verifying OAuth setup completeness.
  */
 export const testGoogleAuthConfig = mutation({
   args: {
@@ -319,8 +315,7 @@ export const testGoogleAuthConfig = mutation({
 });
 
 /**
- * SYSTEM ADMIN ONLY: Reset Google Auth configuration.
- * Only system administrators can reset the configuration.
+ * Resets Google Auth configuration by removing all stored settings.
  */
 export const resetGoogleAuthConfig = mutation({
   args: {

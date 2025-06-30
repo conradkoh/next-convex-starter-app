@@ -9,6 +9,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { LoginWithCode } from '../components/LoginWithCode';
 
+/**
+ * Login code page that allows users to enter a code from another device for authentication.
+ * Redirects authenticated users and provides a clean interface for code-based login.
+ */
 export default function LoginCodePage() {
   const router = useRouter();
   const authState = useAuthState();

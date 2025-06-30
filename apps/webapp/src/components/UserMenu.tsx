@@ -25,9 +25,13 @@ import { useSessionMutation } from 'convex-helpers/react/sessions';
 import { Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+/**
+ * User menu dropdown component with profile links and logout functionality.
+ * Shows user information and navigation options, with admin access for system administrators.
+ */
 export function UserMenu() {
   const authState = useAuthState();
   const router = useRouter();
@@ -39,7 +43,10 @@ export function UserMenu() {
     return null;
   }
 
-  const handleLogout = async () => {
+  /**
+   * Handles the logout process with error handling and navigation.
+   */
+  const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
     try {
       await logout();
@@ -51,67 +58,115 @@ export function UserMenu() {
     } finally {
       setIsLoggingOut(false);
     }
-  };
+  }, [logout, router]);
+
+  /**
+   * Shows the logout confirmation dialog.
+   */
+  const showLogoutConfirmation = useCallback(() => {
+    setShowLogoutConfirm(true);
+  }, []);
+
+  /**
+   * Handles the logout confirmation dialog state changes.
+   */
+  const handleLogoutConfirmChange = useCallback((open: boolean) => {
+    setShowLogoutConfirm(open);
+  }, []);
 
   return (
     <>
-      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You will be redirected to the home page after logging out.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isLoggingOut ? 'Logging out...' : 'Log out'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {_renderLogoutConfirmDialog(
+        showLogoutConfirm,
+        handleLogoutConfirmChange,
+        handleLogout,
+        isLoggingOut
+      )}
+      {_renderUserDropdownMenu(authState, showLogoutConfirmation, isLoggingOut)}
+    </>
+  );
+}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="relative flex items-center text-sm font-medium focus:outline-none text-muted-foreground hover:text-foreground"
-          >
-            {authState.user.name}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <Link href="/app/profile">
-            <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-          </Link>
-          <Link href="/app">
-            <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
-          </Link>
-          {authState.user.accessLevel === 'system_admin' && (
-            <Link href="/app/admin">
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings className="h-4 w-4" />
-                System Admin
-              </DropdownMenuItem>
-            </Link>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-            onClick={() => setShowLogoutConfirm(true)}
+// 5. Internal helper functions
+/**
+ * Renders the logout confirmation dialog.
+ */
+function _renderLogoutConfirmDialog(
+  showLogoutConfirm: boolean,
+  handleLogoutConfirmChange: (open: boolean) => void,
+  handleLogout: () => void,
+  isLoggingOut: boolean
+) {
+  return (
+    <AlertDialog open={showLogoutConfirm} onOpenChange={handleLogoutConfirmChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+          <AlertDialogDescription>
+            You will be redirected to the home page after logging out.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleLogout}
             disabled={isLoggingOut}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isLoggingOut ? 'Logging out...' : 'Log out'}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+/**
+ * Renders the user dropdown menu with navigation links.
+ */
+function _renderUserDropdownMenu(
+  authState: Extract<NonNullable<ReturnType<typeof useAuthState>>, { state: 'authenticated' }>,
+  showLogoutConfirmation: () => void,
+  isLoggingOut: boolean
+) {
+  const isSystemAdmin = authState.user.accessLevel === 'system_admin';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="relative flex items-center text-sm font-medium focus:outline-none text-muted-foreground hover:text-foreground"
+        >
+          {authState.user.name}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <Link href="/app/profile">
+          <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
+        </Link>
+        <Link href="/app">
+          <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
+        </Link>
+        {isSystemAdmin && (
+          <Link href="/app/admin">
+            <DropdownMenuItem className="cursor-pointer">
+              <Settings className="h-4 w-4" />
+              System Admin
+            </DropdownMenuItem>
+          </Link>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+          onClick={showLogoutConfirmation}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? 'Logging out...' : 'Log out'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

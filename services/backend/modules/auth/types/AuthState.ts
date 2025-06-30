@@ -1,6 +1,10 @@
 import type { Doc } from '../../../convex/_generated/dataModel';
 import type { AccessLevel } from '../accessControl';
 
+/**
+ * Authentication state type representing user session status and information.
+ * Can be either unauthenticated with a reason or authenticated with user data.
+ */
 export type AuthState =
   | {
       sessionId: string;
@@ -15,7 +19,10 @@ export type AuthState =
       isSystemAdmin: boolean;
     };
 
-// Google-specific user profile type for frontend components
+/**
+ * Google-specific user profile type for frontend components.
+ * Contains both basic user info and detailed Google profile data.
+ */
 export type GoogleUserProfile = {
   name: string;
   email: string;

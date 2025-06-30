@@ -4,111 +4,143 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuthState } from '@/lib/auth/AuthProvider';
 import { useAppInfo } from '@/modules/app/useAppInfo';
 import { Settings, Shield, Users } from 'lucide-react';
+import { useMemo } from 'react';
 
+interface _StatusCardData {
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+/**
+ * Admin dashboard page displaying system status and configuration overview.
+ * Shows app version, Google authentication status, and user access level.
+ */
 export default function AdminDashboard() {
   const authState = useAuthState();
   const { appInfo, isLoading } = useAppInfo();
 
+  /**
+   * Memoized status cards data to prevent unnecessary recalculations.
+   */
+  const statusCards = useMemo((): _StatusCardData[] => {
+    return [
+      {
+        title: 'App Version',
+        value: isLoading ? '...' : appInfo?.version || 'Unknown',
+        description: 'Current version',
+        icon: <Settings className="h-4 w-4 text-muted-foreground" />,
+      },
+      {
+        title: 'Google Auth',
+        value: isLoading ? '...' : appInfo?.googleAuthAvailable ? 'Enabled' : 'Disabled',
+        description: isLoading
+          ? 'Loading...'
+          : appInfo?.googleAuthAvailable
+            ? 'Ready for user login'
+            : 'Configuration required',
+        icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+      },
+      {
+        title: 'Your Access',
+        value:
+          authState?.state === 'authenticated'
+            ? authState.accessLevel === 'system_admin'
+              ? 'Admin'
+              : 'User'
+            : '...',
+        description: 'Access level',
+        icon: <Users className="h-4 w-4 text-muted-foreground" />,
+      },
+    ];
+  }, [authState, appInfo, isLoading]);
+
+  /**
+   * Memoized Google auth status for system information section.
+   */
+  const googleAuthStatus = useMemo(() => {
+    if (isLoading) return { text: 'Loading...', className: 'text-muted-foreground' };
+
+    if (appInfo?.googleAuthAvailable) {
+      return { text: 'Active', className: 'text-green-600' };
+    }
+
+    if (appInfo?.googleAuthDetails.isConfiguredInDatabase) {
+      return { text: 'Disabled', className: 'text-yellow-600' };
+    }
+
+    return { text: 'Unconfigured', className: 'text-red-600' };
+  }, [appInfo, isLoading]);
+
   return (
     <div className="pt-6 space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          System administration and configuration panel
-        </p>
-      </div>
+      {_renderHeader()}
+      {_renderStatusOverview(statusCards)}
+      {_renderSystemInformation(googleAuthStatus)}
+    </div>
+  );
+}
 
-      {/* Status Overview */}
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+/**
+ * Renders the dashboard header section.
+ */
+function _renderHeader() {
+  return (
+    <div className="space-y-2">
+      <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
+      <p className="text-sm md:text-base text-muted-foreground">
+        System administration and configuration panel
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Renders the status overview cards grid.
+ */
+function _renderStatusOverview(statusCards: _StatusCardData[]) {
+  return (
+    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {statusCards.map((card) => (
+        <Card key={card.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">App Version</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+            {card.icon}
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-xl md:text-2xl font-bold">
-              {isLoading ? '...' : appInfo?.version || 'Unknown'}
-            </div>
-            <p className="text-xs text-muted-foreground">Current version</p>
+            <div className="text-xl md:text-2xl font-bold">{card.value}</div>
+            <p className="text-xs text-muted-foreground">{card.description}</p>
           </CardContent>
         </Card>
+      ))}
+    </div>
+  );
+}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Google Auth</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-xl md:text-2xl font-bold">
-              {isLoading ? '...' : appInfo?.googleAuthAvailable ? 'Enabled' : 'Disabled'}
+/**
+ * Renders the system information section.
+ */
+function _renderSystemInformation(googleAuthStatus: { text: string; className: string }) {
+  return (
+    <div className="space-y-3 md:space-y-4">
+      <h2 className="text-lg md:text-xl font-semibold">System Information</h2>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">Environment Status</CardTitle>
+          <CardDescription className="text-sm">
+            Current system configuration details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-3 text-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+              <span className="font-medium">Google Authentication:</span>
+              <span className={googleAuthStatus.className}>{googleAuthStatus.text}</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {isLoading
-                ? 'Loading...'
-                : appInfo?.googleAuthAvailable
-                  ? 'Ready for user login'
-                  : 'Configuration required'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Your Access</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-xl md:text-2xl font-bold">
-              {authState?.state === 'authenticated'
-                ? authState.accessLevel === 'system_admin'
-                  ? 'Admin'
-                  : 'User'
-                : '...'}
-            </div>
-            <p className="text-xs text-muted-foreground">Access level</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* System Information */}
-      <div className="space-y-3 md:space-y-4">
-        <h2 className="text-lg md:text-xl font-semibold">System Information</h2>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg">Environment Status</CardTitle>
-            <CardDescription className="text-sm">
-              Current system configuration details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3 text-sm">
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                <span className="font-medium">Google Authentication:</span>
-                <span
-                  className={
-                    isLoading
-                      ? 'text-muted-foreground'
-                      : appInfo?.googleAuthAvailable
-                        ? 'text-green-600'
-                        : appInfo?.googleAuthDetails.isConfiguredInDatabase
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
-                  }
-                >
-                  {isLoading
-                    ? 'Loading...'
-                    : appInfo?.googleAuthAvailable
-                      ? 'Active'
-                      : appInfo?.googleAuthDetails.isConfiguredInDatabase
-                        ? 'Disabled'
-                        : 'Unconfigured'}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

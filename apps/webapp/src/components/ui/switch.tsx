@@ -2,9 +2,13 @@
 
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import type * as React from 'react';
+import { memo } from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Displays a toggle switch component built on Radix UI primitives with customizable styling.
+ */
 function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>) {
   return (
     <SwitchPrimitive.Root
@@ -25,4 +29,7 @@ function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimi
   );
 }
 
-export { Switch };
+const _MemoizedSwitch = memo(Switch);
+_MemoizedSwitch.displayName = 'Switch';
+
+export { _MemoizedSwitch as Switch };

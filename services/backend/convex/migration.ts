@@ -4,7 +4,15 @@ import { internalAction, internalMutation, internalQuery } from './_generated/se
 
 const BATCH_SIZE = 100; // Process 100 sessions per batch
 
-// Internal mutation to unset expiration fields for a single session
+interface PaginationOpts {
+  numItems: number;
+  cursor: string | null;
+}
+
+/**
+ * Internal mutation to remove deprecated expiration fields from a single session.
+ * Part of the session expiration deprecation migration.
+ */
 export const unsetSessionExpiration = internalMutation({
   args: { sessionId: v.id('sessions') },
   handler: async (ctx, args) => {
@@ -15,11 +23,14 @@ export const unsetSessionExpiration = internalMutation({
   },
 });
 
-// Internal action to iterate through all sessions and unset expiration
+/**
+ * Internal action to migrate all sessions by removing deprecated expiration fields.
+ * Processes sessions in batches to avoid timeout issues.
+ */
 export const migrateUnsetSessionExpiration = internalAction({
   args: { cursor: v.optional(v.string()) }, // Convex cursor for pagination
   handler: async (ctx, args) => {
-    const paginationOpts = {
+    const paginationOpts: PaginationOpts = {
       numItems: BATCH_SIZE,
       cursor: args.cursor ?? null,
     };
@@ -45,9 +56,16 @@ export const migrateUnsetSessionExpiration = internalAction({
   },
 });
 
-// Helper query to get sessions with pagination (used by the action)
+/**
+ * Helper query to fetch sessions in batches for pagination during migration.
+ */
 export const getSessionsBatch = internalQuery({
-  args: { paginationOpts: v.any() }, // Using v.any() for simplicity, consider a stricter type
+  args: {
+    paginationOpts: v.object({
+      numItems: v.number(),
+      cursor: v.union(v.string(), v.null()),
+    }),
+  },
   handler: async (ctx, args) => {
     return await ctx.db.query('sessions').paginate(args.paginationOpts);
   },
@@ -57,7 +75,10 @@ export const getSessionsBatch = internalQuery({
 // USER ACCESS LEVEL MIGRATION
 // ========================================
 
-// Internal mutation to set accessLevel to 'user' for a single user if undefined
+/**
+ * Internal mutation to set default accessLevel for a user if currently undefined.
+ * Part of the user access level migration to ensure all users have explicit access levels.
+ */
 export const setUserAccessLevelDefault = internalMutation({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
@@ -75,11 +96,14 @@ export const setUserAccessLevelDefault = internalMutation({
   },
 });
 
-// Internal action to migrate all users to have accessLevel set to 'user' if undefined
+/**
+ * Internal action to migrate all users to have explicit accessLevel values.
+ * Sets undefined accessLevel fields to 'user' as the default.
+ */
 export const migrateUserAccessLevels = internalAction({
   args: { cursor: v.optional(v.string()) }, // Convex cursor for pagination
   handler: async (ctx, args) => {
-    const paginationOpts = {
+    const paginationOpts: PaginationOpts = {
       numItems: BATCH_SIZE,
       cursor: args.cursor ?? null,
     };
@@ -114,9 +138,16 @@ export const migrateUserAccessLevels = internalAction({
   },
 });
 
-// Helper query to get users with pagination (used by the migration action)
+/**
+ * Helper query to fetch users in batches for pagination during migration.
+ */
 export const getUsersBatch = internalQuery({
-  args: { paginationOpts: v.any() }, // Using v.any() for simplicity, consider a stricter type
+  args: {
+    paginationOpts: v.object({
+      numItems: v.number(),
+      cursor: v.union(v.string(), v.null()),
+    }),
+  },
   handler: async (ctx, args) => {
     return await ctx.db.query('users').paginate(args.paginationOpts);
   },

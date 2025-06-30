@@ -40,6 +40,10 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Root layout component that wraps the entire application with providers and global structure.
+ * Sets up authentication, theming, navigation, and toast notifications for all pages.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

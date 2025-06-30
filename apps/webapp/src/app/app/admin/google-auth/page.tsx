@@ -14,34 +14,20 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
-  Loader2,
   RefreshCw,
   Save,
   TestTube,
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+/**
+ * Displays Google Authentication configuration page with OAuth setup, testing, and management capabilities.
+ */
 export default function GoogleAuthConfigPage() {
   const { appInfo, isLoading: appInfoLoading } = useAppInfo();
-
-  // Generate redirect URIs based on current domain
-  const getRedirectUris = () => {
-    if (typeof window === 'undefined') return [];
-
-    const { protocol, host } = window.location;
-    const baseUrl = `${protocol}//${host}`;
-
-    return [
-      `${baseUrl}/login/google/callback`,
-      // Add localhost for development if not already localhost
-      ...(host.includes('localhost') ? [] : ['http://localhost:3000/login/google/callback']),
-    ];
-  };
-
-  const redirectUris = getRedirectUris();
 
   // State for form inputs
   const [enabled, setEnabled] = useState(false);
@@ -58,9 +44,15 @@ export default function GoogleAuthConfigPage() {
   const testConfig = useSessionMutation(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
   const resetConfig = useSessionMutation(api.system.thirdPartyAuthConfig.resetGoogleAuthConfig);
 
-  // Loading states
+  // Computed values
+  const redirectUris = useMemo(() => _getRedirectUris(), []);
   const isConfigLoading = configData === undefined;
   const isPageLoading = appInfoLoading || isConfigLoading;
+  const isFullyConfigured = isConfigured && enabled;
+  const clientSecretDisplayValue = useMemo(
+    () => _getClientSecretDisplayValue(configData || undefined, clientSecretFocused, clientSecret),
+    [configData, clientSecretFocused, clientSecret]
+  );
 
   // Load existing configuration
   useEffect(() => {
@@ -72,140 +64,47 @@ export default function GoogleAuthConfigPage() {
     }
   }, [configData]);
 
-  // Copy to clipboard helper
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Copied to clipboard!');
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
-      toast.error('Failed to copy to clipboard');
-    }
-  };
+  // Event handlers
+  const handleClientSecretFocus = useCallback(() => {
+    _handleClientSecretFocus(setClientSecretFocused);
+  }, []);
 
-  // Compute display value for client secret field
-  const getClientSecretDisplayValue = () => {
-    const hasExistingSecret = configData?.hasClientSecret;
-    const hasUserInput = clientSecret.length > 0;
+  const handleClientSecretBlur = useCallback(() => {
+    _handleClientSecretBlur(setClientSecretFocused);
+  }, []);
 
-    // If there's an existing secret, field is not focused, and user hasn't entered anything
-    if (hasExistingSecret && !clientSecretFocused && !hasUserInput) {
-      return '••••••••••••••••••••••••••••••••';
-    }
+  const handleToggleEnabled = useCallback(
+    async (newEnabled: boolean) => {
+      await _handleToggleEnabled(newEnabled, toggleEnabled, setEnabled);
+    },
+    [toggleEnabled]
+  );
 
-    // Otherwise show the actual input value
-    return clientSecret;
-  };
+  const handleSave = useCallback(async () => {
+    await _handleSave({
+      isFormLoading,
+      setIsFormLoading,
+      redirectUris,
+      clientId,
+      clientSecret,
+      configData: configData || undefined,
+      enabled,
+      updateConfig,
+      setIsConfigured,
+    });
+  }, [isFormLoading, redirectUris, clientId, clientSecret, configData, enabled, updateConfig]);
 
-  // Handle client secret focus
-  const handleClientSecretFocus = () => {
-    setClientSecretFocused(true);
-  };
+  const handleTest = useCallback(async () => {
+    await _handleTest(clientId, clientSecret, testConfig);
+  }, [clientId, clientSecret, testConfig]);
 
-  // Handle client secret blur
-  const handleClientSecretBlur = () => {
-    setClientSecretFocused(false);
-  };
+  const handleReset = useCallback(async () => {
+    await _handleReset(resetConfig, setClientId, setClientSecret, setIsConfigured);
+  }, [resetConfig]);
 
-  // Handle enable/disable toggle
-  const handleToggleEnabled = async (newEnabled: boolean) => {
-    try {
-      await toggleEnabled({ enabled: newEnabled });
-      setEnabled(newEnabled);
-      toast.success(`Google Auth ${newEnabled ? 'enabled' : 'disabled'} successfully`);
-    } catch (error) {
-      console.error('Failed to toggle Google Auth:', error);
-      toast.error('Failed to toggle Google Auth. Please try again.');
-    }
-  };
-
-  // Handle form submission
-  const handleSave = async () => {
-    setIsFormLoading(true);
-    try {
-      if (redirectUris.length === 0) {
-        toast.error('No redirect URIs available. Please refresh the page.');
-        return;
-      }
-
-      if (!clientId.trim()) {
-        toast.error('Client ID is required');
-        return;
-      }
-
-      // Check if client secret is required (new configuration or replacing existing)
-      const hasExistingSecret = configData?.hasClientSecret;
-      if (!hasExistingSecret && !clientSecret.trim()) {
-        toast.error('Client Secret is required for new configuration');
-        return;
-      }
-
-      await updateConfig({
-        enabled, // Keep current enabled state
-        clientId: clientId.trim(),
-        clientSecret: clientSecret.trim(), // Backend will preserve existing if empty and one exists
-        redirectUris: redirectUris,
-      });
-
-      toast.success('Google Auth configuration saved successfully');
-      setIsConfigured(true);
-    } catch (error) {
-      console.error('Failed to save configuration:', error);
-      toast.error('Failed to save configuration. Please try again.');
-    } finally {
-      setIsFormLoading(false);
-    }
-  };
-
-  // Handle configuration test
-  const handleTest = async () => {
-    // Check if there's any configuration to test
-    if (!clientId.trim() && !clientSecret.trim()) {
-      toast.error('Please enter at least a Client ID or Client Secret to test');
-      return;
-    }
-
-    try {
-      const result = await testConfig({});
-      if (result.success) {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-        // Show additional details if available
-        if (result.details?.issues) {
-          console.log('Configuration issues:', result.details.issues);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to test configuration:', error);
-      toast.error('Failed to test configuration. Please try again.');
-    }
-  };
-
-  // Handle configuration reset
-  const handleReset = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to reset the Google Auth configuration? This action cannot be undone.'
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await resetConfig({});
-      toast.success('Google Auth configuration has been reset');
-      // Note: enabled state is preserved and handled separately
-      setClientId('');
-      setClientSecret('');
-      setIsConfigured(false);
-    } catch (error) {
-      console.error('Failed to reset configuration:', error);
-      toast.error('Failed to reset configuration. Please try again.');
-    }
-  };
-
-  const isFullyConfigured = isConfigured && enabled;
+  const handleCopyToClipboard = useCallback(async (text: string) => {
+    await _copyToClipboard(text);
+  }, []);
 
   // Show loading state while data is being fetched
   if (isPageLoading) {
@@ -483,7 +382,7 @@ export default function GoogleAuthConfigPage() {
                   ? 'Enter new client secret (leave empty to keep current)'
                   : 'Enter your Google Client Secret'
               }
-              value={getClientSecretDisplayValue()}
+              value={clientSecretDisplayValue}
               onChange={(e) => setClientSecret(e.target.value)}
               onFocus={handleClientSecretFocus}
               onBlur={handleClientSecretBlur}
@@ -515,7 +414,7 @@ export default function GoogleAuthConfigPage() {
               {redirectUris.map((uri) => (
                 <div key={uri} className="flex gap-2">
                   <Input value={uri} readOnly className="font-mono text-sm" />
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(uri)}>
+                  <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(uri)}>
                     Copy
                   </Button>
                 </div>
@@ -617,4 +516,221 @@ export default function GoogleAuthConfigPage() {
       </Card>
     </div>
   );
+}
+
+/**
+ * Generates redirect URIs based on current domain for OAuth configuration.
+ */
+function _getRedirectUris(): string[] {
+  if (typeof window === 'undefined') return [];
+
+  const { protocol, host } = window.location;
+  const baseUrl = `${protocol}//${host}`;
+
+  return [
+    `${baseUrl}/login/google/callback`,
+    // Add localhost for development if not already localhost
+    ...(host.includes('localhost') ? [] : ['http://localhost:3000/login/google/callback']),
+  ];
+}
+
+/**
+ * Copies text to clipboard and shows success/error toast notification.
+ */
+async function _copyToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  } catch (error) {
+    console.error('Failed to copy to clipboard:', error);
+    toast.error('Failed to copy to clipboard');
+  }
+}
+
+/**
+ * Computes display value for client secret field showing masked value or user input.
+ */
+function _getClientSecretDisplayValue(
+  configData: { hasClientSecret?: boolean } | undefined,
+  clientSecretFocused: boolean,
+  clientSecret: string
+): string {
+  const hasExistingSecret = configData?.hasClientSecret;
+  const hasUserInput = clientSecret.length > 0;
+
+  // If there's an existing secret, field is not focused, and user hasn't entered anything
+  if (hasExistingSecret && !clientSecretFocused && !hasUserInput) {
+    return '••••••••••••••••••••••••••••••••';
+  }
+
+  // Otherwise show the actual input value
+  return clientSecret;
+}
+
+/**
+ * Handles client secret field focus by setting focused state.
+ */
+function _handleClientSecretFocus(setClientSecretFocused: (focused: boolean) => void): void {
+  setClientSecretFocused(true);
+}
+
+/**
+ * Handles client secret field blur by clearing focused state.
+ */
+function _handleClientSecretBlur(setClientSecretFocused: (focused: boolean) => void): void {
+  setClientSecretFocused(false);
+}
+
+/**
+ * Handles enable/disable toggle for Google Authentication.
+ */
+async function _handleToggleEnabled(
+  newEnabled: boolean,
+  toggleEnabled: (params: { enabled: boolean }) => Promise<{ success: boolean; message: string }>,
+  setEnabled: (enabled: boolean) => void
+): Promise<void> {
+  try {
+    await toggleEnabled({ enabled: newEnabled });
+    setEnabled(newEnabled);
+    toast.success(`Google Auth ${newEnabled ? 'enabled' : 'disabled'} successfully`);
+  } catch (error) {
+    console.error('Failed to toggle Google Auth:', error);
+    toast.error('Failed to toggle Google Auth. Please try again.');
+  }
+}
+
+interface _SaveConfigParams {
+  isFormLoading: boolean;
+  setIsFormLoading: (loading: boolean) => void;
+  redirectUris: string[];
+  clientId: string;
+  clientSecret: string;
+  configData: { hasClientSecret?: boolean } | undefined;
+  enabled: boolean;
+  updateConfig: (params: {
+    enabled: boolean;
+    clientId: string;
+    clientSecret: string;
+    redirectUris: string[];
+  }) => Promise<{ success: boolean; message: string }>;
+  setIsConfigured: (configured: boolean) => void;
+}
+
+/**
+ * Handles form submission to save Google OAuth configuration.
+ */
+async function _handleSave(params: _SaveConfigParams): Promise<void> {
+  const {
+    isFormLoading,
+    setIsFormLoading,
+    redirectUris,
+    clientId,
+    clientSecret,
+    configData,
+    enabled,
+    updateConfig,
+    setIsConfigured,
+  } = params;
+
+  if (isFormLoading) return;
+
+  setIsFormLoading(true);
+  try {
+    if (redirectUris.length === 0) {
+      toast.error('No redirect URIs available. Please refresh the page.');
+      return;
+    }
+
+    if (!clientId.trim()) {
+      toast.error('Client ID is required');
+      return;
+    }
+
+    // Check if client secret is required (new configuration or replacing existing)
+    const hasExistingSecret = configData?.hasClientSecret;
+    if (!hasExistingSecret && !clientSecret.trim()) {
+      toast.error('Client Secret is required for new configuration');
+      return;
+    }
+
+    await updateConfig({
+      enabled, // Keep current enabled state
+      clientId: clientId.trim(),
+      clientSecret: clientSecret.trim(), // Backend will preserve existing if empty and one exists
+      redirectUris: redirectUris,
+    });
+
+    toast.success('Google Auth configuration saved successfully');
+    setIsConfigured(true);
+  } catch (error) {
+    console.error('Failed to save configuration:', error);
+    toast.error('Failed to save configuration. Please try again.');
+  } finally {
+    setIsFormLoading(false);
+  }
+}
+
+/**
+ * Handles configuration test to validate OAuth setup.
+ */
+async function _handleTest(
+  clientId: string,
+  clientSecret: string,
+  testConfig: (params: Record<string, never>) => Promise<{
+    success: boolean;
+    message: string;
+    details?: { issues?: string[] };
+  }>
+): Promise<void> {
+  // Check if there's any configuration to test
+  if (!clientId.trim() && !clientSecret.trim()) {
+    toast.error('Please enter at least a Client ID or Client Secret to test');
+    return;
+  }
+
+  try {
+    const result = await testConfig({});
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+      // Show additional details if available
+      if (result.details?.issues) {
+        console.log('Configuration issues:', result.details.issues);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to test configuration:', error);
+    toast.error('Failed to test configuration. Please try again.');
+  }
+}
+
+/**
+ * Handles configuration reset with confirmation dialog.
+ */
+async function _handleReset(
+  resetConfig: (params: Record<string, never>) => Promise<{ success: boolean; message: string }>,
+  setClientId: (id: string) => void,
+  setClientSecret: (secret: string) => void,
+  setIsConfigured: (configured: boolean) => void
+): Promise<void> {
+  if (
+    !confirm(
+      'Are you sure you want to reset the Google Auth configuration? This action cannot be undone.'
+    )
+  ) {
+    return;
+  }
+
+  try {
+    await resetConfig({});
+    toast.success('Google Auth configuration has been reset');
+    // Note: enabled state is preserved and handled separately
+    setClientId('');
+    setClientSecret('');
+    setIsConfigured(false);
+  } catch (error) {
+    console.error('Failed to reset configuration:', error);
+    toast.error('Failed to reset configuration. Please try again.');
+  }
 }

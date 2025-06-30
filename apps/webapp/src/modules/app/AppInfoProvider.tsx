@@ -2,7 +2,7 @@
 
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useQuery } from 'convex/react';
-import React, { createContext, type ReactNode } from 'react';
+import React, { createContext, useMemo, type ReactNode } from 'react';
 
 /**
  * App Info data structure from the backend
@@ -48,25 +48,29 @@ export function AppInfoProvider({ children }: AppInfoProviderProps) {
   // Fetch app info from backend
   const appInfoQuery = useQuery(api.appinfo.get);
 
-  // Extract loading state
-  const isLoading = appInfoQuery === undefined;
+  /**
+   * Memoized context value to prevent unnecessary re-renders.
+   */
+  const contextValue = useMemo((): AppInfoContextValue => {
+    const isLoading = appInfoQuery === undefined;
+    const error = null; // Convex handles errors internally, we could extend this if needed
 
-  // Handle error state (Convex queries don't typically throw, but we prepare for it)
-  const error = null; // Convex handles errors internally, we could extend this if needed
-
-  // Create refetch function (in Convex, this happens automatically, but we provide interface consistency)
-  const refetch = () => {
-    // Convex queries automatically refetch, but we could implement manual refetch logic here if needed
-    // For now, this is mainly for interface consistency
-  };
-
-  // Prepare context value
-  const contextValue: AppInfoContextValue = {
-    appInfo: appInfoQuery || null,
-    isLoading,
-    error,
-    refetch,
-  };
+    return {
+      appInfo: appInfoQuery || null,
+      isLoading,
+      error,
+      refetch: _refetch,
+    };
+  }, [appInfoQuery]);
 
   return <AppInfoContext.Provider value={contextValue}>{children}</AppInfoContext.Provider>;
+}
+
+/**
+ * Refetch function for interface consistency.
+ * In Convex, queries automatically refetch, but we provide this for interface consistency.
+ */
+function _refetch(): void {
+  // Convex queries automatically refetch, but we could implement manual refetch logic here if needed
+  // For now, this is mainly for interface consistency
 }

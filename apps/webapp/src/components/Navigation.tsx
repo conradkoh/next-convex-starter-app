@@ -5,11 +5,23 @@ import { Button } from '@/components/ui/button';
 import { useAuthState } from '@/lib/auth/AuthProvider';
 import { featureFlags } from '@workspace/backend/config/featureFlags';
 import Link from 'next/link';
+import { useMemo } from 'react';
 
+/**
+ * Main navigation header component with authentication state handling.
+ * Shows login button for unauthenticated users and user menu for authenticated users.
+ */
 export function Navigation() {
   const authState = useAuthState();
-  const isAuthenticated = authState?.state === 'authenticated';
-  const isLoading = authState === undefined;
+
+  /**
+   * Memoized authentication status to prevent unnecessary re-renders.
+   */
+  const authStatus = useMemo(() => {
+    const isAuthenticated = authState?.state === 'authenticated';
+    const isLoading = authState === undefined;
+    return { isAuthenticated, isLoading };
+  }, [authState]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -22,21 +34,35 @@ export function Navigation() {
         <nav className="flex items-center justify-between w-full">
           <div className="flex gap-6 text-sm">{/* Navigation links removed */}</div>
           <div className="flex items-center gap-2">
-            {!isLoading &&
-              (isAuthenticated ? (
-                <UserMenu />
-              ) : (
-                !featureFlags.disableLogin && (
-                  <Link href="/login">
-                    <Button size="sm" variant="outline">
-                      Login
-                    </Button>
-                  </Link>
-                )
-              ))}
+            {_renderAuthSection(authStatus.isLoading, authStatus.isAuthenticated)}
           </div>
         </nav>
       </div>
     </header>
   );
+}
+
+/**
+ * Renders the appropriate authentication section based on user state.
+ */
+function _renderAuthSection(isLoading: boolean, isAuthenticated: boolean) {
+  if (isLoading) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <UserMenu />;
+  }
+
+  if (!featureFlags.disableLogin) {
+    return (
+      <Link href="/login">
+        <Button size="sm" variant="outline">
+          Login
+        </Button>
+      </Link>
+    );
+  }
+
+  return null;
 }

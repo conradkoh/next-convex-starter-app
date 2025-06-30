@@ -16,51 +16,9 @@ import {
   query,
 } from './_generated/server';
 
-// Helper function to generate random anonymous usernames
-const generateAnonUsername = (): string => {
-  const adjectives = [
-    'Happy',
-    'Curious',
-    'Cheerful',
-    'Bright',
-    'Calm',
-    'Eager',
-    'Gentle',
-    'Honest',
-    'Kind',
-    'Lively',
-    'Polite',
-    'Proud',
-    'Silly',
-    'Witty',
-    'Brave',
-  ];
-
-  const nouns = [
-    'Penguin',
-    'Tiger',
-    'Dolphin',
-    'Eagle',
-    'Koala',
-    'Panda',
-    'Fox',
-    'Wolf',
-    'Owl',
-    'Rabbit',
-    'Lion',
-    'Bear',
-    'Deer',
-    'Hawk',
-    'Turtle',
-  ];
-
-  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-  const randomNumber = Math.floor(Math.random() * 1000);
-
-  return `${randomAdjective}${randomNoun}${randomNumber}`;
-};
-
+/**
+ * Retrieves the current authentication state for a session.
+ */
 export const getState = query({
   args: {
     ...SessionIdArg,
@@ -107,7 +65,9 @@ export const getState = query({
   },
 });
 
-// Anonymous login mutation
+/**
+ * Creates an anonymous user and establishes a session for them.
+ */
 export const loginAnon = mutation({
   args: {
     ...SessionIdArg,
@@ -128,7 +88,7 @@ export const loginAnon = mutation({
       .first();
 
     // Create an anonymous user
-    const anonName = generateAnonUsername();
+    const anonName = _generateAnonUsername();
     const userId = await ctx.db.insert('users', {
       type: 'anonymous',
       name: anonName,
@@ -152,7 +112,9 @@ export const loginAnon = mutation({
   },
 });
 
-// Logout mutation
+/**
+ * Logs out a user by deleting their session.
+ */
 export const logout = mutation({
   args: {
     ...SessionIdArg,
@@ -172,7 +134,9 @@ export const logout = mutation({
   },
 });
 
-// Update user name mutation
+/**
+ * Updates the display name for an authenticated user.
+ */
 export const updateUserName = mutation({
   args: {
     newName: v.string(),
@@ -232,7 +196,9 @@ export const updateUserName = mutation({
   },
 });
 
-// Get active login code for the current user
+/**
+ * Retrieves the active login code for the current authenticated user.
+ */
 export const getActiveLoginCode = query({
   args: {
     ...SessionIdArg,
@@ -279,7 +245,9 @@ export const getActiveLoginCode = query({
   },
 });
 
-// Generate a login code for cross-device authentication
+/**
+ * Generates a temporary login code for cross-device authentication.
+ */
 export const createLoginCode = mutation({
   args: {
     ...SessionIdArg,
@@ -348,7 +316,9 @@ export const createLoginCode = mutation({
   },
 });
 
-// Verify and use a login code
+/**
+ * Verifies and consumes a login code to authenticate a session.
+ */
 export const verifyLoginCode = mutation({
   args: {
     code: v.string(),
@@ -436,7 +406,9 @@ export const verifyLoginCode = mutation({
   },
 });
 
-// Check if a login code is still valid (not used and not expired)
+/**
+ * Checks if a login code is still valid (exists and not expired).
+ */
 export const checkCodeValidity = query({
   args: {
     code: v.string(),
@@ -471,74 +443,9 @@ export const checkCodeValidity = query({
   },
 });
 
-// Helper internal query to get a session by sessionId
-export const getSessionBySessionId = internalQuery({
-  args: { sessionId: v.string() },
-  handler: async (ctx, args): Promise<Doc<'sessions'> | null> => {
-    return await ctx.db
-      .query('sessions')
-      .withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
-      .first();
-  },
-});
-
-// Helper internal query to get a user by ID
-export const getUserById = internalQuery({
-  args: { userId: v.id('users') },
-  handler: async (ctx, args): Promise<Doc<'users'> | null> => {
-    return await ctx.db.get(args.userId);
-  },
-});
-
-// Helper internal query to find a user by recovery code
-export const getUserByRecoveryCode = internalQuery({
-  args: { recoveryCode: v.string() },
-  handler: async (ctx, args): Promise<Doc<'users'> | null> => {
-    return await ctx.db
-      .query('users')
-      .filter((q) => q.eq(q.field('recoveryCode'), args.recoveryCode))
-      .first();
-  },
-});
-
-// Helper internal mutation to add or update a recovery code on a user
-export const updateUserRecoveryCode = internalMutation({
-  args: { userId: v.id('users'), recoveryCode: v.string() },
-  handler: async (ctx, args): Promise<void> => {
-    await ctx.db.patch(args.userId, { recoveryCode: args.recoveryCode });
-  },
-});
-
-// Helper internal mutation to create a new session for a user
-export const createSession = internalMutation({
-  args: {
-    sessionId: v.string(),
-    userId: v.id('users'),
-    createdAt: v.number(),
-  },
-  handler: async (ctx, args): Promise<Id<'sessions'>> => {
-    return await ctx.db.insert('sessions', {
-      sessionId: args.sessionId,
-      userId: args.userId,
-      createdAt: args.createdAt,
-    });
-  },
-});
-
-// Helper internal mutation to update an existing session
-export const updateSession = internalMutation({
-  args: {
-    sessionId: v.id('sessions'),
-    userId: v.id('users'),
-  },
-  handler: async (ctx, args): Promise<void> => {
-    await ctx.db.patch(args.sessionId, {
-      userId: args.userId,
-    });
-  },
-});
-
-// Action: Get or create a recovery code for the current user
+/**
+ * Gets or creates a recovery code for the current authenticated user.
+ */
 export const getOrCreateRecoveryCode = action({
   args: { ...SessionIdArg },
   handler: async (
@@ -587,7 +494,9 @@ export const getOrCreateRecoveryCode = action({
   },
 });
 
-// Action: Verify a recovery code and return the user if valid
+/**
+ * Verifies a recovery code and authenticates the session if valid.
+ */
 export const verifyRecoveryCode = action({
   args: { recoveryCode: v.string(), ...SessionIdArg },
   handler: async (
@@ -641,7 +550,9 @@ export const verifyRecoveryCode = action({
   },
 });
 
-// Action: Regenerate a new recovery code for the current user (invalidates the old one)
+/**
+ * Regenerates a new recovery code for the current user, invalidating the old one.
+ */
 export const regenerateRecoveryCode = action({
   args: { ...SessionIdArg },
   handler: async (
@@ -684,3 +595,129 @@ export const regenerateRecoveryCode = action({
     return { success: true, recoveryCode: code };
   },
 });
+
+/**
+ * Internal query to retrieve a session by its sessionId.
+ */
+export const getSessionBySessionId = internalQuery({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args): Promise<Doc<'sessions'> | null> => {
+    return await ctx.db
+      .query('sessions')
+      .withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
+      .first();
+  },
+});
+
+/**
+ * Internal query to retrieve a user by their ID.
+ */
+export const getUserById = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args): Promise<Doc<'users'> | null> => {
+    return await ctx.db.get(args.userId);
+  },
+});
+
+/**
+ * Internal query to find a user by their recovery code.
+ */
+export const getUserByRecoveryCode = internalQuery({
+  args: { recoveryCode: v.string() },
+  handler: async (ctx, args): Promise<Doc<'users'> | null> => {
+    return await ctx.db
+      .query('users')
+      .filter((q) => q.eq(q.field('recoveryCode'), args.recoveryCode))
+      .first();
+  },
+});
+
+/**
+ * Internal mutation to add or update a recovery code on a user.
+ */
+export const updateUserRecoveryCode = internalMutation({
+  args: { userId: v.id('users'), recoveryCode: v.string() },
+  handler: async (ctx, args): Promise<void> => {
+    await ctx.db.patch(args.userId, { recoveryCode: args.recoveryCode });
+  },
+});
+
+/**
+ * Internal mutation to create a new session for a user.
+ */
+export const createSession = internalMutation({
+  args: {
+    sessionId: v.string(),
+    userId: v.id('users'),
+    createdAt: v.number(),
+  },
+  handler: async (ctx, args): Promise<Id<'sessions'>> => {
+    return await ctx.db.insert('sessions', {
+      sessionId: args.sessionId,
+      userId: args.userId,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Internal mutation to update an existing session with a new user.
+ */
+export const updateSession = internalMutation({
+  args: {
+    sessionId: v.id('sessions'),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    await ctx.db.patch(args.sessionId, {
+      userId: args.userId,
+    });
+  },
+});
+
+/**
+ * Generates a random anonymous username from predefined adjectives and nouns.
+ */
+function _generateAnonUsername(): string {
+  const adjectives = [
+    'Happy',
+    'Curious',
+    'Cheerful',
+    'Bright',
+    'Calm',
+    'Eager',
+    'Gentle',
+    'Honest',
+    'Kind',
+    'Lively',
+    'Polite',
+    'Proud',
+    'Silly',
+    'Witty',
+    'Brave',
+  ];
+
+  const nouns = [
+    'Penguin',
+    'Tiger',
+    'Dolphin',
+    'Eagle',
+    'Koala',
+    'Panda',
+    'Fox',
+    'Wolf',
+    'Owl',
+    'Rabbit',
+    'Lion',
+    'Bear',
+    'Deer',
+    'Hawk',
+    'Turtle',
+  ];
+
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  const randomNumber = Math.floor(Math.random() * 1000);
+
+  return `${randomAdjective}${randomNoun}${randomNumber}`;
+}
