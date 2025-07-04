@@ -167,9 +167,7 @@ export const loginWithGoogle = mutation({
                 message: 'User exists with different authentication type',
               });
             }
-
             await ctx.db.patch(existingUser._id, {
-              name: profile.name,
               email: profile.email,
               google: profile,
             });
@@ -191,14 +189,10 @@ export const loginWithGoogle = mutation({
               });
             }
 
-            // Generate username from email for the full user account
-            const username = profile.email.replace('@', '_').replace(/\./g, '_').toLowerCase();
-
             // Create new full user with Google profile
             return await ctx.db.insert('users', {
               type: 'full',
               name: profile.name,
-              username: username,
               email: profile.email,
               google: profile,
               accessLevel: 'user', // Default access level for new Google users
@@ -612,8 +606,7 @@ async function _convertAnonymousToFullUser(
       username: uniqueUsername,
       email: googleProfile.email,
       google: googleProfile,
-      // Preserve existing fields
-      name: anonymousUser.name,
+      name: googleProfile.name,
       recoveryCode: anonymousUser.recoveryCode,
       accessLevel: anonymousUser.accessLevel,
     });
@@ -624,8 +617,7 @@ async function _convertAnonymousToFullUser(
       username: username,
       email: googleProfile.email,
       google: googleProfile,
-      // Preserve existing fields
-      name: anonymousUser.name,
+      name: googleProfile.name,
       recoveryCode: anonymousUser.recoveryCode,
       accessLevel: anonymousUser.accessLevel,
     });
