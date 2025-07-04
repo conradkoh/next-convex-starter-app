@@ -479,9 +479,19 @@ export const connectGoogle = mutation({
 
     // Check if user already has Google connected
     if (currentUser.google) {
+      // If it's the same Google account, return success (idempotent operation)
+      if (currentUser.google.id === profile.id) {
+        return {
+          success: true,
+          message: 'Google account is already connected to this user',
+          connectedEmail: profile.email,
+          alreadyConnected: true,
+        };
+      }
+      // Different Google account is already connected
       throw new ConvexError({
         code: 'ALREADY_CONNECTED',
-        message: 'A Google account is already connected to this user',
+        message: 'A different Google account is already connected to this user',
       });
     }
 

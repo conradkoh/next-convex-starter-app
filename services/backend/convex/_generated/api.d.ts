@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as appinfo from "../appinfo.js";
 import type * as attendance from "../attendance.js";
+import type * as auth_google from "../auth/google.js";
 import type * as auth from "../auth.js";
 import type * as checklists from "../checklists.js";
 import type * as cleanupTasks from "../cleanupTasks.js";
@@ -37,6 +38,7 @@ import type * as system_thirdPartyAuthConfig from "../system/thirdPartyAuthConfi
 declare const fullApi: ApiFromModules<{
   appinfo: typeof appinfo;
   attendance: typeof attendance;
+  "auth/google": typeof auth_google;
   auth: typeof auth;
   checklists: typeof checklists;
   cleanupTasks: typeof cleanupTasks;
