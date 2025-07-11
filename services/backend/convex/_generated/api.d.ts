@@ -21,7 +21,6 @@ import type * as checklists from "../checklists.js";
 import type * as cleanupTasks from "../cleanupTasks.js";
 import type * as crypto from "../crypto.js";
 import type * as discussions from "../discussions.js";
-import type * as googleAuth from "../googleAuth.js";
 import type * as migration from "../migration.js";
 import type * as presentations from "../presentations.js";
 import type * as serviceDesk from "../serviceDesk.js";
@@ -44,7 +43,6 @@ declare const fullApi: ApiFromModules<{
   cleanupTasks: typeof cleanupTasks;
   crypto: typeof crypto;
   discussions: typeof discussions;
-  googleAuth: typeof googleAuth;
   migration: typeof migration;
   presentations: typeof presentations;
   serviceDesk: typeof serviceDesk;

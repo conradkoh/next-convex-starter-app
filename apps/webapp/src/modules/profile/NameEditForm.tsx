@@ -66,7 +66,7 @@ export function NameEditForm() {
 
   // Convex mutations
   const updateUserName = useSessionMutation(api.auth.updateUserName);
-  const disconnectGoogle = useSessionMutation(api.googleAuth.disconnectGoogle);
+  const disconnectGoogle = useSessionMutation(api.auth.google.disconnectGoogle);
   const createLoginRequest = useSessionMutation(api.auth.google.createLoginRequest);
 
   // Initialize name when user data is available

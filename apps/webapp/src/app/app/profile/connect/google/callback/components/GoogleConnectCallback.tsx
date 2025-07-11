@@ -37,8 +37,8 @@ export const GoogleConnectCallback = ({ code, state }: GoogleConnectCallbackProp
   const [hasProcessed, setHasProcessed] = useState(false);
 
   // Convex functions
-  const exchangeGoogleCode = useAction(api.googleAuth.exchangeGoogleCode);
-  const connectGoogle = useSessionMutation(api.googleAuth.connectGoogle);
+  const exchangeGoogleCode = useAction(api.auth.google.exchangeGoogleCode);
+  const connectGoogle = useSessionMutation(api.auth.google.connectGoogle);
 
   /**
    * Processes the OAuth callback with the provided parameters.

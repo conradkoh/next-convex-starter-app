@@ -24,8 +24,8 @@ export const GoogleCallback = ({ code, state, redirectPath = '/app' }: GoogleCal
   const [isProcessing, setIsProcessing] = useState(true);
   const [hasProcessed, setHasProcessed] = useState(false);
 
-  const exchangeGoogleCode = useAction(api.googleAuth.exchangeGoogleCode);
-  const loginWithGoogle = useSessionMutation(api.googleAuth.loginWithGoogle);
+  const exchangeGoogleCode = useAction(api.auth.google.exchangeGoogleCode);
+  const loginWithGoogle = useSessionMutation(api.auth.google.loginWithGoogle);
 
   /**
    * Processes the OAuth callback with the provided parameters.
