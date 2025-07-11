@@ -1,6 +1,6 @@
 import { httpRouter } from 'convex/server';
 import type { SessionId } from 'convex-helpers/server/sessions';
-import { api, internal } from './_generated/api';
+import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
 
@@ -27,9 +27,11 @@ http.route({
 
     try {
       // Get the login request to extract sessionId
-      const loginRequest = await ctx.runQuery(internal.auth.google.getLoginRequest, {
+      console.log('here 1');
+      const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
         loginRequestId: state as Id<'auth_loginRequests'>,
       });
+      console.log('here 2');
       if (!loginRequest || loginRequest.provider !== 'google') {
         throw new Error('Invalid login request');
       }
@@ -96,7 +98,7 @@ http.route({
 
     try {
       // Get the login request to extract sessionId
-      const loginRequest = await ctx.runQuery(internal.auth.google.getLoginRequest, {
+      const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
         loginRequestId: state as Id<'auth_loginRequests'>,
       });
       if (!loginRequest || loginRequest.provider !== 'google') {
@@ -114,7 +116,7 @@ http.route({
       // Connect Google account to existing user - using mutation
       const connectResult = await ctx.runMutation(api.googleAuth.connectGoogle, {
         profile,
-        sessionId: loginRequest.sessionId as any, // SessionId type casting
+        sessionId: loginRequest.sessionId as SessionId, // SessionId type casting
       });
       if (!connectResult.success) throw new Error('Connect failed');
 

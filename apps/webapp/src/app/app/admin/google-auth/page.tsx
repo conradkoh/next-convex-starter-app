@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@workspace/backend/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import {
   useSessionAction,
   useSessionMutation,
@@ -52,8 +53,11 @@ export default function GoogleAuthConfigPage() {
   const testConfig = useSessionAction(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
   const resetConfig = useSessionMutation(api.system.thirdPartyAuthConfig.resetGoogleAuthConfig);
 
+  // Get Google auth config for redirect URIs (same as login page)
+  const googleConfig = useQuery(api.auth.google.getConfig);
+
   // Computed values
-  const redirectUris = useMemo(() => _getRedirectUris(), []);
+  const redirectUris = useMemo(() => _getRedirectUris(googleConfig), [googleConfig]);
   const isConfigLoading = configData === undefined;
   const isPageLoading = appInfoLoading || isConfigLoading;
   const isFullyConfigured = isConfigured && enabled;
@@ -597,25 +601,15 @@ export default function GoogleAuthConfigPage() {
 }
 
 /**
- * Generates redirect URIs based on current domain for OAuth configuration.
+ * Gets redirect URIs from backend configuration for OAuth configuration.
  */
-function _getRedirectUris(): string[] {
-  if (typeof window === 'undefined') return [];
+function _getRedirectUris(
+  googleConfig: { redirectUris?: { login: string; connect: string } } | null | undefined
+): string[] {
+  if (!googleConfig?.redirectUris) return [];
 
-  const { protocol, host } = window.location;
-  const baseUrl = `${protocol}//${host}`;
-
-  return [
-    `${baseUrl}/login/google/callback`,
-    `${baseUrl}/app/profile/connect/google/callback`,
-    // Add localhost for development if not already localhost
-    ...(host.includes('localhost')
-      ? []
-      : [
-          'http://localhost:3000/login/google/callback',
-          'http://localhost:3000/app/profile/connect/google/callback',
-        ]),
-  ];
+  const { login, connect } = googleConfig.redirectUris;
+  return [login, connect];
 }
 
 /**
