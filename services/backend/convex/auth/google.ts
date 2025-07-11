@@ -3,7 +3,7 @@ import { mutation, query } from '../_generated/server';
 
 /**
  * Gets Google authentication configuration for client use.
- * Returns public configuration data (client ID, enabled status, and redirect URIs for login/connect).
+ * Returns public configuration data (client ID and enabled status).
  */
 export const getConfig = query({
   args: {},
@@ -14,24 +14,16 @@ export const getConfig = query({
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 
-    const base = process.env.CONVEX_SITE_URL;
-    const redirectUris = {
-      login: `${base}/auth/google/callback`,
-      connect: `${base}/app/profile/connect/google/callback`,
-    };
-
     if (!config) {
       return {
         enabled: false,
         clientId: null,
-        redirectUris,
       };
     }
 
     return {
       enabled: config.enabled,
       clientId: config.clientId || null,
-      redirectUris,
     };
   },
 });
@@ -43,8 +35,13 @@ export const getConfig = query({
 export const createLoginRequest = mutation({
   args: {
     sessionId: v.string(),
+    redirectUri: v.string(),
   },
   handler: async (ctx, args) => {
+    if (!args.redirectUri) {
+      throw new Error('redirectUri is required');
+    }
+
     const now = Date.now();
     const expiresAt = now + 15 * 60 * 1000; // 15 minutes from now
     const id = await ctx.db.insert('auth_loginRequests', {
@@ -53,6 +50,7 @@ export const createLoginRequest = mutation({
       createdAt: now,
       expiresAt,
       provider: 'google',
+      redirectUri: args.redirectUri,
     });
     return { loginId: id };
   },
@@ -88,22 +86,6 @@ export const getLoginRequest = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.loginRequestId);
-  },
-});
-
-/**
- * Query to get the correct Google OAuth redirect URI for login or connect flows.
- */
-export const getGoogleRedirectUri = query({
-  args: {
-    type: v.union(v.literal('login'), v.literal('connect')),
-  },
-  handler: async (_ctx, args) => {
-    const base = process.env.CONVEX_SITE_URL;
-    if (args.type === 'login') {
-      return { redirectUri: `${base}/auth/google/callback` };
-    }
-    return { redirectUri: `${base}/app/profile/connect/google/callback` };
   },
 });
 

@@ -35,15 +35,6 @@ interface _DisconnectDialogState {
 }
 
 /**
- * Generates a cryptographically secure random state for CSRF protection.
- */
-function _generateState(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-/**
  * Name edit form component allowing users to update their display name.
  * Supports different user types (Google, anonymous, full account) with appropriate messaging.
  */
@@ -76,6 +67,7 @@ export function NameEditForm() {
   // Convex mutations
   const updateUserName = useSessionMutation(api.auth.updateUserName);
   const disconnectGoogle = useSessionMutation(api.googleAuth.disconnectGoogle);
+  const createLoginRequest = useSessionMutation(api.auth.google.createLoginRequest);
 
   // Initialize name when user data is available
   useEffect(() => {
@@ -132,16 +124,23 @@ export function NameEditForm() {
   const handleGoogleConnect = useCallback(async () => {
     setIsConnectingGoogle(true);
     try {
-      const state = _generateState();
-      sessionStorage.setItem('google_oauth_connect_state', state);
+      // Generate redirect URI from current window location
+      if (typeof window === 'undefined') {
+        throw new Error('Window is not available');
+      }
 
-      const redirectUri = `${window.location.origin}/app/profile/connect/google/callback`;
+      const redirectUri = `${window.location.origin}/api/app/profile/connect/google/callback`;
+
+      // Create a login request in the backend for connect flow
+      const result = await createLoginRequest({ redirectUri });
+
+      // Generate the Google OAuth URL using the login request ID as state
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
         client_id: googleAuthAvailable?.clientId || '',
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: 'openid email profile',
-        state,
+        state: result.loginId,
         access_type: 'offline',
         prompt: 'consent',
       })}`;
@@ -152,7 +151,7 @@ export function NameEditForm() {
       toast.error('Failed to connect Google account');
       setIsConnectingGoogle(false);
     }
-  }, [googleAuthAvailable?.clientId]);
+  }, [googleAuthAvailable?.clientId, createLoginRequest]);
 
   // Handle disconnect confirmation
   const showDisconnectConfirmation = useCallback((providerId: string, providerName: string) => {

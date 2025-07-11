@@ -29,8 +29,15 @@ export function useGoogleLoginFlow() {
 
     setIsLoading(true);
     try {
+      // Generate redirect URI from current window location
+      if (typeof window === 'undefined') {
+        throw new Error('Window is not available');
+      }
+
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+
       // Create a login request in the backend
-      const result = await createLoginRequest();
+      const result = await createLoginRequest({ redirectUri });
 
       // Redirect to the login page with the loginRequestId
       router.push(`/login/${result.loginId}`);

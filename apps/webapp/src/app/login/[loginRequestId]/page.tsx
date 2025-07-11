@@ -45,7 +45,9 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
   const buildGoogleOAuthUrl = useCallback(async () => {
     if (!googleConfig?.enabled || !googleConfig?.clientId || !loginRequestId) return null;
 
-    const redirectUri = googleConfig.redirectUris.login;
+    // Generate redirect URI from current window location
+    if (typeof window === 'undefined') return null;
+    const redirectUri = `${window.location.origin}/api/auth/google/callback`;
 
     const params = new URLSearchParams({
       client_id: googleConfig.clientId,

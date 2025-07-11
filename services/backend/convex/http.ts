@@ -22,16 +22,11 @@ http.route({
       });
     }
 
-    // Build the redirect URI (must match what was sent to Google)
-    const redirectUri = `${process.env.CONVEX_SITE_URL}/auth/google/callback`;
-
     try {
-      // Get the login request to extract sessionId
-      console.log('here 1');
+      // Get the login request to extract sessionId and redirectUri
       const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
         loginRequestId: state as Id<'auth_loginRequests'>,
       });
-      console.log('here 2');
       if (!loginRequest || loginRequest.provider !== 'google') {
         throw new Error('Invalid login request');
       }
@@ -40,6 +35,12 @@ http.route({
       const now = Date.now();
       if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
         throw new Error('Login request expired');
+      }
+
+      // Use the redirect URI that was stored with the login request
+      const redirectUri = loginRequest.redirectUri;
+      if (!redirectUri) {
+        throw new Error('No redirect URI found in login request');
       }
 
       // Exchange code for Google profile
@@ -99,11 +100,8 @@ http.route({
       });
     }
 
-    // Build the redirect URI
-    const redirectUri = `${process.env.CONVEX_SITE_URL}/app/profile/connect/google/callback`;
-
     try {
-      // Get the login request to extract sessionId
+      // Get the login request to extract sessionId and redirectUri
       const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
         loginRequestId: state as Id<'auth_loginRequests'>,
       });
@@ -115,6 +113,12 @@ http.route({
       const now = Date.now();
       if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
         throw new Error('Login request expired');
+      }
+
+      // Use the redirect URI that was stored with the login request
+      const redirectUri = loginRequest.redirectUri;
+      if (!redirectUri) {
+        throw new Error('No redirect URI found in login request');
       }
 
       // Exchange code for Google profile

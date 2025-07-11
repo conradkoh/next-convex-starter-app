@@ -53,11 +53,17 @@ export default function GoogleAuthConfigPage() {
   const testConfig = useSessionAction(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
   const resetConfig = useSessionMutation(api.system.thirdPartyAuthConfig.resetGoogleAuthConfig);
 
-  // Get Google auth config for redirect URIs (same as login page)
-  const googleConfig = useQuery(api.auth.google.getConfig);
+  // Get Google auth config for client ID and enabled status
+  const _googleConfig = useQuery(api.auth.google.getConfig);
 
-  // Computed values
-  const redirectUris = useMemo(() => _getRedirectUris(googleConfig), [googleConfig]);
+  // Computed values - generate redirect URIs on frontend
+  const redirectUris = useMemo(() => {
+    if (typeof window === 'undefined') return [];
+    return [
+      `${window.location.origin}/api/auth/google/callback`,
+      `${window.location.origin}/api/app/profile/connect/google/callback`,
+    ];
+  }, []);
   const isConfigLoading = configData === undefined;
   const isPageLoading = appInfoLoading || isConfigLoading;
   const isFullyConfigured = isConfigured && enabled;
@@ -598,18 +604,6 @@ export default function GoogleAuthConfigPage() {
       </Card>
     </div>
   );
-}
-
-/**
- * Gets redirect URIs from backend configuration for OAuth configuration.
- */
-function _getRedirectUris(
-  googleConfig: { redirectUris?: { login: string; connect: string } } | null | undefined
-): string[] {
-  if (!googleConfig?.redirectUris) return [];
-
-  const { login, connect } = googleConfig.redirectUris;
-  return [login, connect];
 }
 
 /**
