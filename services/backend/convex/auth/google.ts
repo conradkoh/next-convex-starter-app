@@ -93,44 +93,6 @@ export const getLoginRequest = query({
 });
 
 /**
- * Query to get expired login requests for cleanup.
- */
-export const getExpiredLoginRequests = query({
-  args: {},
-  handler: async (ctx, _args) => {
-    const now = Date.now();
-    return await ctx.db
-      .query('auth_loginRequests')
-      .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
-      .collect();
-  },
-});
-
-/**
- * Mutation to clean up expired login requests.
- */
-export const cleanupExpiredLoginRequests = mutation({
-  args: {},
-  handler: async (ctx, _args) => {
-    const now = Date.now();
-    const expiredRequests = await ctx.db
-      .query('auth_loginRequests')
-      .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
-      .collect();
-
-    // Delete expired requests
-    for (const request of expiredRequests) {
-      await ctx.db.delete(request._id);
-    }
-
-    return {
-      success: true,
-      deletedCount: expiredRequests.length,
-    };
-  },
-});
-
-/**
  * Handles Google OAuth callback for login flow.
  * Processes the OAuth code, exchanges it for a profile, logs in the user, and marks the request as completed.
  */
