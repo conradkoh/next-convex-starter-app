@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation, query } from '../_generated/server';
+import { internalQuery, mutation, query } from '../_generated/server';
 
 /**
  * Gets Google authentication configuration for client use.
@@ -67,5 +67,17 @@ export const completeLoginRequest = mutation({
       error: args.error,
     });
     return { success: true };
+  },
+});
+
+/**
+ * Internal query to get a login request by ID.
+ */
+export const getLoginRequest = internalQuery({
+  args: {
+    loginRequestId: v.id('auth_loginRequests'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.loginRequestId);
   },
 });

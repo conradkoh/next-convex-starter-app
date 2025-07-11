@@ -1,4 +1,7 @@
 import { httpRouter } from 'convex/server';
+import type { SessionId } from 'convex-helpers/server/sessions';
+import { api, internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
 
 const http = httpRouter();
@@ -7,13 +10,68 @@ const http = httpRouter();
 http.route({
   path: '/auth/google/callback',
   method: 'GET',
-  handler: httpAction(async (_ctx, request) => {
-    // Placeholder: parse query params (code, state, etc.)
+  handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
-    // TODO: Exchange code for tokens, handle user login/creation
-    return new Response(`Received code: ${code}, state: ${state}`, { status: 200 });
+    const state = url.searchParams.get('state'); // state is now loginRequestId
+
+    if (!code || !state) {
+      return new Response('<html><body>Missing required parameters.</body></html>', {
+        status: 400,
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
+
+    // Build the redirect URI (must match what was sent to Google)
+    const redirectUri = `${process.env.CONVEX_SITE_URL}/auth/google/callback`;
+
+    try {
+      // Get the login request to extract sessionId
+      const loginRequest = await ctx.runQuery(internal.auth.google.getLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+      });
+      if (!loginRequest || loginRequest.provider !== 'google') {
+        throw new Error('Invalid login request');
+      }
+
+      // Exchange code for Google profile
+      const { profile, success } = await ctx.runAction(api.googleAuth.exchangeGoogleCode, {
+        code,
+        state,
+        redirectUri,
+      });
+      if (!success) throw new Error('Google OAuth failed');
+
+      // Find or create user and update session - using mutation
+      const loginResult = await ctx.runMutation(api.googleAuth.loginWithGoogle, {
+        profile,
+        sessionId: loginRequest.sessionId as SessionId, // SessionId type casting
+      });
+      if (!loginResult.success) throw new Error('Login failed');
+
+      // Mark login request as completed
+      await ctx.runMutation(api.auth.google.completeLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+        status: 'completed',
+      });
+
+      // Return HTML/JS to close the window
+      return new Response(
+        '<html><body><script>window.close();</script>Login successful. You may close this window.</body></html>',
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      );
+    } catch (err) {
+      // Mark login request as failed
+      await ctx.runMutation(api.auth.google.completeLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+        status: 'failed',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+      return new Response(
+        `<html><body>Login failed: ${err instanceof Error ? err.message : 'Unknown error'}</body></html>`,
+        { status: 500, headers: { 'Content-Type': 'text/html' } }
+      );
+    }
   }),
 });
 
@@ -21,13 +79,68 @@ http.route({
 http.route({
   path: '/app/profile/connect/google/callback',
   method: 'GET',
-  handler: httpAction(async (_ctx, request) => {
-    // Placeholder: parse query params (code, state, etc.)
+  handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
-    // TODO: Exchange code for tokens, handle account linking
-    return new Response(`Received code: ${code}, state: ${state}`, { status: 200 });
+    const state = url.searchParams.get('state'); // state is now loginRequestId
+
+    if (!code || !state) {
+      return new Response('<html><body>Missing required parameters.</body></html>', {
+        status: 400,
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
+
+    // Build the redirect URI
+    const redirectUri = `${process.env.CONVEX_SITE_URL}/app/profile/connect/google/callback`;
+
+    try {
+      // Get the login request to extract sessionId
+      const loginRequest = await ctx.runQuery(internal.auth.google.getLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+      });
+      if (!loginRequest || loginRequest.provider !== 'google') {
+        throw new Error('Invalid login request');
+      }
+
+      // Exchange code for Google profile
+      const { profile, success } = await ctx.runAction(api.googleAuth.exchangeGoogleCode, {
+        code,
+        state,
+        redirectUri,
+      });
+      if (!success) throw new Error('Google OAuth failed');
+
+      // Connect Google account to existing user - using mutation
+      const connectResult = await ctx.runMutation(api.googleAuth.connectGoogle, {
+        profile,
+        sessionId: loginRequest.sessionId as any, // SessionId type casting
+      });
+      if (!connectResult.success) throw new Error('Connect failed');
+
+      // Mark login request as completed
+      await ctx.runMutation(api.auth.google.completeLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+        status: 'completed',
+      });
+
+      // Return HTML/JS to close the window
+      return new Response(
+        '<html><body><script>window.close();</script>Account connected successfully. You may close this window.</body></html>',
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      );
+    } catch (err) {
+      // Mark login request as failed
+      await ctx.runMutation(api.auth.google.completeLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+        status: 'failed',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+      return new Response(
+        `<html><body>Connect failed: ${err instanceof Error ? err.message : 'Unknown error'}</body></html>`,
+        { status: 500, headers: { 'Content-Type': 'text/html' } }
+      );
+    }
   }),
 });
 
