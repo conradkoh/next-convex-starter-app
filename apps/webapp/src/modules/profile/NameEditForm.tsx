@@ -28,6 +28,16 @@ import {
 import { useAuthState, useCurrentUser } from '@/modules/auth/AuthProvider';
 import { ConnectButton, GoogleIcon } from '@/modules/auth/ConnectButton';
 
+// Helper function to create OAuth state for connect flow
+function createConnectOAuthState(connectRequestId: string): string {
+  const state = {
+    flowType: 'connect' as const,
+    requestId: connectRequestId,
+    version: 'v1' as const,
+  };
+  return encodeURIComponent(JSON.stringify(state));
+}
+
 interface _DisconnectDialogState {
   isOpen: boolean;
   providerId: string;
@@ -69,30 +79,30 @@ export function NameEditForm() {
   // Convex mutations
   const updateUserName = useSessionMutation(api.auth.updateUserName);
   const disconnectGoogle = useSessionMutation(api.auth.google.disconnectGoogle);
-  const createLoginRequest = useSessionMutation(api.auth.google.createLoginRequest);
+  const createConnectRequest = useSessionMutation(api.auth.google.createConnectRequest);
 
-  // Query to poll login request status for connect flow
-  const connectLoginRequest = useQuery(
-    api.auth.google.getLoginRequest,
+  // Query to poll connect request status for connect flow
+  const connectRequest = useQuery(
+    api.auth.google.getConnectRequest,
     connectLoginRequestId
-      ? { loginRequestId: connectLoginRequestId as Id<'auth_loginRequests'> }
+      ? { connectRequestId: connectLoginRequestId as Id<'auth_connectRequests'> }
       : 'skip'
   );
 
-  // Effect to handle connect login request status changes
+  // Effect to handle connect request status changes
   useEffect(() => {
-    if (!connectLoginRequest || !isConnectingGoogle) return;
+    if (!connectRequest || !isConnectingGoogle) return;
 
-    if (connectLoginRequest.status === 'completed') {
+    if (connectRequest.status === 'completed') {
       toast.success('Google account connected successfully!');
       setIsConnectingGoogle(false);
       setConnectLoginRequestId(null);
-    } else if (connectLoginRequest.status === 'failed') {
-      toast.error(connectLoginRequest.error || 'Failed to connect Google account');
+    } else if (connectRequest.status === 'failed') {
+      toast.error(connectRequest.error || 'Failed to connect Google account');
       setIsConnectingGoogle(false);
       setConnectLoginRequestId(null);
     }
-  }, [connectLoginRequest, isConnectingGoogle]);
+  }, [connectRequest, isConnectingGoogle]);
 
   // Initialize name when user data is available
   useEffect(() => {
@@ -156,19 +166,20 @@ export function NameEditForm() {
 
       const redirectUri = `${window.location.origin}/api/auth/google/callback`;
 
-      // Create a login request in the backend for connect flow
-      const result = await createLoginRequest({ redirectUri });
+      // Create a connect request in the backend for connect flow
+      const result = await createConnectRequest({ redirectUri });
 
-      // Set the login request ID for polling
-      setConnectLoginRequestId(result.loginId);
+      // Set the connect request ID for polling
+      setConnectLoginRequestId(result.connectId);
 
-      // Generate the Google OAuth URL using the login request ID as state
+      // Generate the Google OAuth URL using the structured state parameter
+      const state = createConnectOAuthState(result.connectId);
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
         client_id: googleAuthAvailable?.clientId || '',
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: 'openid email profile',
-        state: result.loginId,
+        state: state,
         access_type: 'offline',
         prompt: 'consent',
       })}`;
@@ -214,7 +225,7 @@ export function NameEditForm() {
       setIsConnectingGoogle(false);
       setConnectLoginRequestId(null);
     }
-  }, [googleAuthAvailable?.clientId, createLoginRequest]);
+  }, [googleAuthAvailable?.clientId, createConnectRequest]);
 
   // Handle disconnect confirmation
   const showDisconnectConfirmation = useCallback((providerId: string, providerName: string) => {

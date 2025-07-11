@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 import type { SessionId } from 'convex-helpers/server/sessions';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
+import { z } from 'zod';
 import { featureFlags } from '../../config/featureFlags';
 import { api } from '../_generated/api';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -36,6 +37,63 @@ interface _GoogleTokenResponse {
 
 const _GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const _GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
+
+// OAuth State Parameter Schema - makes flow type explicit and type-safe
+const OAuthStateSchema = z.object({
+  flowType: z.enum(['login', 'connect']),
+  requestId: z.string(), // ID of the login or connect request
+  version: z.literal('v1'), // Schema version for future compatibility
+});
+
+type OAuthState = z.infer<typeof OAuthStateSchema>;
+
+/**
+ * Encodes OAuth state into a URL-safe JSON string
+ */
+function _encodeOAuthState(state: OAuthState): string {
+  return encodeURIComponent(JSON.stringify(state));
+}
+
+/**
+ * Decodes and validates OAuth state from URL-encoded JSON string
+ */
+function _decodeOAuthState(encodedState: string): OAuthState {
+  try {
+    const decoded = decodeURIComponent(encodedState);
+    const parsed = JSON.parse(decoded);
+    return OAuthStateSchema.parse(parsed);
+  } catch (error) {
+    console.error('Failed to decode OAuth state:', { encodedState, error });
+    throw new ConvexError({
+      code: 'INVALID_STATE',
+      message: 'Invalid or malformed OAuth state parameter',
+    });
+  }
+}
+
+/**
+ * Creates a structured OAuth state parameter for login flow
+ */
+function _createLoginOAuthState(loginRequestId: string): string {
+  const state: OAuthState = {
+    flowType: 'login',
+    requestId: loginRequestId,
+    version: 'v1',
+  };
+  return _encodeOAuthState(state);
+}
+
+/**
+ * Creates a structured OAuth state parameter for connect flow
+ */
+function _createConnectOAuthState(connectRequestId: string): string {
+  const state: OAuthState = {
+    flowType: 'connect',
+    requestId: connectRequestId,
+    version: 'v1',
+  };
+  return _encodeOAuthState(state);
+}
 
 /**
  * Gets Google authentication configuration for client use.
@@ -535,6 +593,34 @@ export const createLoginRequest = mutation({
 });
 
 /**
+ * Mutation to create a new connect request for third-party account linking (e.g., Google OAuth).
+ * Returns the id of the inserted connect request as connectId.
+ */
+export const createConnectRequest = mutation({
+  args: {
+    sessionId: v.string(),
+    redirectUri: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.redirectUri) {
+      throw new Error('redirectUri is required');
+    }
+
+    const now = Date.now();
+    const expiresAt = now + 15 * 60 * 1000; // 15 minutes from now
+    const id = await ctx.db.insert('auth_connectRequests', {
+      sessionId: args.sessionId,
+      status: 'pending',
+      createdAt: now,
+      expiresAt,
+      provider: 'google',
+      redirectUri: args.redirectUri,
+    });
+    return { connectId: id };
+  },
+});
+
+/**
  * Mutation to complete or fail a login request after OAuth callback.
  * Updates status, completedAt, and error fields.
  */
@@ -556,6 +642,27 @@ export const completeLoginRequest = mutation({
 });
 
 /**
+ * Mutation to complete or fail a connect request after OAuth callback.
+ * Updates status, completedAt, and error fields.
+ */
+export const completeConnectRequest = mutation({
+  args: {
+    connectRequestId: v.id('auth_connectRequests'),
+    status: v.union(v.literal('completed'), v.literal('failed')),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const completedAt = Date.now();
+    await ctx.db.patch(args.connectRequestId, {
+      status: args.status,
+      completedAt,
+      error: args.error,
+    });
+    return { success: true };
+  },
+});
+
+/**
  * Query to get a login request by ID (public for frontend polling).
  */
 export const getLoginRequest = query({
@@ -568,44 +675,98 @@ export const getLoginRequest = query({
 });
 
 /**
- * Unified Google OAuth callback handler that determines flow type based on redirectUri.
- * Handles both login and profile connect flows through a single endpoint.
+ * Query to get a connect request by ID (public for frontend polling).
+ */
+export const getConnectRequest = query({
+  args: {
+    connectRequestId: v.id('auth_connectRequests'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.connectRequestId);
+  },
+});
+
+/**
+ * Improved Google OAuth callback handler with explicit flow detection via structured state.
+ * Handles both login and connect flows with proper validation and type safety.
  */
 export const handleGoogleCallback = action({
   args: {
     code: v.string(),
-    state: v.string(), // This is the loginRequestId
+    state: v.string(), // Structured OAuth state with explicit flow type
   },
   handler: async (ctx, args) => {
     const { code, state } = args;
 
     try {
-      // Get the login request to extract sessionId, redirectUri, and determine flow type
-      const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
-        loginRequestId: state as Id<'auth_loginRequests'>,
-      });
-      if (!loginRequest || loginRequest.provider !== 'google') {
-        throw new Error('Invalid login request');
+      // Decode and validate the structured state parameter
+      const oauthState = _decodeOAuthState(state);
+      const { flowType, requestId } = oauthState;
+
+      if (flowType === 'connect') {
+        // Handle connect flow
+        const connectRequest = await ctx.runQuery(api.auth.google.getConnectRequest, {
+          connectRequestId: requestId as Id<'auth_connectRequests'>,
+        });
+
+        if (!connectRequest || connectRequest.provider !== 'google') {
+          throw new Error('Invalid connect request');
+        }
+
+        // SECURITY: Check if connect request has expired
+        const now = Date.now();
+        if (connectRequest.expiresAt && now > connectRequest.expiresAt) {
+          throw new Error('Connect request expired');
+        }
+
+        const redirectUri = connectRequest.redirectUri;
+        if (!redirectUri) {
+          throw new Error('No redirect URI found in connect request');
+        }
+
+        // Exchange code for Google profile
+        const { profile, success } = await ctx.runAction(api.auth.google.exchangeGoogleCode, {
+          code,
+          state,
+          redirectUri,
+        });
+        if (!success) throw new Error('Google OAuth failed');
+
+        // Connect Google account to existing user
+        const connectResult = await ctx.runMutation(api.auth.google.connectGoogle, {
+          profile,
+          sessionId: connectRequest.sessionId as SessionId,
+        });
+        if (!connectResult.success) throw new Error('Connect failed');
+
+        // Mark connect request as completed
+        await ctx.runMutation(api.auth.google.completeConnectRequest, {
+          connectRequestId: requestId as Id<'auth_connectRequests'>,
+          status: 'completed',
+        });
+
+        return {
+          success: true,
+          message: 'Account connected successfully. You may close this window.',
+          flowType: 'connect' as const,
+        };
       }
+      if (flowType === 'login') {
+        // Handle login flow
+        const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
+          loginRequestId: requestId as Id<'auth_loginRequests'>,
+        });
 
-      // SECURITY: Check if login request has expired
-      const now = Date.now();
-      if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
-        throw new Error('Login request expired');
-      }
+        if (!loginRequest || loginRequest.provider !== 'google') {
+          throw new Error('Invalid login request');
+        }
 
-      // Determine flow type based on whether user is already authenticated
-      // If there's an authenticated user in the session, this is a connect flow
-      // If there's no user or an anonymous user, this is a login flow
-      const authState = await ctx.runQuery(api.auth.getState, {
-        sessionId: loginRequest.sessionId as SessionId,
-      });
+        // SECURITY: Check if login request has expired
+        const now = Date.now();
+        if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
+          throw new Error('Login request expired');
+        }
 
-      const isConnectFlow =
-        authState.state === 'authenticated' && authState.user.type !== 'anonymous';
-
-      if (isConnectFlow) {
-        // Handle profile connect flow
         const redirectUri = loginRequest.redirectUri;
         if (!redirectUri) {
           throw new Error('No redirect URI found in login request');
@@ -619,64 +780,50 @@ export const handleGoogleCallback = action({
         });
         if (!success) throw new Error('Google OAuth failed');
 
-        // Connect Google account to existing user - using mutation
-        const connectResult = await ctx.runMutation(api.auth.google.connectGoogle, {
+        // Find or create user and update session
+        const loginResult = await ctx.runMutation(api.auth.google.loginWithGoogle, {
           profile,
-          sessionId: loginRequest.sessionId as SessionId, // SessionId type casting
+          sessionId: loginRequest.sessionId as SessionId,
         });
-        if (!connectResult.success) throw new Error('Connect failed');
+        if (!loginResult.success) throw new Error('Login failed');
 
         // Mark login request as completed
         await ctx.runMutation(api.auth.google.completeLoginRequest, {
-          loginRequestId: state as Id<'auth_loginRequests'>,
+          loginRequestId: requestId as Id<'auth_loginRequests'>,
           status: 'completed',
         });
 
         return {
           success: true,
-          message: 'Account connected successfully. You may close this window.',
-          flowType: 'connect' as const,
+          message: 'Login successful. You may close this window.',
+          flowType: 'login' as const,
         };
       }
-      // Handle login flow
-      const redirectUri = loginRequest.redirectUri;
-      if (!redirectUri) {
-        throw new Error('No redirect URI found in login request');
-      }
 
-      // Exchange code for Google profile
-      const { profile, success } = await ctx.runAction(api.auth.google.exchangeGoogleCode, {
-        code,
-        state,
-        redirectUri,
-      });
-      if (!success) throw new Error('Google OAuth failed');
-
-      // Find or create user and update session - using mutation
-      const loginResult = await ctx.runMutation(api.auth.google.loginWithGoogle, {
-        profile,
-        sessionId: loginRequest.sessionId as SessionId, // SessionId type casting
-      });
-      if (!loginResult.success) throw new Error('Login failed');
-
-      // Mark login request as completed
-      await ctx.runMutation(api.auth.google.completeLoginRequest, {
-        loginRequestId: state as Id<'auth_loginRequests'>,
-        status: 'completed',
-      });
-
-      return {
-        success: true,
-        message: 'Login successful. You may close this window.',
-        flowType: 'login' as const,
-      };
+      throw new Error(`Unknown flow type: ${flowType}`);
     } catch (err) {
-      // Mark login request as failed
-      await ctx.runMutation(api.auth.google.completeLoginRequest, {
-        loginRequestId: state as Id<'auth_loginRequests'>,
-        status: 'failed',
-        error: err instanceof Error ? err.message : 'Unknown error',
-      });
+      // Try to decode state to determine which request to mark as failed
+      try {
+        const oauthState = _decodeOAuthState(state);
+        const { flowType, requestId } = oauthState;
+
+        if (flowType === 'connect') {
+          await ctx.runMutation(api.auth.google.completeConnectRequest, {
+            connectRequestId: requestId as Id<'auth_connectRequests'>,
+            status: 'failed',
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        } else if (flowType === 'login') {
+          await ctx.runMutation(api.auth.google.completeLoginRequest, {
+            loginRequestId: requestId as Id<'auth_loginRequests'>,
+            status: 'failed',
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      } catch (stateError) {
+        // If we can't decode state, log the error but don't fail the entire operation
+        console.error('Failed to decode state for error handling:', stateError);
+      }
 
       return {
         success: false,
@@ -690,7 +837,8 @@ export const handleGoogleCallback = action({
  * Handles Google OAuth callback for login flow.
  * Processes the OAuth code, exchanges it for a profile, logs in the user, and marks the request as completed.
  *
- * @deprecated Use handleGoogleCallback instead - this unified handler supports both login and connect flows
+ * @deprecated Use handleGoogleCallback instead - the new handler uses explicit flow detection via structured state
+ * and supports both login and connect flows with proper type safety and validation.
  */
 export const handleGoogleLoginCallback = action({
   args: {
@@ -766,7 +914,8 @@ export const handleGoogleLoginCallback = action({
  * Handles Google OAuth callback for profile connect flow.
  * Processes the OAuth code, exchanges it for a profile, connects the account to existing user, and marks the request as completed.
  *
- * @deprecated Use handleGoogleCallback instead - this unified handler supports both login and connect flows
+ * @deprecated Use handleGoogleCallback instead - the new handler uses explicit flow detection via structured state
+ * and supports both login and connect flows with proper type safety and validation.
  */
 export const handleGoogleConnectCallback = action({
   args: {

@@ -12,19 +12,70 @@ export const cleanupExpiredLoginRequests = internalMutation({
     const now = Date.now();
 
     // Find expired login requests that haven't been completed
-    const expiredRequests = await ctx.db
+    const expiredLoginRequests = await ctx.db
       .query('auth_loginRequests')
       .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
       .collect();
 
-    // Delete expired requests
+    // Find expired connect requests that haven't been completed
+    const expiredConnectRequests = await ctx.db
+      .query('auth_connectRequests')
+      .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
+      .collect();
+
+    // Delete expired login requests
+    let deletedLoginCount = 0;
+    for (const request of expiredLoginRequests) {
+      await ctx.db.delete(request._id);
+      deletedLoginCount++;
+    }
+
+    // Delete expired connect requests
+    let deletedConnectCount = 0;
+    for (const request of expiredConnectRequests) {
+      await ctx.db.delete(request._id);
+      deletedConnectCount++;
+    }
+
+    const totalDeleted = deletedLoginCount + deletedConnectCount;
+    console.log(
+      `Cleaned up ${totalDeleted} expired OAuth requests (${deletedLoginCount} login, ${deletedConnectCount} connect)`
+    );
+
+    return {
+      success: true,
+      deletedCount: totalDeleted,
+      deletedLoginCount,
+      deletedConnectCount,
+    };
+  },
+});
+
+/**
+ * Cleanup task for expired connect requests.
+ * This can be called periodically to clean up expired OAuth connect requests.
+ *
+ * @deprecated Use cleanupExpiredLoginRequests instead - it now handles both login and connect requests
+ */
+export const cleanupExpiredConnectRequests = internalMutation({
+  args: {},
+  handler: async (ctx, _args) => {
+    const now = Date.now();
+
+    // Find expired connect requests that haven't been completed
+    const expiredConnectRequests = await ctx.db
+      .query('auth_connectRequests')
+      .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
+      .collect();
+
+    // Delete expired connect requests
     let deletedCount = 0;
-    for (const request of expiredRequests) {
+    for (const request of expiredConnectRequests) {
       await ctx.db.delete(request._id);
       deletedCount++;
     }
 
-    console.log(`Cleaned up ${deletedCount} expired login requests`);
+    console.log(`Cleaned up ${deletedCount} expired connect requests`);
 
     return {
       success: true,

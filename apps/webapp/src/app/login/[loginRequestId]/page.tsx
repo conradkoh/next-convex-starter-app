@@ -10,6 +10,16 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+// Helper function to create OAuth state for login flow
+function createLoginOAuthState(loginRequestId: string): string {
+  const state = {
+    flowType: 'login' as const,
+    requestId: loginRequestId,
+    version: 'v1' as const,
+  };
+  return encodeURIComponent(JSON.stringify(state));
+}
+
 interface LoginRequestPageProps {
   params: Promise<{ loginRequestId: string }>;
 }
@@ -40,7 +50,7 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
   );
 
   /**
-   * Builds the Google OAuth URL with the correct state parameter.
+   * Builds the Google OAuth URL with the structured state parameter.
    */
   const buildGoogleOAuthUrl = useCallback(async () => {
     if (!googleConfig?.enabled || !googleConfig?.clientId || !loginRequestId) return null;
@@ -49,12 +59,15 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
     if (typeof window === 'undefined') return null;
     const redirectUri = `${window.location.origin}/api/auth/google/callback`;
 
+    // Create structured state for login flow
+    const state = createLoginOAuthState(loginRequestId);
+
     const params = new URLSearchParams({
       client_id: googleConfig.clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'openid email profile',
-      state: loginRequestId, // Use loginRequestId as state
+      state: state,
       prompt: 'consent',
       access_type: 'offline',
     });

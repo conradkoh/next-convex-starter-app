@@ -214,4 +214,20 @@ export default defineSchema({
     expiresAt: v.number(), // When this login request expires (15 minutes from creation)
     redirectUri: v.string(), // The OAuth redirect URI used for this login request
   }),
+
+  /**
+   * Connect requests for third-party account linking flows (e.g., Google OAuth).
+   * Tracks the state of a connect attempt and links to sessions and users.
+   * Separate from login requests to make flow types explicit and ensure proper validation.
+   */
+  auth_connectRequests: defineTable({
+    sessionId: v.string(), // Session initiating the connect
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')), // Status of the connect request
+    error: v.optional(v.string()), // Error message if failed
+    createdAt: v.number(), // Timestamp of creation
+    completedAt: v.optional(v.number()), // Timestamp of completion
+    provider: v.union(v.literal('google')), // e.g., 'google'
+    expiresAt: v.number(), // When this connect request expires (15 minutes from creation)
+    redirectUri: v.string(), // The OAuth redirect URI used for this connect request
+  }),
 });
