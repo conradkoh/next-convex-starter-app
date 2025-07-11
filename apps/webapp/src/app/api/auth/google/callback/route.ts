@@ -2,22 +2,24 @@ import { api } from '@workspace/backend/convex/_generated/api';
 import { fetchAction } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 
+// Public interfaces and types
+export interface GoogleOAuthCallbackResult {
+  success: boolean;
+  flowType?: 'login' | 'connect';
+  error?: string;
+}
+
 /**
- * Unified Google OAuth callback - handles both login and profile connect flows
- * This processes the OAuth callback and automatically determines the flow type based on redirectUri
+ * Unified Google OAuth callback - handles both login and profile connect flows.
+ * This processes the OAuth callback and automatically determines the flow type based on redirectUri.
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
 
-  // Debug: Log incoming request URL and params
-  console.log('[Google OAuth Callback] Incoming request URL:', request.url);
-  console.log('[Google OAuth Callback] code:', code, 'state:', state);
-
   // Validate required parameters
   if (!code || !state) {
-    console.warn('[Google OAuth Callback] Missing required parameters: code or state');
     return new NextResponse(
       '<html><body>Missing required parameters for OAuth callback.</body></html>',
       {
@@ -28,18 +30,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(
-      '[Google OAuth Callback] Calling unified Convex action:',
-      'auth.google.handleGoogleCallback'
-    );
-
     // Call the unified Convex action using type-safe fetchAction
     const result = await fetchAction(api.auth.google.handleGoogleCallback, {
       code,
       state,
     });
-
-    console.log('[Google OAuth Callback] Convex action result:', result);
 
     if (result.success) {
       // Customize success message based on flow type
@@ -54,13 +49,13 @@ export async function GET(request: NextRequest) {
         { status: 200, headers: { 'Content-Type': 'text/html' } }
       );
     }
+
     // Handle failure
     return new NextResponse(
       `<html><body>OAuth failed: ${result.error || 'Unknown error'}</body></html>`,
       { status: 500, headers: { 'Content-Type': 'text/html' } }
     );
-  } catch (error) {
-    console.error('Error calling Convex Google OAuth callback:', error);
+  } catch (_error) {
     return new NextResponse(
       '<html><body>Internal server error during OAuth callback.</body></html>',
       {

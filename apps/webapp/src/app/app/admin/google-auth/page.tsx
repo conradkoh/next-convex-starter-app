@@ -606,8 +606,7 @@ async function _copyToClipboard(text: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
-  } catch (error) {
-    console.error('Failed to copy to clipboard:', error);
+  } catch (_error) {
     toast.error('Failed to copy to clipboard');
   }
 }
@@ -739,8 +738,7 @@ async function _handleToggleEnabled(
     await toggleEnabled({ enabled: newEnabled });
     setEnabled(newEnabled);
     toast.success(`Google Auth ${newEnabled ? 'enabled' : 'disabled'} successfully`);
-  } catch (error) {
-    console.error('Failed to toggle Google Auth:', error);
+  } catch (_error) {
     toast.error('Failed to toggle Google Auth. Please try again.');
   }
 }
@@ -812,8 +810,7 @@ async function _handleSave(params: _SaveConfigParams): Promise<void> {
 
     toast.success('Google Auth configuration saved successfully');
     setIsConfigured(true);
-  } catch (error) {
-    console.error('Failed to save configuration:', error);
+  } catch (_error) {
     toast.error('Failed to save configuration. Please try again.');
   } finally {
     setIsFormLoading(false);
@@ -855,12 +852,8 @@ async function _handleTest(
       toast.success(`✅ Configuration is valid: ${result.message}`);
     } else {
       toast.error(`❌ Configuration failed: ${result.message}`);
-      if (result.details?.issues) {
-        console.log('Configuration issues:', result.details.issues);
-      }
     }
-  } catch (error) {
-    console.error('Failed to test configuration:', error);
+  } catch (_error) {
     toast.error('Failed to test configuration. Please try again.');
   }
 }
@@ -891,8 +884,7 @@ async function _handleReset(
     setClientId('');
     setClientSecret('');
     setIsConfigured(false);
-  } catch (error) {
-    console.error('Failed to reset configuration:', error);
+  } catch (_error) {
     toast.error('Failed to reset configuration. Please try again.');
   }
 }

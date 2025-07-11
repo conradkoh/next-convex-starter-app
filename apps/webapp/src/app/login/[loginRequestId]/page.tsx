@@ -10,18 +10,20 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Helper function to create OAuth state for login flow
-function createLoginOAuthState(loginRequestId: string): string {
-  const state = {
-    flowType: 'login' as const,
-    requestId: loginRequestId,
-    version: 'v1' as const,
-  };
-  return encodeURIComponent(JSON.stringify(state));
+// Public interfaces and types
+export interface LoginRequestPageProps {
+  params: Promise<{ loginRequestId: string }>;
 }
 
-interface LoginRequestPageProps {
-  params: Promise<{ loginRequestId: string }>;
+export interface GoogleIconProps {
+  className?: string;
+}
+
+// Internal interfaces and types
+interface _OAuthState {
+  flowType: 'login';
+  requestId: string;
+  version: 'v1';
 }
 
 /**
@@ -60,7 +62,7 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
     const redirectUri = `${window.location.origin}/api/auth/google/callback`;
 
     // Create structured state for login flow
-    const state = createLoginOAuthState(loginRequestId);
+    const state = _createLoginOAuthState(loginRequestId);
 
     const params = new URLSearchParams({
       client_id: googleConfig.clientId,
@@ -207,7 +209,7 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
-              <GoogleIcon className="h-5 w-5" />
+              <_GoogleIcon className="h-5 w-5" />
               Google Sign In
             </CardTitle>
             <CardDescription>
@@ -228,7 +230,7 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
                 </>
               ) : (
                 <>
-                  <GoogleIcon className="mr-2 h-4 w-4" />
+                  <_GoogleIcon className="mr-2 h-4 w-4" />
                   Continue with Google
                 </>
               )}
@@ -261,10 +263,23 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
   );
 }
 
+// Internal helper functions
 /**
- * Google brand icon component.
+ * Creates OAuth state for login flow with proper typing.
  */
-function GoogleIcon({ className }: { className?: string }) {
+function _createLoginOAuthState(loginRequestId: string): string {
+  const state: _OAuthState = {
+    flowType: 'login',
+    requestId: loginRequestId,
+    version: 'v1',
+  };
+  return encodeURIComponent(JSON.stringify(state));
+}
+
+/**
+ * Renders the Google brand icon with proper colors and accessibility.
+ */
+function _GoogleIcon({ className }: GoogleIconProps) {
   return (
     <svg
       className={className}

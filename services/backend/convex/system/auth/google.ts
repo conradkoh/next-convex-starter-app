@@ -407,8 +407,7 @@ async function _testNewCredentials(
       message: `Unexpected response from Google: ${result.error || 'Unknown error'}`,
       details: { issues: [result.error_description || 'Unknown error'] },
     };
-  } catch (error) {
-    console.error('Error testing Google credentials:', error);
+  } catch (_error) {
     return {
       success: false,
       message: 'Failed to test credentials due to network or server error',

@@ -2,13 +2,32 @@ import { cronJobs } from 'convex/server';
 import { internal } from './_generated/api';
 import { internalMutation } from './_generated/server';
 
+// Public interfaces and types
+export interface CleanupResult {
+  success: boolean;
+  deletedCount: number;
+}
+
+export interface LoginRequestsCleanupResult extends CleanupResult {
+  deletedLoginCount: number;
+  deletedConnectCount: number;
+}
+
+export interface AllCleanupResults {
+  success: boolean;
+  results: {
+    loginRequests: LoginRequestsCleanupResult;
+    loginCodes: CleanupResult;
+  };
+}
+
 /**
  * Cleanup task for expired login requests.
  * This can be called periodically to clean up expired OAuth login requests.
  */
 export const cleanupExpiredLoginRequests = internalMutation({
   args: {},
-  handler: async (ctx, _args) => {
+  handler: async (ctx, _args): Promise<LoginRequestsCleanupResult> => {
     const now = Date.now();
 
     // Find expired login requests that haven't been completed
@@ -38,9 +57,6 @@ export const cleanupExpiredLoginRequests = internalMutation({
     }
 
     const totalDeleted = deletedLoginCount + deletedConnectCount;
-    console.log(
-      `Cleaned up ${totalDeleted} expired OAuth requests (${deletedLoginCount} login, ${deletedConnectCount} connect)`
-    );
 
     return {
       success: true,
@@ -59,7 +75,7 @@ export const cleanupExpiredLoginRequests = internalMutation({
  */
 export const cleanupExpiredConnectRequests = internalMutation({
   args: {},
-  handler: async (ctx, _args) => {
+  handler: async (ctx, _args): Promise<CleanupResult> => {
     const now = Date.now();
 
     // Find expired connect requests that haven't been completed
@@ -75,8 +91,6 @@ export const cleanupExpiredConnectRequests = internalMutation({
       deletedCount++;
     }
 
-    console.log(`Cleaned up ${deletedCount} expired connect requests`);
-
     return {
       success: true,
       deletedCount,
@@ -90,7 +104,7 @@ export const cleanupExpiredConnectRequests = internalMutation({
  */
 export const cleanupExpiredLoginCodes = internalMutation({
   args: {},
-  handler: async (ctx, _args) => {
+  handler: async (ctx, _args): Promise<CleanupResult> => {
     const now = Date.now();
 
     // Find expired login codes
@@ -106,8 +120,6 @@ export const cleanupExpiredLoginCodes = internalMutation({
       deletedCount++;
     }
 
-    console.log(`Cleaned up ${deletedCount} expired login codes`);
-
     return {
       success: true,
       deletedCount,
@@ -120,22 +132,11 @@ export const cleanupExpiredLoginCodes = internalMutation({
  */
 export const runAllCleanupTasks = internalMutation({
   args: {},
-  handler: async (
-    ctx,
-    _args
-  ): Promise<{
-    success: boolean;
-    results: {
-      loginRequests: { success: boolean; deletedCount: number };
-      loginCodes: { success: boolean; deletedCount: number };
-    };
-  }> => {
+  handler: async (ctx, _args): Promise<AllCleanupResults> => {
     const results = {
       loginRequests: await ctx.runMutation(internal.cleanupTasks.cleanupExpiredLoginRequests, {}),
       loginCodes: await ctx.runMutation(internal.cleanupTasks.cleanupExpiredLoginCodes, {}),
     };
-
-    console.log('Cleanup completed:', results);
 
     return {
       success: true,
@@ -144,14 +145,24 @@ export const runAllCleanupTasks = internalMutation({
   },
 });
 
-// Register cron jobs for automatic cleanup
-const cleanupCronJobs = cronJobs();
+// Internal helper functions
+/**
+ * Registers cron jobs for automatic cleanup of expired authentication data.
+ */
+const _registerCleanupCronJobs = (): typeof cleanupCronJobs => {
+  const cleanupCronJobs = cronJobs();
 
-// Run cleanup every 10 minutes
-cleanupCronJobs.interval(
-  'cleanup expired auth data',
-  { minutes: 10 },
-  internal.cleanupTasks.runAllCleanupTasks
-);
+  // Run cleanup every 10 minutes
+  cleanupCronJobs.interval(
+    'cleanup expired auth data',
+    { minutes: 10 },
+    internal.cleanupTasks.runAllCleanupTasks
+  );
+
+  return cleanupCronJobs;
+};
+
+// Register cron jobs for automatic cleanup
+const cleanupCronJobs = _registerCleanupCronJobs();
 
 export default cleanupCronJobs;

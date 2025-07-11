@@ -133,8 +133,7 @@ export function NameEditForm() {
         await updateUserName({ newName: name.trim() });
         setIsEditing(false);
         toast.success('Name updated successfully');
-      } catch (error) {
-        console.error('Failed to update name:', error);
+      } catch (_error) {
         setError('Failed to update name. Please try again.');
       } finally {
         setIsLoading(false);
@@ -219,8 +218,7 @@ export function NameEditForm() {
         },
         15 * 60 * 1000
       ); // 15 minutes timeout
-    } catch (error) {
-      console.error('Failed to initiate Google connection:', error);
+    } catch (_error) {
       toast.error('Failed to connect Google account');
       setIsConnectingGoogle(false);
       setConnectLoginRequestId(null);
@@ -250,8 +248,7 @@ export function NameEditForm() {
           providerName: '',
           isDisconnecting: false,
         });
-      } catch (error) {
-        console.error('Failed to disconnect Google:', error);
+      } catch (_error) {
         toast.error('Failed to disconnect Google account');
         setDisconnectDialog((prev) => ({ ...prev, isDisconnecting: false }));
       }

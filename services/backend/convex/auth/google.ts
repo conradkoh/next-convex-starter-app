@@ -14,7 +14,10 @@ import {
   query,
 } from '../_generated/server';
 
-// Google OAuth endpoints
+// Public interfaces and types
+export type OAuthState = z.infer<typeof OAuthStateSchema>;
+
+// Internal interfaces and types
 interface _GoogleProfile {
   id: string;
   email: string;
@@ -35,6 +38,7 @@ interface _GoogleTokenResponse {
   refresh_token?: string;
 }
 
+// Internal constants
 const _GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const _GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
@@ -44,8 +48,6 @@ const OAuthStateSchema = z.object({
   requestId: z.string(), // ID of the login or connect request
   version: z.literal('v1'), // Schema version for future compatibility
 });
-
-type OAuthState = z.infer<typeof OAuthStateSchema>;
 
 /**
  * Encodes OAuth state into a URL-safe JSON string
@@ -62,8 +64,7 @@ function _decodeOAuthState(encodedState: string): OAuthState {
     const decoded = decodeURIComponent(encodedState);
     const parsed = JSON.parse(decoded);
     return OAuthStateSchema.parse(parsed);
-  } catch (error) {
-    console.error('Failed to decode OAuth state:', { encodedState, error });
+  } catch (_error) {
     throw new ConvexError({
       code: 'INVALID_STATE',
       message: 'Invalid or malformed OAuth state parameter',
@@ -173,8 +174,7 @@ export const exchangeGoogleCode = action({
       });
 
       if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error('Google token exchange failed:', errorText);
+        const _errorText = await tokenResponse.text();
         throw new ConvexError({
           code: 'OAUTH_ERROR',
           message: 'Failed to exchange authorization code for token',
@@ -191,8 +191,7 @@ export const exchangeGoogleCode = action({
       });
 
       if (!profileResponse.ok) {
-        const errorText = await profileResponse.text();
-        console.error('Google profile fetch failed:', errorText);
+        const _errorText = await profileResponse.text();
         throw new ConvexError({
           code: 'OAUTH_ERROR',
           message: 'Failed to fetch user profile from Google',
@@ -211,7 +210,6 @@ export const exchangeGoogleCode = action({
 
       return { profile, success: true };
     } catch (error) {
-      console.error('Google OAuth exchange error:', error);
       if (error instanceof ConvexError) {
         throw error;
       }
@@ -329,7 +327,6 @@ export const loginWithGoogle = mutation({
         userType: 'full' as const,
       };
     } catch (error) {
-      console.error('Google login error:', error);
       if (error instanceof ConvexError) {
         throw error;
       }
@@ -479,7 +476,6 @@ export const connectGoogle = mutation({
         connectedEmail: profile.email,
       };
     } catch (error) {
-      console.error('Google connect error:', error);
       if (error instanceof ConvexError) {
         throw error;
       }
@@ -820,9 +816,8 @@ export const handleGoogleCallback = action({
             error: err instanceof Error ? err.message : 'Unknown error',
           });
         }
-      } catch (stateError) {
-        // If we can't decode state, log the error but don't fail the entire operation
-        console.error('Failed to decode state for error handling:', stateError);
+      } catch (_stateError) {
+        // If we can't decode state, continue without failing the entire operation
       }
 
       return {

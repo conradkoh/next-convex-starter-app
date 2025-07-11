@@ -41,8 +41,7 @@ export function useGoogleLoginFlow() {
 
       // Redirect to the login page with the loginRequestId
       router.push(`/login/${result.loginId}`);
-    } catch (error) {
-      console.error('Failed to initiate Google login:', error);
+    } catch (_error) {
       toast.error('Failed to start Google login. Please try again.');
       setIsLoading(false);
     }
