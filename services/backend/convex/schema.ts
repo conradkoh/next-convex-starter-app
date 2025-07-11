@@ -199,4 +199,17 @@ export default defineSchema({
     configuredBy: v.id('users'), // User who configured this (must be system_admin)
     configuredAt: v.number(), // When this configuration was created/updated
   }).index('by_type', ['type']),
+
+  /**
+   * Login requests for third-party authentication flows (e.g., Google OAuth).
+   * Tracks the state of a login attempt and links to sessions and users.
+   */
+  auth_loginRequests: defineTable({
+    sessionId: v.string(), // Session initiating the login
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')), // Status of the login request
+    error: v.optional(v.string()), // Error message if failed
+    createdAt: v.number(), // Timestamp of creation
+    completedAt: v.optional(v.number()), // Timestamp of completion
+    provider: v.union(v.literal('google')), // e.g., 'google'
+  }),
 });

@@ -1,4 +1,5 @@
-import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { mutation, query } from '../_generated/server';
 
 /**
  * Gets Google authentication configuration for client use.
@@ -25,5 +26,46 @@ export const getConfig = query({
       enabled: config.enabled,
       clientId: config.clientId || null,
     };
+  },
+});
+
+/**
+ * Mutation to create a new login request for third-party auth (e.g., Google OAuth).
+ * Returns the id of the inserted login request as loginId.
+ */
+export const createLoginRequest = mutation({
+  args: {
+    sessionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const id = await ctx.db.insert('auth_loginRequests', {
+      sessionId: args.sessionId,
+      status: 'pending',
+      createdAt: now,
+      provider: 'google',
+    });
+    return { loginId: id };
+  },
+});
+
+/**
+ * Mutation to complete or fail a login request after OAuth callback.
+ * Updates status, completedAt, and error fields.
+ */
+export const completeLoginRequest = mutation({
+  args: {
+    loginRequestId: v.id('auth_loginRequests'),
+    status: v.union(v.literal('completed'), v.literal('failed')),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const completedAt = Date.now();
+    await ctx.db.patch(args.loginRequestId, {
+      status: args.status,
+      completedAt,
+      error: args.error,
+    });
+    return { success: true };
   },
 });
