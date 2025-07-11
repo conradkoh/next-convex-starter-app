@@ -36,6 +36,12 @@ http.route({
         throw new Error('Invalid login request');
       }
 
+      // SECURITY: Check if login request has expired
+      const now = Date.now();
+      if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
+        throw new Error('Login request expired');
+      }
+
       // Exchange code for Google profile
       const { profile, success } = await ctx.runAction(api.googleAuth.exchangeGoogleCode, {
         code,
@@ -103,6 +109,12 @@ http.route({
       });
       if (!loginRequest || loginRequest.provider !== 'google') {
         throw new Error('Invalid login request');
+      }
+
+      // SECURITY: Check if login request has expired
+      const now = Date.now();
+      if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
+        throw new Error('Login request expired');
       }
 
       // Exchange code for Google profile

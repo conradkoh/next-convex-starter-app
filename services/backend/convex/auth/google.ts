@@ -46,10 +46,12 @@ export const createLoginRequest = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const expiresAt = now + 15 * 60 * 1000; // 15 minutes from now
     const id = await ctx.db.insert('auth_loginRequests', {
       sessionId: args.sessionId,
       status: 'pending',
       createdAt: now,
+      expiresAt,
       provider: 'google',
     });
     return { loginId: id };
@@ -102,5 +104,43 @@ export const getGoogleRedirectUri = query({
       return { redirectUri: `${base}/auth/google/callback` };
     }
     return { redirectUri: `${base}/app/profile/connect/google/callback` };
+  },
+});
+
+/**
+ * Query to get expired login requests for cleanup.
+ */
+export const getExpiredLoginRequests = query({
+  args: {},
+  handler: async (ctx, _args) => {
+    const now = Date.now();
+    return await ctx.db
+      .query('auth_loginRequests')
+      .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
+      .collect();
+  },
+});
+
+/**
+ * Mutation to clean up expired login requests.
+ */
+export const cleanupExpiredLoginRequests = mutation({
+  args: {},
+  handler: async (ctx, _args) => {
+    const now = Date.now();
+    const expiredRequests = await ctx.db
+      .query('auth_loginRequests')
+      .filter((q) => q.and(q.lt(q.field('expiresAt'), now), q.neq(q.field('status'), 'completed')))
+      .collect();
+
+    // Delete expired requests
+    for (const request of expiredRequests) {
+      await ctx.db.delete(request._id);
+    }
+
+    return {
+      success: true,
+      deletedCount: expiredRequests.length,
+    };
   },
 });

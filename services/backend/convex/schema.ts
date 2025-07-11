@@ -211,5 +211,6 @@ export default defineSchema({
     createdAt: v.number(), // Timestamp of creation
     completedAt: v.optional(v.number()), // Timestamp of completion
     provider: v.union(v.literal('google')), // e.g., 'google'
+    expiresAt: v.number(), // When this login request expires (15 minutes from creation)
   }),
 });
