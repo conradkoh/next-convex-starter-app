@@ -24,7 +24,7 @@ import type * as discussions from "../discussions.js";
 import type * as migration from "../migration.js";
 import type * as presentations from "../presentations.js";
 import type * as serviceDesk from "../serviceDesk.js";
-import type * as system_thirdPartyAuthConfig from "../system/thirdPartyAuthConfig.js";
+import type * as system_auth_google from "../system/auth/google.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -46,7 +46,7 @@ declare const fullApi: ApiFromModules<{
   migration: typeof migration;
   presentations: typeof presentations;
   serviceDesk: typeof serviceDesk;
-  "system/thirdPartyAuthConfig": typeof system_thirdPartyAuthConfig;
+  "system/auth/google": typeof system_auth_google;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

@@ -11,7 +11,7 @@ export const get = query({
 
     // Get Google Auth configuration from database
     const googleAuthConfig = await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 

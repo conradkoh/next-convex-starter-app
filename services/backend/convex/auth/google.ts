@@ -104,7 +104,7 @@ export const getConfig = query({
   handler: async (ctx, _args) => {
     // Get Google Auth configuration from database
     const config = await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 
@@ -129,7 +129,7 @@ export const getGoogleAuthConfigInternal = query({
   args: {},
   handler: async (ctx) => {
     return await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
   },
@@ -565,7 +565,7 @@ export const disconnectGoogle = mutation({
 });
 
 /**
- * Mutation to create a new login request for third-party auth (e.g., Google OAuth).
+ * Mutation to create a new login request for authentication provider (e.g., Google OAuth).
  * Returns the id of the inserted login request as loginId.
  */
 export const createLoginRequest = mutation({
@@ -593,7 +593,7 @@ export const createLoginRequest = mutation({
 });
 
 /**
- * Mutation to create a new connect request for third-party account linking (e.g., Google OAuth).
+ * Mutation to create a new connect request for authentication provider account linking (e.g., Google OAuth).
  * Returns the id of the inserted connect request as connectId.
  */
 export const createConnectRequest = mutation({
@@ -1078,7 +1078,7 @@ async function _isGoogleAuthEnabled(ctx: QueryCtx | MutationCtx): Promise<boolea
 
   // Check database configuration
   const config = await ctx.db
-    .query('thirdPartyAuthConfig')
+    .query('auth_providerConfigs')
     .withIndex('by_type', (q) => q.eq('type', 'google'))
     .first();
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { api } from '@workspace/backend/convex/_generated/api';
-import { useQuery } from 'convex/react';
 import {
   useSessionAction,
   useSessionMutation,
@@ -47,14 +46,11 @@ export default function GoogleAuthConfigPage() {
   const [showClientSecret, setShowClientSecret] = useState(false);
 
   // Convex queries and mutations
-  const configData = useSessionQuery(api.system.thirdPartyAuthConfig.getGoogleAuthConfig);
-  const updateConfig = useSessionMutation(api.system.thirdPartyAuthConfig.updateGoogleAuthConfig);
-  const toggleEnabled = useSessionMutation(api.system.thirdPartyAuthConfig.toggleGoogleAuthEnabled);
-  const testConfig = useSessionAction(api.system.thirdPartyAuthConfig.testGoogleAuthConfig);
-  const resetConfig = useSessionMutation(api.system.thirdPartyAuthConfig.resetGoogleAuthConfig);
-
-  // Get Google auth config for client ID and enabled status
-  const _googleConfig = useQuery(api.auth.google.getConfig);
+  const configData = useSessionQuery(api.system.auth.google.getConfig);
+  const updateConfig = useSessionMutation(api.system.auth.google.updateConfig);
+  const toggleEnabled = useSessionMutation(api.system.auth.google.toggleEnabled);
+  const testConfig = useSessionAction(api.system.auth.google.testConfig);
+  const resetConfig = useSessionMutation(api.system.auth.google.resetConfig);
 
   // Computed values - generate redirect URIs on frontend
   const redirectUris = useMemo(() => {

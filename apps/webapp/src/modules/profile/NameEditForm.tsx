@@ -488,7 +488,7 @@ function _renderSessionInfo(authMethod: string | undefined) {
 }
 
 /**
- * Renders third-party authentication accounts section.
+ * Renders authentication provider accounts section.
  */
 function _renderThirdPartyAccounts(
   _user: { google?: { email?: string } },
