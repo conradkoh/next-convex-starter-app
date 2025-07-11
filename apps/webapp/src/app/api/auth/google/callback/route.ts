@@ -3,8 +3,8 @@ import { fetchAction } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
- * Google OAuth callback for login - calls Convex action directly using type-safe fetchAction
- * This processes the OAuth callback and handles the authentication flow
+ * Unified Google OAuth callback - handles both login and profile connect flows
+ * This processes the OAuth callback and automatically determines the flow type based on redirectUri
  */
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log(
-      '[Google OAuth Callback] Calling Convex action:',
-      'auth.google.handleGoogleLoginCallback'
+      '[Google OAuth Callback] Calling unified Convex action:',
+      'auth.google.handleGoogleCallback'
     );
 
-    // Call the Convex action using type-safe fetchAction
-    const result = await fetchAction(api.auth.google.handleGoogleLoginCallback, {
+    // Call the unified Convex action using type-safe fetchAction
+    const result = await fetchAction(api.auth.google.handleGoogleCallback, {
       code,
       state,
     });
@@ -42,15 +42,21 @@ export async function GET(request: NextRequest) {
     console.log('[Google OAuth Callback] Convex action result:', result);
 
     if (result.success) {
+      // Customize success message based on flow type
+      const successMessage =
+        result.flowType === 'connect'
+          ? 'Account connected successfully. You may close this window.'
+          : 'Login successful. You may close this window.';
+
       // Return HTML/JS to close the window
       return new NextResponse(
-        '<html><body><script>window.close();</script>Login successful. You may close this window.</body></html>',
+        `<html><body><script>window.close();</script>${successMessage}</body></html>`,
         { status: 200, headers: { 'Content-Type': 'text/html' } }
       );
     }
     // Handle failure
     return new NextResponse(
-      `<html><body>Login failed: ${result.error || 'Unknown error'}</body></html>`,
+      `<html><body>OAuth failed: ${result.error || 'Unknown error'}</body></html>`,
       { status: 500, headers: { 'Content-Type': 'text/html' } }
     );
   } catch (error) {

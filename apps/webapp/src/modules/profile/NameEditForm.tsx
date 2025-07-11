@@ -2,6 +2,7 @@
 
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { api } from '@workspace/backend/convex/_generated/api';
+import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
 import { X } from 'lucide-react';
@@ -55,6 +56,7 @@ export function NameEditForm() {
 
   // State for Google connection
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [connectLoginRequestId, setConnectLoginRequestId] = useState<string | null>(null);
 
   // State for disconnect confirmation dialog
   const [disconnectDialog, setDisconnectDialog] = useState<_DisconnectDialogState>({
@@ -68,6 +70,29 @@ export function NameEditForm() {
   const updateUserName = useSessionMutation(api.auth.updateUserName);
   const disconnectGoogle = useSessionMutation(api.auth.google.disconnectGoogle);
   const createLoginRequest = useSessionMutation(api.auth.google.createLoginRequest);
+
+  // Query to poll login request status for connect flow
+  const connectLoginRequest = useQuery(
+    api.auth.google.getLoginRequest,
+    connectLoginRequestId
+      ? { loginRequestId: connectLoginRequestId as Id<'auth_loginRequests'> }
+      : 'skip'
+  );
+
+  // Effect to handle connect login request status changes
+  useEffect(() => {
+    if (!connectLoginRequest || !isConnectingGoogle) return;
+
+    if (connectLoginRequest.status === 'completed') {
+      toast.success('Google account connected successfully!');
+      setIsConnectingGoogle(false);
+      setConnectLoginRequestId(null);
+    } else if (connectLoginRequest.status === 'failed') {
+      toast.error(connectLoginRequest.error || 'Failed to connect Google account');
+      setIsConnectingGoogle(false);
+      setConnectLoginRequestId(null);
+    }
+  }, [connectLoginRequest, isConnectingGoogle]);
 
   // Initialize name when user data is available
   useEffect(() => {
@@ -129,10 +154,13 @@ export function NameEditForm() {
         throw new Error('Window is not available');
       }
 
-      const redirectUri = `${window.location.origin}/api/app/profile/connect/google/callback`;
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
 
       // Create a login request in the backend for connect flow
       const result = await createLoginRequest({ redirectUri });
+
+      // Set the login request ID for polling
+      setConnectLoginRequestId(result.loginId);
 
       // Generate the Google OAuth URL using the login request ID as state
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
@@ -145,11 +173,46 @@ export function NameEditForm() {
         prompt: 'consent',
       })}`;
 
-      window.location.href = authUrl;
+      // Open popup window instead of redirecting current page
+      const popup = window.open(
+        authUrl,
+        'google-oauth-connect',
+        'width=500,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+      );
+
+      if (!popup) {
+        toast.error('Failed to open popup. Please enable popups and try again.');
+        setIsConnectingGoogle(false);
+        setConnectLoginRequestId(null);
+        return;
+      }
+
+      // Poll for popup closure
+      const pollInterval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(pollInterval);
+          // Don't reset connecting state here - let the login request status handle it
+        }
+      }, 1000);
+
+      // Cleanup on timeout
+      const _timeout = setTimeout(
+        () => {
+          clearInterval(pollInterval);
+          if (!popup.closed) {
+            popup.close();
+          }
+          toast.error('Connection timeout. Please try again.');
+          setIsConnectingGoogle(false);
+          setConnectLoginRequestId(null);
+        },
+        15 * 60 * 1000
+      ); // 15 minutes timeout
     } catch (error) {
       console.error('Failed to initiate Google connection:', error);
       toast.error('Failed to connect Google account');
       setIsConnectingGoogle(false);
+      setConnectLoginRequestId(null);
     }
   }, [googleAuthAvailable?.clientId, createLoginRequest]);
 

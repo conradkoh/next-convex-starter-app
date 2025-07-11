@@ -59,10 +59,7 @@ export default function GoogleAuthConfigPage() {
   // Computed values - generate redirect URIs on frontend
   const redirectUris = useMemo(() => {
     if (typeof window === 'undefined') return [];
-    return [
-      `${window.location.origin}/api/auth/google/callback`,
-      `${window.location.origin}/api/app/profile/connect/google/callback`,
-    ];
+    return [`${window.location.origin}/api/auth/google/callback`];
   }, []);
   const isConfigLoading = configData === undefined;
   const isPageLoading = appInfoLoading || isConfigLoading;

@@ -568,8 +568,129 @@ export const getLoginRequest = query({
 });
 
 /**
+ * Unified Google OAuth callback handler that determines flow type based on redirectUri.
+ * Handles both login and profile connect flows through a single endpoint.
+ */
+export const handleGoogleCallback = action({
+  args: {
+    code: v.string(),
+    state: v.string(), // This is the loginRequestId
+  },
+  handler: async (ctx, args) => {
+    const { code, state } = args;
+
+    try {
+      // Get the login request to extract sessionId, redirectUri, and determine flow type
+      const loginRequest = await ctx.runQuery(api.auth.google.getLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+      });
+      if (!loginRequest || loginRequest.provider !== 'google') {
+        throw new Error('Invalid login request');
+      }
+
+      // SECURITY: Check if login request has expired
+      const now = Date.now();
+      if (loginRequest.expiresAt && now > loginRequest.expiresAt) {
+        throw new Error('Login request expired');
+      }
+
+      // Determine flow type based on whether user is already authenticated
+      // If there's an authenticated user in the session, this is a connect flow
+      // If there's no user or an anonymous user, this is a login flow
+      const authState = await ctx.runQuery(api.auth.getState, {
+        sessionId: loginRequest.sessionId as SessionId,
+      });
+
+      const isConnectFlow =
+        authState.state === 'authenticated' && authState.user.type !== 'anonymous';
+
+      if (isConnectFlow) {
+        // Handle profile connect flow
+        const redirectUri = loginRequest.redirectUri;
+        if (!redirectUri) {
+          throw new Error('No redirect URI found in login request');
+        }
+
+        // Exchange code for Google profile
+        const { profile, success } = await ctx.runAction(api.auth.google.exchangeGoogleCode, {
+          code,
+          state,
+          redirectUri,
+        });
+        if (!success) throw new Error('Google OAuth failed');
+
+        // Connect Google account to existing user - using mutation
+        const connectResult = await ctx.runMutation(api.auth.google.connectGoogle, {
+          profile,
+          sessionId: loginRequest.sessionId as SessionId, // SessionId type casting
+        });
+        if (!connectResult.success) throw new Error('Connect failed');
+
+        // Mark login request as completed
+        await ctx.runMutation(api.auth.google.completeLoginRequest, {
+          loginRequestId: state as Id<'auth_loginRequests'>,
+          status: 'completed',
+        });
+
+        return {
+          success: true,
+          message: 'Account connected successfully. You may close this window.',
+          flowType: 'connect' as const,
+        };
+      }
+      // Handle login flow
+      const redirectUri = loginRequest.redirectUri;
+      if (!redirectUri) {
+        throw new Error('No redirect URI found in login request');
+      }
+
+      // Exchange code for Google profile
+      const { profile, success } = await ctx.runAction(api.auth.google.exchangeGoogleCode, {
+        code,
+        state,
+        redirectUri,
+      });
+      if (!success) throw new Error('Google OAuth failed');
+
+      // Find or create user and update session - using mutation
+      const loginResult = await ctx.runMutation(api.auth.google.loginWithGoogle, {
+        profile,
+        sessionId: loginRequest.sessionId as SessionId, // SessionId type casting
+      });
+      if (!loginResult.success) throw new Error('Login failed');
+
+      // Mark login request as completed
+      await ctx.runMutation(api.auth.google.completeLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+        status: 'completed',
+      });
+
+      return {
+        success: true,
+        message: 'Login successful. You may close this window.',
+        flowType: 'login' as const,
+      };
+    } catch (err) {
+      // Mark login request as failed
+      await ctx.runMutation(api.auth.google.completeLoginRequest, {
+        loginRequestId: state as Id<'auth_loginRequests'>,
+        status: 'failed',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+/**
  * Handles Google OAuth callback for login flow.
  * Processes the OAuth code, exchanges it for a profile, logs in the user, and marks the request as completed.
+ *
+ * @deprecated Use handleGoogleCallback instead - this unified handler supports both login and connect flows
  */
 export const handleGoogleLoginCallback = action({
   args: {
@@ -644,6 +765,8 @@ export const handleGoogleLoginCallback = action({
 /**
  * Handles Google OAuth callback for profile connect flow.
  * Processes the OAuth code, exchanges it for a profile, connects the account to existing user, and marks the request as completed.
+ *
+ * @deprecated Use handleGoogleCallback instead - this unified handler supports both login and connect flows
  */
 export const handleGoogleConnectCallback = action({
   args: {
