@@ -1,16 +1,16 @@
 import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
-import { isSystemAdmin } from '../../modules/auth/accessControl';
-import { getAuthUserOptional } from '../../modules/auth/getAuthUser';
-import { api } from '../_generated/api';
-import type { Id } from '../_generated/dataModel';
-import { action, mutation, query } from '../_generated/server';
+import { isSystemAdmin } from '../../../modules/auth/accessControl';
+import { getAuthUserOptional } from '../../../modules/auth/getAuthUser';
+import { api, internal } from '../../_generated/api';
+import type { Id } from '../../_generated/dataModel';
+import { action, internalMutation, mutation, query } from '../../_generated/server';
 
 /**
- * SYSTEM ADMIN ONLY: Third-Party Auth Configuration Management
+ * SYSTEM ADMIN ONLY: Google Authentication Provider Configuration Management
  *
  * All functions in this module require system administrator access.
- * These functions are used to configure and manage third-party OAuth settings.
+ * These functions are used to configure and manage Google OAuth settings.
  *
  * Security Note: Every function in this module MUST verify system admin access.
  */
@@ -34,7 +34,7 @@ export interface GoogleAuthConfigData {
 /**
  * Retrieves the current Google Auth configuration for system administrators.
  */
-export const getGoogleAuthConfig = query({
+export const getConfig = query({
   args: {
     ...SessionIdArg,
   },
@@ -50,7 +50,7 @@ export const getGoogleAuthConfig = query({
 
     // Get the configuration for Google auth
     const config = await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 
@@ -80,7 +80,7 @@ export const getGoogleAuthConfig = query({
 /**
  * Updates Google Auth configuration with validation and security checks.
  */
-export const updateGoogleAuthConfig = mutation({
+export const updateConfig = mutation({
   args: {
     enabled: v.boolean(),
     projectId: v.optional(v.string()),
@@ -108,7 +108,7 @@ export const updateGoogleAuthConfig = mutation({
 
     // Check if configuration already exists
     const existingConfig = await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 
@@ -162,7 +162,7 @@ export const updateGoogleAuthConfig = mutation({
       await ctx.db.patch(existingConfig._id, configData);
     } else {
       // Create new configuration
-      await ctx.db.insert('thirdPartyAuthConfig', configData);
+      await ctx.db.insert('auth_providerConfigs', configData);
     }
 
     return {
@@ -175,7 +175,7 @@ export const updateGoogleAuthConfig = mutation({
 /**
  * Toggles Google Auth enabled state without changing other configuration.
  */
-export const toggleGoogleAuthEnabled = mutation({
+export const toggleEnabled = mutation({
   args: {
     enabled: v.boolean(),
     ...SessionIdArg,
@@ -201,7 +201,7 @@ export const toggleGoogleAuthEnabled = mutation({
 
     // Check if configuration already exists
     const existingConfig = await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 
@@ -213,7 +213,7 @@ export const toggleGoogleAuthEnabled = mutation({
       });
     } else {
       // Create minimal configuration with enabled flag
-      await ctx.db.insert('thirdPartyAuthConfig', {
+      await ctx.db.insert('auth_providerConfigs', {
         type: 'google' as const,
         enabled: args.enabled,
         clientId: '',
@@ -233,10 +233,10 @@ export const toggleGoogleAuthEnabled = mutation({
 
 /**
  * Tests Google Auth configuration by validating credentials with Google's API.
- * Uses the provided clientId and either the provided clientSecret or the saved one.
- * Uses action to allow external HTTP requests to Google's API.
+ * Self-contained function that handles authentication, database access, and external
+ * Google API testing all within a single action. No additional API calls needed.
  */
-export const testGoogleAuthConfig = action({
+export const testConfig = action({
   args: {
     clientId: v.string(),
     clientSecret: v.optional(v.string()),
@@ -268,16 +268,18 @@ export const testGoogleAuthConfig = action({
 
     let clientSecret = args.clientSecret;
 
-    // If no client secret provided, try to use the saved one
+    // If no client secret provided, we need to get it from the database
+    // We'll use a simple mutation to access the saved configuration
     if (!clientSecret) {
-      const config: GoogleAuthConfigData | null = await ctx.runQuery(
-        api.system.thirdPartyAuthConfig.getGoogleAuthConfig,
+      // Call a simple mutation that can access the database and return the client secret
+      const savedSecret = await ctx.runMutation(
+        internal.system.auth.google.getClientSecretForTesting,
         {
           sessionId: args.sessionId,
         }
       );
 
-      if (!config?.clientSecret) {
+      if (!savedSecret) {
         return {
           success: false,
           message: 'No client secret provided and no saved client secret found',
@@ -285,11 +287,40 @@ export const testGoogleAuthConfig = action({
         };
       }
 
-      clientSecret = config.clientSecret;
+      clientSecret = savedSecret;
     }
 
     // Test the credentials with Google API
     return _testNewCredentials(args.clientId, clientSecret);
+  },
+});
+
+/**
+ * Internal mutation to retrieve the client secret for testing purposes.
+ * Only accessible by system administrators. Returns the client secret directly.
+ * This is an internal function to prevent external access to sensitive data.
+ */
+export const getClientSecretForTesting = internalMutation({
+  args: {
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args): Promise<string | null> => {
+    // Verify system admin access
+    const user = await getAuthUserOptional(ctx, args);
+    if (!user || !isSystemAdmin(user)) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Only system administrators can access client secret for testing',
+      });
+    }
+
+    // Query the database directly to get the saved configuration
+    const config = await ctx.db
+      .query('auth_providerConfigs')
+      .withIndex('by_type', (q) => q.eq('type', 'google'))
+      .first();
+
+    return config?.clientSecret || null;
   },
 });
 
@@ -355,35 +386,32 @@ async function _testNewCredentials(
     }
 
     if (result.error === 'invalid_client') {
-      // This means the Client ID or Secret is invalid
       return {
         success: false,
-        message: 'Invalid credentials: Google rejected the Client ID or Secret.',
-        details: { issues: ['Invalid Client ID or Secret'] },
+        message: 'Invalid credentials. Please check your Client ID and Secret.',
+        details: { issues: ['Invalid Client Credentials'] },
       };
     }
 
     if (result.error === 'redirect_uri_mismatch') {
-      // Credentials are valid but redirect URI isn't configured
       return {
         success: true,
         message:
-          'Credentials are valid! (Note: You may need to add redirect URIs in Google Cloud Console)',
+          'Credentials are valid, but redirect URI configuration needs attention in Google Console.',
       };
     }
 
-    // Some other error - credentials might be valid but there's another issue
+    // Any other error might indicate network issues or other problems
     return {
       success: false,
-      message: `Google API error: ${result.error_description || result.error || 'Unknown error'}`,
-      details: { issues: [result.error || 'Unknown error'] },
+      message: `Unexpected response from Google: ${result.error || 'Unknown error'}`,
+      details: { issues: [result.error_description || 'Unknown error'] },
     };
-  } catch (error) {
-    console.error('Error testing Google credentials:', error);
+  } catch (_error) {
     return {
       success: false,
-      message: 'Failed to connect to Google API. Please check your internet connection.',
-      details: { issues: ['Network error'] },
+      message: 'Failed to test credentials due to network or server error',
+      details: { issues: ['Network/Server Error'] },
     };
   }
 }
@@ -391,7 +419,7 @@ async function _testNewCredentials(
 /**
  * Resets Google Auth configuration by removing all stored settings.
  */
-export const resetGoogleAuthConfig = mutation({
+export const resetConfig = mutation({
   args: {
     ...SessionIdArg,
   },
@@ -414,7 +442,7 @@ export const resetGoogleAuthConfig = mutation({
 
     // Find and delete existing configuration
     const existingConfig = await ctx.db
-      .query('thirdPartyAuthConfig')
+      .query('auth_providerConfigs')
       .withIndex('by_type', (q) => q.eq('type', 'google'))
       .first();
 
