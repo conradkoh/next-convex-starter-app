@@ -60,20 +60,20 @@ pnpm lint
 The mobile app is connected to the same Convex backend as the web app:
 
 - **Shared Backend**: Uses `@workspace/backend` package
-- **Shared Frontend Code**: Reuses components and hooks from `@workspace/webapp`
+- **Independent Frontend**: Mobile-specific React Native components and hooks
 - **Real-time Data**: Automatic updates via Convex subscriptions
 - **Type Safety**: Full TypeScript support across frontend and backend
 - **App Version Display**: Shows backend version on the home screen
-- **Reduced Duplication**: Imports AppInfoProvider and useAppInfo from webapp
+- **Platform Independence**: No dependencies on webapp code
 
-### Code Sharing Strategy
+### Architecture Strategy
 
-The mobile app reduces code duplication by importing shared components from the webapp:
+The mobile app maintains complete independence from the webapp while sharing the backend:
 
-- **AppInfoProvider**: Context provider for app information (shared)
-- **useAppInfo Hook**: Custom hook for accessing app info (shared)
+- **AppInfoProvider**: Mobile-specific context provider for app information
+- **useAppInfo Hook**: Mobile-specific hook for accessing app info
 - **ConvexClientProvider**: Mobile-specific implementation for Expo environment
-- **Types**: All types are shared between mobile and web apps
+- **Types**: Platform-specific types ensure mobile-optimized interfaces
 
 ### Environment Configuration
 

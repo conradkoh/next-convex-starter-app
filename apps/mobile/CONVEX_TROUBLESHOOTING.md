@@ -52,22 +52,18 @@
 apps/mobile/
 ├── providers/
 │   ├── ConvexClientProvider.tsx  # Mobile-specific Convex client setup
-│   └── index.ts                  # Exports (imports shared code from webapp)
+│   ├── AppInfoProvider.tsx       # Mobile-specific app info context
+│   ├── useAppInfo.ts            # Mobile-specific app info hook
+│   └── index.ts                 # Exports all mobile providers
 ├── hooks/
-│   └── index.ts                 # Exports (imports shared hooks from webapp)
+│   └── index.ts                 # Exports mobile-specific hooks
 ├── app/
 │   └── _layout.tsx              # Root layout with providers
 ├── .env.local                   # Environment variables
 └── app.config.js               # Expo configuration
-
-Shared from @workspace/webapp:
-├── src/modules/app/
-│   ├── AppInfoProvider.tsx      # Shared app info context
-│   └── useAppInfo.ts           # Shared app info hook
 ```
 
 ### Dependencies
 
 - `@workspace/backend` - Shared backend API and types
-- `@workspace/webapp` - Shared frontend components and hooks
 - `convex` & `convex-helpers` - Convex client libraries

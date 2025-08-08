@@ -7,6 +7,7 @@ const readline = require('node:readline');
 
 const backendEnvPath = path.join(__dirname, '..', 'services', 'backend', '.env.local');
 const webappEnvPath = path.join(__dirname, '..', 'apps', 'webapp', '.env.local');
+const mobileEnvPath = path.join(__dirname, '..', 'apps', 'mobile', '.env.local');
 
 // Create readline interface for user interaction
 const rl = readline.createInterface({
@@ -96,6 +97,40 @@ function setupWebappEnv(convexUrl) {
 }
 
 /**
+ * Create or update the mobile app's .env.local file with the CONVEX_URL
+ */
+function setupMobileEnv(convexUrl) {
+  // Create the mobile directory if it doesn't exist
+  const mobileEnvDir = path.dirname(mobileEnvPath);
+  if (!fs.existsSync(mobileEnvDir)) {
+    fs.mkdirSync(mobileEnvDir, { recursive: true });
+  }
+
+  let envContent = '';
+
+  // If the mobile .env.local already exists, read its content
+  if (fs.existsSync(mobileEnvPath)) {
+    envContent = fs.readFileSync(mobileEnvPath, 'utf8');
+
+    // Update or add the EXPO_PUBLIC_CONVEX_URL
+    if (envContent.includes('EXPO_PUBLIC_CONVEX_URL=')) {
+      envContent = envContent.replace(
+        /EXPO_PUBLIC_CONVEX_URL=.+/,
+        `EXPO_PUBLIC_CONVEX_URL=${convexUrl}`
+      );
+    } else {
+      envContent += `\nEXPO_PUBLIC_CONVEX_URL=${convexUrl}\n`;
+    }
+  } else {
+    // Create a new .env.local file with just the CONVEX_URL
+    envContent = `EXPO_PUBLIC_CONVEX_URL=${convexUrl}\n`;
+  }
+
+  // Write the content to the mobile .env.local file
+  fs.writeFileSync(mobileEnvPath, envContent);
+}
+
+/**
  * Add upstream remote repository
  */
 function addUpstreamRemote() {
@@ -162,8 +197,16 @@ function continueSetup() {
   setupWebappEnv(convexUrl);
   console.log('✅ Webapp .env.local file created/updated successfully.');
 
+  // Set up the mobile app .env.local file
+  console.log('📱 Setting up mobile app .env.local file...');
+  setupMobileEnv(convexUrl);
+  console.log('✅ Mobile app .env.local file created/updated successfully.');
+
   console.log('\n🎉 Setup completed successfully!');
   console.log('You can now run "pnpm run dev" to start both the frontend and backend services.');
+  console.log(
+    'For mobile development, you can run "pnpm run mobile:dev" to start the Expo development server.'
+  );
 
   rl.close();
 }

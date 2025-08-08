@@ -1,9 +1,8 @@
-// Import shared components from webapp
+// Mobile-specific providers
+
 export {
   type AppInfo,
   type AppInfoContextValue,
   AppInfoProvider,
-} from '@workspace/webapp/src/modules/app/AppInfoProvider';
-
-// Mobile-specific providers
+} from './AppInfoProvider';
 export { ConvexClientProvider } from './ConvexClientProvider';

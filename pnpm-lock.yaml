@@ -54,9 +54,6 @@ importers:
       '@workspace/backend':
         specifier: workspace:*
         version: link:../../services/backend
-      '@workspace/webapp':
-        specifier: workspace:*
-        version: link:../webapp
       convex:
         specifier: ^1.24.8
         version: 1.24.8(react@19.0.0)
