@@ -6,6 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nx run-many --target=dev --projects=@workspace/webapp,@workspace/backend --parallel",
+    "mobile": "cd apps/mobile && pnpm start",
+    "mobile:ios": "cd apps/mobile && pnpm ios",
+    "mobile:android": "cd apps/mobile && pnpm android",
+    "mobile:web": "cd apps/mobile && pnpm web",
     "setup": "node scripts/setup.js",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
