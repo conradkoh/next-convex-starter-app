@@ -119,7 +119,11 @@ function setupMobileEnv(convexUrl) {
         `EXPO_PUBLIC_CONVEX_URL=${convexUrl}`
       );
     } else {
-      envContent += `\nEXPO_PUBLIC_CONVEX_URL=${convexUrl}\n`;
+      // Only add a newline if the content does not already end with one
+      if (!envContent.endsWith('\n')) {
+        envContent += '\n';
+      }
+      envContent += `EXPO_PUBLIC_CONVEX_URL=${convexUrl}\n`;
     }
   } else {
     // Create a new .env.local file with just the CONVEX_URL
