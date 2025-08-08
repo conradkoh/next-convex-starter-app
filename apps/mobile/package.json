@@ -8,6 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -15,6 +16,10 @@
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
+    "@workspace/backend": "workspace:*",
+    "@workspace/webapp": "workspace:*",
+    "convex": "^1.24.8",
+    "convex-helpers": "^0.1.96",
     "expo": "~53.0.20",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.7",

@@ -52,7 +52,35 @@ pnpm lint
 - **TypeScript**: Full TypeScript support
 - **Cross-platform**: iOS, Android, and Web support
 - **Modern React Native**: Uses React Native 0.79.5
+- **Convex Integration**: Real-time backend with type safety
 - **Development Tools**: ESLint configuration included
+
+## Convex Backend Integration
+
+The mobile app is connected to the same Convex backend as the web app:
+
+- **Shared Backend**: Uses `@workspace/backend` package
+- **Shared Frontend Code**: Reuses components and hooks from `@workspace/webapp`
+- **Real-time Data**: Automatic updates via Convex subscriptions
+- **Type Safety**: Full TypeScript support across frontend and backend
+- **App Version Display**: Shows backend version on the home screen
+- **Reduced Duplication**: Imports AppInfoProvider and useAppInfo from webapp
+
+### Code Sharing Strategy
+
+The mobile app reduces code duplication by importing shared components from the webapp:
+
+- **AppInfoProvider**: Context provider for app information (shared)
+- **useAppInfo Hook**: Custom hook for accessing app info (shared)
+- **ConvexClientProvider**: Mobile-specific implementation for Expo environment
+- **Types**: All types are shared between mobile and web apps
+
+### Environment Configuration
+
+The app uses `EXPO_PUBLIC_CONVEX_URL` for backend connection. This is configured in:
+
+- `.env.local` for development
+- `app.config.js` for app configuration
 
 ## Development Environment
 
@@ -62,12 +90,25 @@ The app supports:
 - Android API level 35+
 - Web browsers with modern JavaScript support
 
+## Available Commands
+
+Additional development commands:
+
+```bash
+# Type checking
+pnpm typecheck
+
+# From root (includes mobile app)
+pnpm typecheck
+```
+
 ## Next Steps
 
 1. Install the Expo Go app on your mobile device for easy testing
 2. Run `pnpm mobile` to start the development server
 3. Scan the QR code with Expo Go (Android) or Camera app (iOS)
-4. Start building your mobile app!
+4. Check the home screen for the app version from Convex backend
+5. Start building your mobile app with real-time data!
 
 ## Monorepo Integration
 
