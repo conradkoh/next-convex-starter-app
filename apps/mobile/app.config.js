@@ -1,6 +1,6 @@
 export default {
   expo: {
-    name: '@workspace/mobile',
+    name: 'Convex + Expo Starter App',
     slug: 'mobile',
     version: '1.0.0',
     orientation: 'portrait',

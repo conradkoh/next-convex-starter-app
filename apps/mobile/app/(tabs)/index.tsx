@@ -1,98 +1,81 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAppInfo } from '@/hooks';
 
 /**
- * Home screen component that displays app information and getting started steps.
+ * Home screen component that displays the app title and version.
  */
 export default function HomeScreen() {
   const { appInfo, isLoading, error } = useAppInfo();
 
+  // Debug log to see what we're getting
+  console.log('App info:', { appInfo, isLoading, error });
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
+    <ThemedView style={styles.container}>
+      <View style={styles.main}>
+        <ThemedText type="title" style={styles.title}>
+          Convex + Expo Starter App
+        </ThemedText>
+      </View>
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">App Information</ThemedText>
+      <View style={styles.footer}>
         {isLoading ? (
-          <ThemedText>Loading app info...</ThemedText>
+          <ThemedText style={styles.versionText}>Loading app version...</ThemedText>
         ) : error ? (
-          <ThemedText>Error loading app info: {error.message}</ThemedText>
+          <ThemedText style={styles.versionText}>Error: {error.message}</ThemedText>
         ) : appInfo ? (
-          <ThemedText>
-            App Version: <ThemedText type="defaultSemiBold">{appInfo.version}</ThemedText>
-          </ThemedText>
+          <ThemedText style={styles.versionText}>App Version: {appInfo.version}</ThemedText>
         ) : (
-          <ThemedText>No app info available</ThemedText>
+          <ThemedText style={styles.versionText}>No app info available</ThemedText>
         )}
-      </ThemedView>
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
+        <ThemedText style={styles.debugText}>
+          Debug - Loading: {isLoading ? 'Yes' : 'No'}, Error: {error ? 'Yes' : 'No'}, AppInfo:{' '}
+          {appInfo ? 'Yes' : 'No'}
         </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingVertical: 20,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  main: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  title: {
+    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: '600',
+    lineHeight: 40,
+  },
+  footer: {
+    paddingBottom: 40,
+    paddingTop: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  versionText: {
+    textAlign: 'center',
+    fontSize: 13,
+    opacity: 0.6,
+    fontWeight: '400',
+  },
+  debugText: {
+    textAlign: 'center',
+    fontSize: 12,
+    opacity: 0.8,
+    marginTop: 10,
   },
 });

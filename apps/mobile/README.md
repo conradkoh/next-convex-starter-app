@@ -1,6 +1,6 @@
-# Welcome to your Expo app 👋
+# Convex + Expo Starter App 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is a mobile app built with [Expo](https://expo.dev) and [Convex](https://convex.dev) as part of the Next Convex Starter App project.
 
 ## Get started
 
