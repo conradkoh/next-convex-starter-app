@@ -10,8 +10,10 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
+      bundleIdentifier: 'com.example.convexstarter', // TODO: replace with your org identifier
     },
     android: {
+      package: 'com.example.convexstarter', // TODO: replace with your org identifier
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
