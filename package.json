@@ -15,7 +15,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format .",
     "format:fix": "biome format --write .",
-    "typecheck": "nx run-many --target=typecheck --projects=@workspace/webapp,@workspace/backend,@workspace/mobile",
+    "typecheck": "nx run-many --target=typecheck --projects=@workspace/webapp,@workspace/backend,@workspace/mobile,@workspace/sdk",
     "prepare": "husky"
   },
   "lint-staged": {

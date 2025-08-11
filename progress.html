@@ -220,6 +220,21 @@
           </ul>
         </section>
       </section>
+      <section id="v1.1">
+        <meta name="version" content="1.1" />
+        <h1>SDK Scaffolding</h1>
+        <section feature="shared-sdk">
+          <ul>
+            <li>[x] Create packages/sdk with tsconfig, src/index.ts, and package.json scripts</li>
+            <li>[x] Add Nx project.json for @workspace/sdk (build, typecheck, lint)</li>
+            <li>[x] Add packages/* to pnpm-workspace.yaml</li>
+            <li>[x] Include @workspace/sdk in root typecheck</li>
+            <li>[x] Wire CI workflow to lint SDK and run typechecks</li>
+            <li>[x] Ensure Husky pre-commit runs lint-staged (already configured globally)</li>
+          </ul>
+          <p>Implementation notes: Followed Biome + Nx conventions. Avoided running dev servers per guidelines. CI limited to SDK lint to avoid unrelated repo issues.</p>
+        </section>
+      </section>
     </section>
   </body>
 </html>
