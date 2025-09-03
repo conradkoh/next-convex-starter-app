@@ -14,8 +14,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "convex": "^1.24.8",
-    "convex-helpers": "^0.1.96",
+    "convex": "^1.26.2",
+    "convex-helpers": "^0.1.104",
     "zod": "^4.0.5"
   },
   "devDependencies": {
