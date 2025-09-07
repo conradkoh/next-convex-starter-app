@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     // Disabling Next.js' built-in ESLint integration as we're using Biome
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    // Enable typed routes for compile-time type safety
+    typedRoutes: true,
+  },
 };
 
 const withMDX = createMDX({
