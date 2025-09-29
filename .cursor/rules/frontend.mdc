@@ -1,15 +1,22 @@
 ---
-description: 
-globs: 
+description: Frontend-specific context and coding guidelines for the webapp located in apps/webapp
+globs: "**"
 alwaysApply: true
 ---
 
-# Frontend Development
-This location of the frontend project is in `apps/webapp`.
+# Frontend Development Guidelines
 
-## IMPORTANT RULES
-- NEVER run the `dev` command to start the dev server unless explicitly told to do so.
-- NEVER run the `build` command to to test the app and prefer to rely on running tests and typechecks instead.
+This document provides frontend-specific context and coding guidelines for the webapp located in `apps/webapp`.
+
+## IMPORTANT DEVELOPMENT RULES
+
+- ❌ **NEVER run the `dev` command** to start the dev server unless explicitly told to do so
+- ❌ **NEVER run the `build` command** to test the app - prefer running tests and typechecks instead
+
+<warnings>
+  <danger>Do not run `pnpm run dev` unless explicitly requested.</danger>
+  <advice>Prefer tests and typechecks over manual builds for validation.</advice>
+</warnings>
 
 ## Dark Mode Guidelines - CRITICAL FOR ALL COMPONENTS
 
@@ -56,30 +63,70 @@ Test each component in: light mode → dark mode → system mode
 
 ## UI Design - Components & Icons
 
-This project uses the following libraries
-- Components
-    - ShadCN
-- Icons
-    - @radix-ui/react-icons
-    - lucide-react
-    - react-icons
+This project uses the following libraries:
 
-### Shadcn
+- **Components**: ShadCN
+- **Icons**:
+  - @radix-ui/react-icons
+  - lucide-react
+  - react-icons
+
+### ShadCN Components
+
 - When adding a new component, use the command format `npx shadcn@latest add <component-name>`
-- ALWAYS run the shadcn component add command from within the webapp folder at `apps/webapp`
+- ⚠️ **ALWAYS run the shadcn component add command from within the webapp folder** at `apps/webapp`
 
-## Next.js
+<note>
+  <scope>UI components</scope>
+  <why>Running the generator from the correct folder ensures paths and aliases resolve properly.</why>
+</note>
+
+## Next.js App Router
 
 In the latest Next.js app router, the `params` prop for top-level pages is now passed in as a **Promise**. This means you must `await` the params before using them in your page components.
 
-## Example
-```ts
+### Example
+
+```tsx
 // Always destructure and use `await params` in your top-level page components.
-export default async function MyComponent({ params }: { params: Promise<{ id: string }> }) {
+export default async function MyComponent({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
-  return (
-    <div>{id}</div>
-  );
+  return <div>{id}</div>;
 }
 ```
+
+## Authentication (Frontend)
+
+Use the session helpers from convex-helpers to automatically handle session ID:
+
+- `useSessionQuery` instead of `useQuery`
+- `useSessionMutation` instead of `useMutation`
+- `useSessionAction` instead of `useAction`
+
+### Example
+
+```tsx
+import {
+  useSessionQuery,
+  useSessionMutation,
+} from "convex-helpers/react/sessions";
+
+// In your component:
+const authState = useSessionQuery(api.auth.getState);
+const updateName = useSessionMutation(api.auth.updateUserName);
+```
+
+<contract>
+  <inputs>React components using Convex queries/mutations/actions.</inputs>
+  <outputs>Session-aware hooks that automatically pass session ID.</outputs>
+  <errorModes>Hooks return undefined while auth state is loading; handle loading states.</errorModes>
+</contract>
+
+## Feature Flags
+
+Feature flags for the app are configured in the backend at [featureFlags.ts](mdc:services/backend/config/featureFlags.ts).
 
