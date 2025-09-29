@@ -1,6 +1,44 @@
 # AI Instruction Surface Framework
 
-This framework sets out the meta rules for structuring and synchronizing AI assistant guidance. It explains how the `.github`, `.cursor`, and `codemaps` surfaces **MUST** be organized so that instructions stay consistent across tools.
+This framework sets out the meta rules for structuring and synchronizing AI assistant guidance. It explains how the `.github`, `.cursor`, `codemaps`, and `.ai` surfaces **MUST** be organized so that instructions stay consistent across tools.
+
+## Latest Alignment Summary
+
+> Maintain exactly one entry in this section. Each alignment run **MUST** replace the existing summary rather than appending new history, keeping the document concise.
+
+### September 29, 2025 - Initial Bootstrap Alignment
+
+**Completed Actions:**
+
+- ✅ Inventoried existing `.github/instructions/` files (core.instructions.md, frontend.instructions.md, backend.instructions.md)
+- ✅ Validated project structure against `codemaps/projectmap.md` - all paths and references are accurate
+- ✅ Created `.cursor/instructions/` directory structure
+- ✅ Created Cursor instruction files in `.mdc` format:
+  - `core.instructions.mdc` - Mirrors GitHub core guidance with DAFT principles
+  - `frontend.instructions.mdc` - Next.js, ShadCN, dark mode, and auth guidance
+  - `backend.instructions.mdc` - Convex backend patterns and SessionIdArg requirements
+- ✅ Added `/rulesalign` GitHub prompt (`.github/prompts/rulesalign.prompt.md`) aligned with `.ai/commands/rulesalign.md`
+- ✅ Updated `/rulesalign` command doc to require auditing every active tool surface (prompts, commands, snippets)
+
+**Format Adaptations:**
+
+- Converted GitHub's XML-style tags (`<urgent-rules>`, `<directive>`) to standard Markdown formatting
+- Maintained semantic equivalence while using Cursor-compatible syntax
+- Preserved all technical guidance, examples, and verification checklists
+
+**Validation Status:**
+
+- Project structure matches codemap documentation ✅
+- All instruction files reference correct paths and modules ✅
+- Cross-tool consistency maintained ✅
+
+## Open Gaps
+
+- This section **MUST** track outstanding follow-ups discovered during alignment runs.
+- When no actions are pending, the list **SHOULD** explicitly state "None".
+- Entries **MAY** include owners or target dates when known.
+
+_Current status: None_
 
 ## Normative Terms
 
@@ -106,10 +144,10 @@ Keep every surface synchronized. Capture any divergence in Open Gaps with a reme
 
 ## Cross-Surface Alignment Workflow
 
-1. **Inventory** — Inspect every instruction file under `.github` and `.cursor`. Review each file for accuracy and consult supporting meta-docs in `.ai/` for prior notes.
+1. **Inventory** — Inspect every instruction or prompt artifact under `.github`, `.github/prompts`, `.cursor`, and `.ai/commands`. Review each file for accuracy and consult supporting meta-docs in `.ai/` for prior notes.
 2. **Validate Structure** — Compare instructions against the current codemap. Resolve or log any mismatch.
 3. **Normalize Guidance** — Draft a tool-agnostic summary of the changes before producing tool-specific formatting.
-4. **Emit Variants** — Update `.github` first, then propagate identical content to `.cursor`. Document any intentional deviations.
+4. **Emit Variants** — Update `.github/instructions` and `.github/prompts` first, then propagate identical content to `.cursor` surfaces (instructions, commands) and any other tool-specific locations. Document any intentional deviations.
 5. **Record Outcomes** — Append summaries, decisions, and outstanding tasks to this framework so future runs inherit the latest context.
 
 ## Command Contracts
