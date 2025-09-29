@@ -1,44 +1,10 @@
 # AI Instruction Surface Framework
 
-This framework sets out the meta rules for structuring and synchronizing AI assistant guidance. It explains how the `.github`, `.cursor`, `codemaps`, and `.ai` surfaces **MUST** be organized so that instructions stay consistent across tools.
+This framework sets out the meta rules for structuring and synchronizing AI assistant guidance. It explains how - **Annotate examples:** Prefix examples with `Example:` and keep them distinct from directives to simplify extraction.
 
-## Latest Alignment Summary
+---
 
-> Maintain exactly one entry in this section. Each alignment run **MUST** replace the existing summary rather than appending new history, keeping the document concise.
-
-### September 29, 2025 - Initial Bootstrap Alignment
-
-**Completed Actions:**
-
-- ✅ Inventoried existing `.github/instructions/` files (core.instructions.md, frontend.instructions.md, backend.instructions.md)
-- ✅ Validated project structure against `codemaps/projectmap.md` - all paths and references are accurate
-- ✅ Created `.cursor/instructions/` directory structure
-- ✅ Created Cursor instruction files in `.mdc` format:
-  - `core.instructions.mdc` - Mirrors GitHub core guidance with DAFT principles
-  - `frontend.instructions.mdc` - Next.js, ShadCN, dark mode, and auth guidance
-  - `backend.instructions.mdc` - Convex backend patterns and SessionIdArg requirements
-- ✅ Added `/rulesalign` GitHub prompt (`.github/prompts/rulesalign.prompt.md`) aligned with `.ai/commands/rulesalign.md`
-- ✅ Updated `/rulesalign` command doc to require auditing every active tool surface (prompts, commands, snippets)
-
-**Format Adaptations:**
-
-- Converted GitHub's XML-style tags (`<urgent-rules>`, `<directive>`) to standard Markdown formatting
-- Maintained semantic equivalence while using Cursor-compatible syntax
-- Preserved all technical guidance, examples, and verification checklists
-
-**Validation Status:**
-
-- Project structure matches codemap documentation ✅
-- All instruction files reference correct paths and modules ✅
-- Cross-tool consistency maintained ✅
-
-## Open Gaps
-
-- This section **MUST** track outstanding follow-ups discovered during alignment runs.
-- When no actions are pending, the list **SHOULD** explicitly state "None".
-- Entries **MAY** include owners or target dates when known.
-
-_Current status: None_
+This framework provides the meta rules for organizing AI instruction surfaces. When uncertainty arises, update `.github` guidance first, document any lag for `.cursor`, and use codemaps to validate structural assumptions before finalizing changes., `.cursor`, `codemaps`, and `.ai` surfaces **MUST** be organized so that instructions stay consistent across tools.
 
 ## Normative Terms
 
@@ -59,7 +25,7 @@ _Current status: None_
 >
 > - Write each directive in uppercase to align with RFC 2119 conventions.
 > - Avoid mixing multiple normative keywords in a single sentence; split complex guidance into separate statements.
-> - If you depart from a **SHOULD** or **SHOULD NOT** directive, record the rationale in this framework or in the related automation logs.
+> - If you depart from a **SHOULD** or **SHOULD NOT** directive, record the rationale in the related automation logs.
 
 ## Instruction Surfaces Overview
 
@@ -68,7 +34,7 @@ _Current status: None_
 - `codemaps/` stores structural documentation that **SHOULD** inform and validate instruction updates.
 - `.ai/features/codemap.md` captures codemap meta rules and, when present, **MUST** be referenced whenever instruction boundaries or terminology are aligned.
 
-Keep every surface synchronized. Capture any divergence in Open Gaps with a remediation plan. When available, treat the meta rules in `.ai/features/codemap.md` as the canonical source for aligning terminology, boundaries, and expectations across all tool-specific instruction sets.
+Keep every surface synchronized. Capture any divergence with a remediation plan. When available, treat the meta rules in `.ai/features/codemap.md` as the canonical source for aligning terminology, boundaries, and expectations across all tool-specific instruction sets.
 
 ## `.github` Instruction Surface
 
@@ -88,12 +54,11 @@ Keep every surface synchronized. Capture any divergence in Open Gaps with a reme
 
 - Each instruction file **MUST** include clearly labeled sections such as “Directives”, “Constraints”, and “Examples” (or equivalent headings that convey intent).
 - Place guidance that applies to every scope in the “general” document to avoid duplication; doing so **SHOULD** keep the content easy to find.
-- Keep tooling references, command names, and repository paths accurate. If you have to make an assumption, record it in Open Gaps until you can validate it.
+- Keep tooling references, command names, and repository paths accurate. If you have to make an assumption, validate it before proceeding.
 
 ### Maintenance Workflow
 
 - When guidance changes, update every affected `.github/instructions/` file in the same alignment session.
-- Add a summary to this framework describing what changed and why; doing so **SHOULD** give future readers quick context.
 - Example: after introducing a new deployment policy, update the relevant scope file and document that Cursor parity is pending until regenerated.
 
 ## `.cursor` Instruction Surface
@@ -118,7 +83,7 @@ Keep every surface synchronized. Capture any divergence in Open Gaps with a reme
 
 ### Maintenance Workflow
 
-- Whenever `.github` instructions change, regenerate the `.cursor` equivalents or flag them in Open Gaps with a target completion date.
+- Whenever `.github` instructions change, regenerate the `.cursor` equivalents or flag them with a target completion date.
 - Use automation scripts when available to transform Markdown into Cursor format. If you edit manually, follow the same alignment checklist described below.
 - Example: after updating a testing guideline in `.github/instructions/testing.instructions.md`, run the conversion pipeline to refresh the `.cursor` version and verify section parity.
 
@@ -139,8 +104,7 @@ Keep every surface synchronized. Capture any divergence in Open Gaps with a reme
 ### Maintenance Workflow
 
 - Running the codemap generation routine **MUST** update or replace the primary artifact in `codemaps/`.
-- After regeneration, add a brief note here documenting the refresh date and any notable structural changes; doing so **SHOULD** give future editors quick context.
-- Follow the meta requirements documented in `.ai/features/codemap.md` when authoring codemaps, and log any deviations in Open Gaps with a remediation plan.
+- Follow the meta requirements documented in `.ai/features/codemap.md` when authoring codemaps.
 
 ## Cross-Surface Alignment Workflow
 
@@ -148,7 +112,7 @@ Keep every surface synchronized. Capture any divergence in Open Gaps with a reme
 2. **Validate Structure** — Compare instructions against the current codemap. Resolve or log any mismatch.
 3. **Normalize Guidance** — Draft a tool-agnostic summary of the changes before producing tool-specific formatting.
 4. **Emit Variants** — Update `.github/instructions` and `.github/prompts` first, then propagate identical content to `.cursor` surfaces (instructions, commands) and any other tool-specific locations. Document any intentional deviations.
-5. **Record Outcomes** — Append summaries, decisions, and outstanding tasks to this framework so future runs inherit the latest context.
+5. **Record Outcomes** — Document summaries, decisions, and outstanding tasks in the appropriate project tracking systems so future runs inherit the latest context.
 
 ## Command Contracts
 
@@ -167,20 +131,18 @@ Keep every surface synchronized. Capture any divergence in Open Gaps with a reme
 - **Purpose:** Generate or refresh structural maps that describe the repository topology.
 - **MUST:** Run the codemap tooling defined by the workspace and store outputs under `codemaps/` with timestamped filenames.
 - **MUST:** Replace or archive stale maps to avoid conflicting guidance.
-- **SHOULD:** Summarize notable structural discoveries (such as new modules or renamed domains) in this framework after each run.
 - **MAY:** Produce focused maps (per service or feature area) when the repository is large.
 
-**Example:** After reorganizing a feature directory tree, regenerate the codemap, commit the updated artifact, and log the refresh date plus high-level changes here.
+**Example:** After reorganizing a feature directory tree, regenerate the codemap and update the repository artifacts.
 
 ### `/alignrules`
 
 - **Purpose:** Synchronize instruction files across all supported tooling surfaces.
 - **MUST:** Execute the complete alignment workflow described above during each run.
 - **MUST:** Update every impacted instruction file within the same branch or change set.
-- **SHOULD:** Capture a brief outcome summary in this framework, including any deferred work.
 - **MAY:** Use automation to convert Markdown to tool-specific formats, provided the resulting content remains semantically identical.
 
-**Example:** When adding guidance for a new feature flag convention, update the relevant `.github` scopes, regenerate the `.cursor` equivalents, and document the alignment status in the Open Gaps log if follow-up is required.
+**Example:** When adding guidance for a new feature flag convention, update the relevant `.github` scopes, regenerate the `.cursor` equivalents, and document the alignment status in the project tracking system if follow-up is required.
 
 ## Structural Recommendations for AI Agents
 
@@ -200,4 +162,4 @@ _Current status: None_
 
 ---
 
-This framework **MUST** evolve alongside the instruction surfaces. When uncertainty arises, update `.github` guidance first, document any lag for `.cursor`, and use codemaps to validate structural assumptions before finalizing changes.
+This framework provides the meta rules for organizing AI instruction surfaces. When uncertainty arises, update `.github` guidance first, document any lag for `.cursor`, and use codemaps to validate structural assumptions before finalizing changes.
