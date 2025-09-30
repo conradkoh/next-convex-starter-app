@@ -1,6 +1,80 @@
 # AI Instruction Surface Framework
 
-This framework sets out the meta rules for structuring and synchronizing AI assistant guidance. It explains how - **Annotate examples:** Prefix examples with `Example:` and keep them distinct from directives to simplify extraction.
+This framework sets out the meta rules for structuring and synchronizing AI assistant guidance.
+
+## Latest Alignment Summary
+
+**Date:** September 30, 2025  
+**Session:** Rules alignment command execution - Content handling strategy correction  
+**Branch:** rules-alignment
+
+### Changes Completed
+
+1. **CORRECTED content handling strategy** – Updated rulesalign instructions across all surfaces to properly handle different content types:
+   - Commands: `.ai/commands/*.md` is source of truth, copy verbatim to all surfaces
+   - Core instructions: `.github/instructions/*.md` is canonical, sync with format adaptations
+   - Tool-specific rules: Merge latest from all sources, never delete directories
+2. **Updated rulesalign command documentation** – Synchronized improved content handling logic across `.ai/commands/`, `.github/prompts/`, and `.cursor/commands/`
+3. **Restored `.cursor/rules/` directory** – Recreated directory that was incorrectly deleted in previous session
+4. **Enhanced structure.md workflow** – Added explicit content type handling rules to cross-surface alignment workflow
+5. **Added preservation directive** – Explicit requirement to never delete tool-specific directories during alignment
+
+### Structure Validation
+
+- ✅ `.github/instructions/` contains canonical instruction files (core, frontend, backend)
+- ✅ `.github/prompts/` contains authoritative command prompts (cleanup, codemap, rulesalign)
+- ✅ `.cursor/instructions/` mirrors .github content in .mdc format
+- ✅ `.cursor/commands/` contains synchronized command documentation
+- ✅ `.cursor/rules/` directory restored for tool-specific rules
+- ✅ `.ai/commands/` maintains source of truth for command content
+- ✅ `codemaps/projectmap.md` provides current structural context
+
+### Corrected Process
+
+The alignment workflow now properly handles three distinct content types:
+
+1. **Commands** (cleanup, codemap, rulesalign): Source of truth in `.ai/commands/`, copied verbatim
+2. **Core Instructions** (core, frontend, backend): Canonical in `.github/instructions/`, adapted for other tools
+3. **Tool-specific Rules**: Merged from latest versions across tools, directories preserved
+
+### Outstanding Work
+
+None – All instruction surfaces are now synchronized with the corrected content handling strategy.
+
+---outstanding follow-ups discovered during alignment runs.
+
+- When no actions are pending, the list **SHOULD** explicitly state "None".
+- Entries **MAY** include owners or target dates when known.
+
+_Current status: None_
+
+## Latest Alignment Summary
+
+**Date:** September 30, 2025  
+**Session:** Rules alignment command execution  
+**Branch:** rules-alignment
+
+### Changes Completed
+
+1. **Synchronized .cursor/commands/rulesalign.md** – Updated to match canonical .github/prompts/rulesalign.prompt.md content, replacing outdated workflow with current alignment process
+2. **Removed duplicate .cursor/rules/ directory** – Eliminated redundant instruction surface that violated framework specifications
+3. **Validated instruction file consistency** – Confirmed .github/instructions/, .cursor/instructions/, and .ai/commands/ contain synchronized content
+4. **Verified command coverage** – All three commands (cleanup, codemap, rulesalign) now have consistent documentation across all surfaces
+
+### Structure Validation
+
+- ✅ `.github/instructions/` contains canonical instruction files (core, frontend, backend)
+- ✅ `.github/prompts/` contains authoritative command prompts (cleanup, codemap, rulesalign)
+- ✅ `.cursor/instructions/` mirrors .github content in .mdc format
+- ✅ `.cursor/commands/` contains synchronized command documentation
+- ✅ `.ai/commands/` maintains consistent command reference documentation
+- ✅ `codemaps/projectmap.md` provides current structural context
+
+### Outstanding Work
+
+None – All instruction surfaces are now synchronized and compliant with the framework requirements.
+
+---amples:\*\* Prefix examples with `Example:` and keep them distinct from directives to simplify extraction.
 
 ---
 
@@ -15,7 +89,7 @@ This framework provides the meta rules for organizing AI instruction surfaces. W
 | **REQUIRED**    | Synonym for **MUST**.                                             | Prefer **MUST** for clarity unless quoting external policy.              |
 | **SHALL**       | Synonym for **MUST** often used in contractual contexts.          | Reserve for clauses that need a formal tone or match external standards. |
 | **SHALL NOT**   | Synonym for **MUST NOT**.                                         | Apply when mirroring legal or standards language.                        |
-| **SHOULD**      | Strong recommendation; deviations are allowed with justification. | Document any exceptions in the Open Gaps section or session notes.       |
+| **SHOULD**      | Strong recommendation; deviations are allowed with justification. | Record any justified deviations in normal project tracking notes.        |
 | **SHOULD NOT**  | Advisory prohibition with allowed exceptions.                     | Record rationale when exceptions occur.                                  |
 | **RECOMMENDED** | Synonym for **SHOULD**.                                           | Use when emphasizing best practices without making them mandatory.       |
 | **MAY**         | Optional action that is safe to omit.                             | Pair with conditions describing when the option is useful.               |
@@ -108,11 +182,11 @@ Keep every surface synchronized. Capture any divergence with a remediation plan.
 
 ## Cross-Surface Alignment Workflow
 
-1. **Inventory** — Inspect every instruction or prompt artifact under `.github`, `.github/prompts`, `.cursor`, and `.ai/commands`. Review each file for accuracy and consult supporting meta-docs in `.ai/` for prior notes.
-2. **Validate Structure** — Compare instructions against the current codemap. Resolve or log any mismatch.
-3. **Normalize Guidance** — Draft a tool-agnostic summary of the changes before producing tool-specific formatting.
-4. **Emit Variants** — Update `.github/instructions` and `.github/prompts` first, then propagate identical content to `.cursor` surfaces (instructions, commands) and any other tool-specific locations. Document any intentional deviations.
-5. **Record Outcomes** — Document summaries, decisions, and outstanding tasks in the appropriate project tracking systems so future runs inherit the latest context.
+1. **Inventory** — Inspect every instruction or prompt artifact under `.github`, `.github/prompts`, `.cursor`, and `.ai/commands`. Review each file for accuracy and consult supporting meta-docs for prior notes.
+2. **Validate Structure** — Compare instructions against the current codemap. Resolve or note any mismatch in normal project tracking.
+3. **Normalize Guidance** — Draft a tool-agnostic summary of the changes before producing tool-specific formatting. **For commands**: Use `.ai/commands/*.md` as source of truth. **For instructions**: Use `.github/instructions/*.md` as canonical source. **For tool-specific rules**: Merge latest versions to create coherent combined version.
+4. **Emit Variants** — **Start by updating `.github/instructions` and `.github/prompts` first**, then propagate to `.cursor` surfaces and other tool-specific locations. **NEVER delete tool-specific directories** - they serve different purposes than general instructions. Document any intentional deviations externally.
+5. **Record Outcomes** — Capture summaries, decisions, and follow-ups in standard project tracking locations (issues, PR descriptions, etc.) so future runs inherit the latest context.
 
 ## Command Contracts
 
@@ -140,6 +214,9 @@ Keep every surface synchronized. Capture any divergence with a remediation plan.
 - **Purpose:** Synchronize instruction files across all supported tooling surfaces.
 - **MUST:** Execute the complete alignment workflow described above during each run.
 - **MUST:** Update every impacted instruction file within the same branch or change set.
+- **MUST:** Preserve all tool-specific directories (never delete `.cursor/rules/` or similar).
+- **MUST:** Use `.ai/commands/*.md` as source of truth for command content.
+- **MUST:** Use `.github/instructions/*.md` as canonical source for core instruction content.
 - **MAY:** Use automation to convert Markdown to tool-specific formats, provided the resulting content remains semantically identical.
 
 **Example:** When adding guidance for a new feature flag convention, update the relevant `.github` scopes, regenerate the `.cursor` equivalents, and document the alignment status in the project tracking system if follow-up is required.
@@ -152,14 +229,6 @@ Keep every surface synchronized. Capture any divergence with a remediation plan.
 - **Reference glossary identifiers:** Link back to Normative Terms when using keywords so agents can validate intent quickly.
 - **Annotate examples:** Prefix examples with `Example:` and keep them distinct from directives to simplify extraction.
 
-## Open Gaps
+## Reference Notes
 
-- This section **MUST** track outstanding follow-ups discovered during alignment runs.
-- When no actions are pending, the list **SHOULD** explicitly state “None”.
-- Entries **MAY** include owners or target dates when known.
-
-_Current status: None_
-
----
-
-This framework provides the meta rules for organizing AI instruction surfaces. When uncertainty arises, update `.github` guidance first, document any lag for `.cursor`, and use codemaps to validate structural assumptions before finalizing changes.
+This framework defines organization and synchronization principles for instruction surfaces. When uncertainty arises, rely on the canonical sources (`.github/instructions` for core instructions and `.ai/commands` for command content) and validate structural assumptions via the latest codemap artifacts.

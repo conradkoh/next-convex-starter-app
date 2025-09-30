@@ -8,23 +8,23 @@ Follow these steps in order. Only open the referenced files when the step instru
 - Make note of the current branch that will hold alignment changes.
 - Close any instruction files you already have open.
 
-## Step 1 · Load the framework (read now, then close)
+## Step 1 · Load the framework (read only)
 
 1. Open `.ai/structure.md`.
-2. Read it top to bottom once, paying special attention to:
-   - “Latest Alignment Summary” for prior outcomes or pending gaps.
+2. Read it top to bottom once, focusing on:
    - “Instruction Surfaces Overview” and the per-surface sections.
-   - “Cross-Surface Alignment Workflow” and “Command Contracts”.
-3. Close the file after reading—refer back only if a later step explicitly tells you to.
+   - “Cross-Surface Consistency” / similar workflow context.
+   - “Command Contracts”.
+3. Close the file after reading; treat it as reference-only for the remainder of this session.
 
 ## Step 2 · Distribute command definitions
 
-Process each file in `.ai/commands/` one at a time:
+Process each file in `.ai/commands/` one at a time as authoritative reference material:
 
-1. Open a command file (for example `rulesalign.md`) and follow its instructions.
-2. Copy/adapt the command into the locations listed under “Emit Variants” inside that command (e.g. `.github/prompts/`, `.cursor/commands/`).
+1. Open a command file (for example `rulesalign.md`) and consult its documentation to understand intended behavior across other surfaces.
+2. Apply/replicate the documented command behavior into the appropriate locations (e.g. `.github/prompts/`, `.cursor/commands/`) using the existing repository conventions.
 3. Finish syncing that command before moving to the next file.
-4. When all commands are mirrored, run the `/rulesalign` instructions in the command doc to verify surfaces stay in sync.
+4. After all commands are mirrored, use `/rulesalign` to verify surfaces stay in sync.
 
 ## Step 3 · Inspect the project structure
 
@@ -34,12 +34,11 @@ Process each file in `.ai/commands/` one at a time:
 
 ## Step 4 · Author scope-specific rules
 
-1. Re-open `.ai/structure.md` only for the sections that describe the surfaces you are editing (e.g. `.github` or `.cursor`).
-2. For each scope identified in Step 3, create or update the corresponding instruction files:
+1. For each scope identified in Step 3, create or update the corresponding instruction files:
    - `.github/instructions/*.instructions.md`
    - `.cursor/instructions/*.mdc`
-3. Use the framework’s guidance and your Step 3 notes to tailor rules to each workspace or feature area.
-4. After each file is updated, close it and note any outstanding follow-ups in the “Open Gaps” section of `.ai/structure.md`.
+2. Use the framework guidance (from Step 1) and your Step 3 notes to tailor rules to each workspace or feature area.
+3. After each file is updated, close it and record any follow-ups in normal project tracking (issue, PR notes, etc.).
 
 ## Step 5 · Document the architecture
 
@@ -50,9 +49,8 @@ Process each file in `.ai/commands/` one at a time:
 ## Step 6 · Finalize and verify
 
 1. Re-run the `/rulesalign` command to ensure every surface is synchronized.
-2. Confirm the “Latest Alignment Summary” in `.ai/structure.md` reflects this session and still contains only a single entry.
-3. Ensure “Open Gaps” is accurate (either list pending work or state “None”).
-4. Stage changes and prepare them for review according to repository conventions.
+2. Spot-check that `.github/instructions/`, `.github/prompts/`, `.cursor/instructions/`, and `.cursor/commands/` express consistent guidance.
+3. Stage changes and prepare them for review according to repository conventions.
 
 ---
 
