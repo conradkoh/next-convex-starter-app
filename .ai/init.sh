@@ -31,13 +31,11 @@ PROCESS:
     3. Distributes commands from .ai/commands/ to:
        - .github/prompts/*.prompt.md
        - .cursor/commands/*.md
-    4. Syncs instructions from .github/instructions/ to:
-       - .cursor/instructions/*.mdc
 
 SOURCE OF TRUTH:
     • Commands: .ai/commands/*.md
-    • Instructions: .github/instructions/*.instructions.md
-    • Tool-specific rules: Preserved, not modified
+    • Instructions: .github/instructions/*.instructions.md (NOT synced by this script)
+    • Tool-specific rules: .cursor/rules/ (manually managed)
 
 For more information, see .ai/README.md
 EOF
@@ -106,13 +104,11 @@ echo -e "${YELLOW}Step 1: Ensuring target directories exist...${NC}"
 if [ "$DRY_RUN" = false ]; then
     mkdir -p .github/prompts
     mkdir -p .cursor/commands
-    mkdir -p .cursor/instructions
     mkdir -p .cursor/rules
     echo -e "${GREEN}✓ Target directories verified${NC}"
 else
     echo -e "${BLUE}→ Would create: .github/prompts${NC}"
     echo -e "${BLUE}→ Would create: .cursor/commands${NC}"
-    echo -e "${BLUE}→ Would create: .cursor/instructions${NC}"
     echo -e "${BLUE}→ Would create: .cursor/rules${NC}"
 fi
 echo
@@ -178,66 +174,7 @@ else
 fi
 echo
 
-# Step 3: Sync instruction files from .github/instructions/ to .cursor/instructions/
-echo -e "${YELLOW}Step 3: Syncing instruction files...${NC}"
-
-if [ -d ".github/instructions" ]; then
-    INSTRUCTION_COUNT=0
-    for inst_file in .github/instructions/*.instructions.md; do
-        if [ ! -f "$inst_file" ]; then
-            continue
-        fi
-        
-        INSTRUCTION_COUNT=$((INSTRUCTION_COUNT + 1))
-        basename=$(basename "$inst_file")
-        name="${basename%.instructions.md}"
-        
-        echo -e "  ${BLUE}Processing: ${basename}${NC}"
-        
-        # Cursor Instructions: Convert to .mdc format
-        cursor_target=".cursor/instructions/${name}.mdc"
-        
-        if [ "$DRY_RUN" = false ]; then
-            # Read the original file and convert frontmatter from --- to <!-- -->
-            {
-                in_frontmatter=false
-                first_line=true
-                
-                while IFS= read -r line; do
-                    if [ "$line" = "---" ]; then
-                        if [ "$first_line" = true ]; then
-                            echo "<!--"
-                            in_frontmatter=true
-                            first_line=false
-                        elif [ "$in_frontmatter" = true ]; then
-                            echo "-->"
-                            echo ""
-                            in_frontmatter=false
-                        fi
-                    else
-                        echo "$line"
-                        first_line=false
-                    fi
-                done < "$inst_file"
-            } > "$cursor_target"
-            
-            echo -e "    ${GREEN}✓ Synced to .cursor/instructions/${name}.mdc${NC}"
-        else
-            echo -e "    ${BLUE}→ Would sync to .cursor/instructions/${name}.mdc${NC}"
-        fi
-    done
-    
-    if [ $INSTRUCTION_COUNT -eq 0 ]; then
-        echo -e "${YELLOW}  No instruction files found in .github/instructions/${NC}"
-    else
-        echo -e "${GREEN}✓ Synced ${INSTRUCTION_COUNT} instruction file(s)${NC}"
-    fi
-else
-    echo -e "${YELLOW}  Directory .github/instructions/ not found, skipping...${NC}"
-fi
-echo
-
-# Step 4: Summary
+# Step 3: Summary
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 if [ "$DRY_RUN" = true ]; then
     echo -e "${GREEN}✓ Dry run complete! No files were modified.${NC}"
@@ -252,18 +189,12 @@ if [ "$DRY_RUN" = true ]; then
 else
     echo -e "  • Distributed ${COMMAND_COUNT} command(s) from .ai/commands/"
 fi
-echo -e "  • Command targets:"
-echo -e "    - .github/prompts/*.prompt.md"
-echo -e "    - .cursor/commands/*.md"
-if [ -d ".github/instructions" ]; then
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "  • Would sync instruction files from .github/instructions/"
-    else
-        echo -e "  • Synced instruction files from .github/instructions/"
-    fi
-    echo -e "  • Instruction targets:"
-    echo -e "    - .cursor/instructions/*.mdc"
-fi
+echo
+echo -e "${YELLOW}Distribution Mapping:${NC}"
+echo -e "  ${BLUE}Commands:${NC}"
+echo -e "    .ai/commands/<name>.md"
+echo -e "      ├─→ .github/prompts/<name>.prompt.md (+ frontmatter)"
+echo -e "      └─→ .cursor/commands/<name>.md (+ frontmatter)"
 echo
 if [ "$DRY_RUN" = true ]; then
     echo -e "${YELLOW}Next Steps:${NC}"
@@ -278,8 +209,8 @@ fi
 echo
 echo -e "${YELLOW}Note:${NC}"
 echo -e "  • This script treats .ai/commands/*.md as the source of truth"
-echo -e "  • Instruction files use .github/instructions/*.instructions.md as canonical"
-echo -e "  • Tool-specific rules in .cursor/rules/ are preserved (not modified)"
+echo -e "  • Instructions in .github/instructions/ are used by GitHub Copilot only"
+echo -e "  • Cursor-specific rules are manually managed in .cursor/rules/"
 if [ "$DRY_RUN" = true ]; then
     echo -e "  • Run ${BLUE}.ai/init.sh${NC} without --dry-run to apply changes"
 fi

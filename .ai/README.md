@@ -38,9 +38,7 @@ This script will:
 3. 🔄 Distribute commands from `.ai/commands/` to:
    - `.github/prompts/*.prompt.md` (with agent frontmatter)
    - `.cursor/commands/*.md` (with agent frontmatter)
-4. 📋 Sync instruction files from `.github/instructions/` to:
-   - `.cursor/instructions/*.mdc` (converted format)
-5. 📊 Display summary and next steps
+4. 📊 Display summary and next steps
 
 **Options:**
 - `--dry-run` or `-n`: Preview what would be changed without modifying files
@@ -67,21 +65,21 @@ All command definitions in `.ai/commands/*.md` are the **source of truth** and s
 
 ## Instruction Sources
 
-Core instruction files in `.github/instructions/*.instructions.md` are the **canonical source** for:
+Core instruction files in `.github/instructions/*.instructions.md` are used by **GitHub Copilot**:
 
 - `core.instructions.md` - General coding principles and rules
 - `frontend.instructions.md` - Frontend-specific guidelines
 - `backend.instructions.md` - Backend-specific guidelines
 
-These are synced to `.cursor/instructions/*.mdc` with format adaptations.
+**Note:** These are NOT automatically synced to Cursor. Cursor uses its own rules in `.cursor/rules/`.
 
 ## Tool-Specific Rules
 
-The `.cursor/rules/` directory contains **tool-specific rules** that are:
+The `.cursor/rules/` directory contains **Cursor-specific rules** that are:
 
-- ✅ Preserved during alignment
-- ✅ Not overwritten by sync processes
-- ✅ Manually managed per tool requirements
+- ✅ Manually managed for Cursor IDE
+- ✅ NOT synced from `.github/instructions/`
+- ✅ Preserved during init script runs
 
 ## Workflow
 
@@ -109,7 +107,7 @@ Use the `/rulesalign` command to ensure all instruction surfaces are synchronize
 This performs a comprehensive alignment check across:
 - `.ai/commands/` - Command definitions
 - `.github/instructions/` and `.github/prompts/` - GitHub Copilot
-- `.cursor/instructions/`, `.cursor/commands/`, `.cursor/rules/` - Cursor IDE
+- `.cursor/commands/` and `.cursor/rules/` - Cursor IDE
 - `codemaps/` - Project structure documentation
 
 ## Framework Documentation

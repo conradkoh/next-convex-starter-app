@@ -35,10 +35,12 @@ Process each file in `.ai/commands/` one at a time as authoritative reference ma
 ## Step 4 · Author scope-specific rules
 
 1. For each scope identified in Step 3, create or update the corresponding instruction files:
-   - `.github/instructions/*.instructions.md`
-   - `.cursor/instructions/*.mdc`
+   - `.github/instructions/*.instructions.md` (for GitHub Copilot)
+   - `.cursor/rules/*.md` (for Cursor IDE - manually managed)
 2. Use the framework guidance (from Step 1) and your Step 3 notes to tailor rules to each workspace or feature area.
 3. After each file is updated, close it and record any follow-ups in normal project tracking (issue, PR notes, etc.).
+
+**Note:** Instructions are tool-specific and NOT synced between GitHub and Cursor.
 
 ## Step 5 · Document the architecture
 
@@ -49,7 +51,7 @@ Process each file in `.ai/commands/` one at a time as authoritative reference ma
 ## Step 6 · Finalize and verify
 
 1. Re-run the `/rulesalign` command to ensure every surface is synchronized.
-2. Spot-check that `.github/instructions/`, `.github/prompts/`, `.cursor/instructions/`, and `.cursor/commands/` express consistent guidance.
+2. Spot-check that `.github/instructions/`, `.github/prompts/`, `.cursor/commands/`, and `.cursor/rules/` express consistent guidance.
 3. Stage changes and prepare them for review according to repository conventions.
 
 ---
