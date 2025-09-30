@@ -2,81 +2,36 @@
 mode: agent
 ---
 
-# Rules Alignment Command
+# `/rulesalign`
 
-Synchronize every instruction surface (`.github`, `.github/prompts`, `.cursor`, `codemaps`, and `.ai`) so that guidance, automation contracts, and command references stay identical across all tools.
-
-## When to Run
-
-- You edit or review any instruction, prompt, or command file across the repo
-- You add, rename, or deprecate automation commands (for example `/cleanup`, `/codemap`)
-- The codemap or project map changes and introduces new terminology or boundaries
-
-## Preconditions
-
-1. **Branch ready** – Work from a clean branch dedicated to the alignment session.
-2. **Context loaded** – Review `.ai/structure.md`, the latest codemaps, and all instruction/prompt files you expect to touch.
-3. **Tool surface audit** – List every AI/editor integration in use (GitHub prompts, Cursor commands, VS Code snippets, etc.) and locate their command definitions.
-4. **Templates available** – Gather any command or instruction templates needed to regenerate files consistently.
-
-## Alignment Workflow
-
-Follow the cross-surface workflow defined in `.ai/structure.md` and expand as below:
-
-1. **Inventory**
-   - List every instruction and prompt artifact under `.github/`, `.github/prompts/`, `.cursor/`, `.ai/commands/`, and related docs.
-   - Capture version metadata, owners, and last-updated timestamps when present.
-2. **Validate Structure**
-   - Compare the documented guidance against the current codemap/project structure.
-   - Log discrepancies (missing sections, stale paths, outdated terminology) in a scratch pad.
-3. **Normalize Guidance**
-   - Draft a canonical summary of the desired rules, commands, and naming conventions.
-   - Resolve conflicts—default to the latest codemap or project map when sources disagree.
-4. **Emit Variants**
-   - Update `.github/instructions` and `.github/prompts` first, then mirror the same content into `.cursor/instructions`, `.cursor/commands`, and any other tool-specific surfaces.
-   - Regenerate supporting docs (`.ai/commands/*.md`, codemap notes, prompt manifests) so the wording matches verbatim where required.
-   - Keep section ordering and normative language identical unless a tool format forces changes.
-5. **Record Outcomes**
-   - Replace the entry in the `Latest Alignment Summary` section of `.ai/structure.md` with the current run's details (never append additional history).
-   - Document completed updates, outstanding gaps, and owners in the Open Gaps section or session notes.
-   - Include timestamps plus direct references to updated artifacts for traceability.
-
-- Maintain semantic consistency while adapting formatting as needed
-
----
-
-## mode: agent
-
-# Rules Alignment Command
-
-Synchronize every instruction surface (`.github`, `.github/prompts`, `.cursor`, `codemaps`, and `.ai`) so that guidance, automation contracts, and command references stay identical across all tools.
+The `/rulesalign` command synchronizes every instruction surface (.github, .cursor, codemaps, and `.ai`) so that tooling guidance, automation contracts, and command references remain identical across editors.
 
 ## When to Run
 
-- You edit or review any instruction, prompt, or command file across the repo
-- You add, rename, or deprecate automation commands (for example `/cleanup`, `/codemap`)
-- The codemap or project map changes and introduces new terminology or boundaries
+- Initiating or reviewing changes to any instruction files under `.github/` or `.cursor/`
+- Adding, renaming, or deprecating commands referenced by automation (for example `/cleanup`, `/codemap`)
+- After codemap updates that introduce new instruction boundaries or terminology
 
 ## Preconditions
 
-1. **Branch ready** – Work from a clean branch dedicated to the alignment session.
-2. **Context loaded** – Review `.ai/structure.md`, the latest codemaps, and all instruction/prompt files you expect to touch.
-3. **Tool surface audit** – List every AI/editor integration in use (GitHub prompts, Cursor commands, VS Code snippets, etc.) and locate their command definitions.
-4. **Templates available** – Gather any command or instruction templates needed to regenerate files consistently.
+1. **Branch preparation**: Work on a dedicated branch with a clean git status before starting alignment.
+2. **Context gathering**: Review `.ai/structure.md` (reference-only), the latest entries in `codemaps/`, and all instruction files that will be modified.
+3. **Tool surface audit**: Enumerate every AI/editor integration in use (for example GitHub prompts, Cursor commands, VS Code snippets) and note the files that define the shared commands.
+4. **Template readiness**: Ensure command or instruction templates (if any) are available so regenerated files follow repository conventions.
 
 ## Alignment Workflow
 
-Follow the cross-surface workflow defined in `.ai/structure.md` and expand as below:
+Follow the cross-surface workflow (reference the framework document for principles) and expand each step as described below:
 
 1. **Inventory**
-   - List every instruction and prompt artifact under `.github/`, `.github/prompts/`, `.cursor/`, `.ai/commands/`, and related docs.
-   - Capture version metadata, owners, and last-updated timestamps when present.
+   - List every instruction artifact across `.github/`, `.github/prompts/` (or equivalent), `.cursor/`, `.ai/commands/`, and related docs.
+   - Note version metadata, owners, or last-updated dates if present.
 2. **Validate Structure**
-   - Compare the documented guidance against the current codemap/project structure.
-   - Log discrepancies (missing sections, stale paths, outdated terminology) in a scratch pad.
+   - Compare instructions against the current codemap hierarchy and project layout.
+   - Record any discrepancies (missing sections, outdated file paths, stale terminology) in a scratch log.
 3. **Normalize Guidance**
-   - Draft a canonical summary of the desired rules, commands, and naming conventions.
-   - **For commands**: Use `.ai/commands/*.md` as the source of truth - copy verbatim to all surfaces.
+   - Draft a canonical summary of the desired rules, commands, and terminology.
+   - **For commands**: Treat `.ai/commands/*.md` as the source of truth - replicate verbatim to other surfaces.
    - **For instruction files**: Use `.github/instructions/*.md` as the canonical source - sync to other tools with format adaptations only.
    - **For generated/tool-specific rules**: Merge latest versions from all sources to create coherent combined version, then propagate.
    - Resolve conflicts by prioritizing: 1) `.ai/commands/` for commands, 2) `.github/instructions/` for core instructions, 3) newest timestamp for tool-specific rules.
@@ -86,28 +41,23 @@ Follow the cross-surface workflow defined in `.ai/structure.md` and expand as be
    - For core instructions: Copy `.github/instructions/*.md` to `.cursor/instructions/` and other tool surfaces with format adaptations.
    - For tool-specific rules (e.g., `.cursor/rules/`): Merge and sync across corresponding directories in each tool.
    - **NEVER delete tool-specific directories** - they serve different purposes than general instructions.
-   - Keep section ordering and normative language identical unless a tool format forces changes.
-5. **Record Outcomes**
-   - Replace the entry in the `Latest Alignment Summary` section of `.ai/structure.md` with the current run's details (never append additional history).
-   - Document completed updates, outstanding gaps, and owners in the Open Gaps section or session notes.
-   - Include timestamps plus direct references to updated artifacts for traceability.
+   - Maintain identical section ordering unless a tool mandates alternative formatting.
 
 ## Outputs & Verification
 
-- ✅ All touched instruction and prompt files share synchronized content and normative wording.
-- ✅ `.ai/commands/` documents the same behavior described in `.github` and `.cursor` surfaces.
-- ✅ Codemap entries reference the updated commands or rules if applicable.
-- ✅ Alignment summary or PR notes explain what changed and why.
+- ✅ All instruction files edited during the session share synchronized content and normative language.
+- ✅ Command documentation in `.ai/commands/` reflects the same behavior described in `.github` and `.cursor` surfaces.
+- ✅ Codemap(s) reference the updated commands or rules when applicable.
+- ✅ A concise alignment summary (changelog, pull-request notes, or log entry) captures what changed and why.
 
 ## Post-Run Follow-Ups
 
-- Log any pending tool conversions (for example, Cursor exports) under Open Gaps in `.ai/structure.md` with an action plan.
-- Notify maintainers of automation or CI jobs consuming the updated instructions.
-- Re-run `/rulesalign` after major structural changes or when onboarding a new instruction surface.
+- Notify collaborators who maintain automation or CI systems that consume the updated instructions. Track any pending conversions in standard project tracking (issue or PR notes).
+- Re-run `/rulesalign` after substantial structural refactors or when onboarding new instruction surfaces.
 
 ## Escalation Triggers
 
-- **MUST pause** and request guidance if policies conflict and cannot be reconciled from current documentation.
+- **MUST stop** and request guidance if conflicting policies cannot be reconciled from available sources.
 - **MUST preserve** all tool-specific directories (e.g., `.cursor/rules/`, `.cursor/instructions/`) - never delete them during alignment.
-- **SHOULD schedule** `/codemap` when mismatches stem from stale structural docs.
-- **MAY defer** cosmetic-only discrepancies, but track the follow-up before ending the alignment session.
+- **SHOULD schedule** a codemap regeneration (`/codemap`) when instruction mismatches stem from outdated structural documentation.
+- **MAY defer** low-risk cosmetic differences (formatting-only) but must log them as follow-ups if left unresolved.
