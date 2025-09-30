@@ -32,10 +32,16 @@ Follow the cross-surface workflow defined in `.ai/structure.md` and expand as be
    - Log discrepancies (missing sections, stale paths, outdated terminology) in a scratch pad.
 3. **Normalize Guidance**
    - Draft a canonical summary of the desired rules, commands, and naming conventions.
-   - Resolve conflicts—default to the latest codemap or project map when sources disagree.
+   - **For commands**: Use `.ai/commands/*.md` as the source of truth - copy verbatim to all surfaces.
+   - **For instruction files**: Use `.github/instructions/*.md` as the canonical source - sync to other tools with format adaptations only.
+   - **For generated/tool-specific rules**: Merge latest versions from all sources to create coherent combined version, then propagate.
+   - Resolve conflicts by prioritizing: 1) `.ai/commands/` for commands, 2) `.github/instructions/` for core instructions, 3) newest timestamp for tool-specific rules.
 4. **Emit Variants**
-   - Update `.github/instructions` and `.github/prompts` first, then mirror the same content into `.cursor/instructions`, `.cursor/commands`, and any other tool-specific surfaces.
-   - Regenerate supporting docs (`.ai/commands/*.md`, codemap notes, prompt manifests) so the wording matches verbatim where required.
+   - **ALWAYS start with updating `.github/instructions` and `.github/prompts` first**.
+   - For commands: Copy `.ai/commands/*.md` content verbatim to `.github/prompts/` and `.cursor/commands/` with only format header changes.
+   - For core instructions: Copy `.github/instructions/*.md` to `.cursor/instructions/` and other tool surfaces with format adaptations.
+   - For tool-specific rules (e.g., `.cursor/rules/`): Merge and sync across corresponding directories in each tool.
+   - **NEVER delete tool-specific directories** - they serve different purposes than general instructions.
    - Keep section ordering and normative language identical unless a tool format forces changes.
 5. **Record Outcomes**
    - Replace the entry in the `Latest Alignment Summary` section of `.ai/structure.md` with the current run’s details (never append additional history).
@@ -58,6 +64,7 @@ Follow the cross-surface workflow defined in `.ai/structure.md` and expand as be
 ## Escalation Triggers
 
 - **MUST pause** and request guidance if policies conflict and cannot be reconciled from current documentation.
+- **MUST preserve** all tool-specific directories (e.g., `.cursor/rules/`, `.cursor/instructions/`) - never delete them during alignment.
 - **SHOULD schedule** `/codemap` when mismatches stem from stale structural docs.
 - **MAY defer** cosmetic-only discrepancies, but track the follow-up before ending the alignment session.
 ```
