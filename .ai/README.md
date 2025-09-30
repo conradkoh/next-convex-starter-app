@@ -32,8 +32,15 @@ Run the initialization script to automatically distribute commands to all surfac
 .ai/init.sh --dry-run
 ```
 
+**Force run with uncommitted changes:**
+
+```bash
+.ai/init.sh --force
+```
+
 This script will:
-1. ✅ Check git working directory is clean
+
+1. ✅ Check `.cursor/` and `.github/` directories are clean (unless `--force`)
 2. 📦 Create target directories if needed
 3. 🔄 Distribute commands from `.ai/commands/` to:
    - `.github/prompts/*.prompt.md` (with agent frontmatter)
@@ -41,7 +48,10 @@ This script will:
 4. 📊 Display summary and next steps
 
 **Options:**
+
 - `--dry-run` or `-n`: Preview what would be changed without modifying files
+- `--force` or `-f`: Force run even if `.cursor/` or `.github/` have uncommitted changes
+- `--help` or `-h`: Show help message
 
 ### Manual Initialization
 
@@ -57,11 +67,11 @@ All command definitions in `.ai/commands/*.md` are the **source of truth** and s
 
 ### Current Commands
 
-| Command        | Purpose                                      |
-|----------------|----------------------------------------------|
-| `/cleanup`     | Systematic code quality improvements         |
-| `/codemap`     | Generate and update project structure maps   |
-| `/rulesalign`  | Synchronize instruction surfaces             |
+| Command       | Purpose                                    |
+| ------------- | ------------------------------------------ |
+| `/cleanup`    | Systematic code quality improvements       |
+| `/codemap`    | Generate and update project structure maps |
+| `/rulesalign` | Synchronize instruction surfaces           |
 
 ## Instruction Sources
 
@@ -105,6 +115,7 @@ Use the `/rulesalign` command to ensure all instruction surfaces are synchronize
 ```
 
 This performs a comprehensive alignment check across:
+
 - `.ai/commands/` - Command definitions
 - `.github/instructions/` and `.github/prompts/` - GitHub Copilot
 - `.cursor/commands/` and `.cursor/rules/` - Cursor IDE
@@ -113,6 +124,7 @@ This performs a comprehensive alignment check across:
 ## Framework Documentation
 
 See [`structure.md`](./structure.md) for:
+
 - Instruction surface architecture
 - Cross-surface consistency principles
 - Command contracts and conventions
@@ -120,7 +132,7 @@ See [`structure.md`](./structure.md) for:
 
 ## Best Practices
 
-1. **Keep git clean**: Always run `init.sh` with a clean working directory
+1. **Keep target directories clean**: Run `init.sh` when `.cursor/` and `.github/` are clean, or use `--force` if needed
 2. **Source of truth**: Edit commands only in `.ai/commands/`
 3. **Batch changes**: Commit command updates and their distributions together
 4. **Verify**: Review generated files before committing
@@ -128,19 +140,34 @@ See [`structure.md`](./structure.md) for:
 
 ## Troubleshooting
 
-### Script fails with "Git working directory is not clean"
+### Script fails with "Target directories have uncommitted changes"
 
-Commit or stash your changes before running `init.sh`:
+You have three options:
+
+**Option 1:** Commit or stash changes in `.cursor/` and `.github/`:
 
 ```bash
-git stash
+git add .cursor/ .github/
+git commit -m "Update AI surfaces"
 .ai/init.sh
-git stash pop
+```
+
+**Option 2:** Use the `--force` flag to override:
+
+```bash
+.ai/init.sh --force
+```
+
+**Option 3:** Preview changes without modifying files:
+
+```bash
+.ai/init.sh --dry-run
 ```
 
 ### Commands not appearing in editor
 
 After running `init.sh`, you may need to:
+
 - Reload your editor
 - Restart the AI assistant extension
 - Clear any cached command lists

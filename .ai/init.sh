@@ -16,6 +16,7 @@ configured surfaces (GitHub Copilot, Cursor, etc.).
 
 OPTIONS:
     --dry-run, -n    Preview changes without modifying files
+    --force, -f      Force run even if target directories have uncommitted changes
     --help, -h       Show this help message
 
 EXAMPLES:
@@ -24,9 +25,12 @@ EXAMPLES:
 
     # Apply changes
     .ai/init.sh
+    
+    # Force apply even with uncommitted changes in .cursor or .github
+    .ai/init.sh --force
 
 PROCESS:
-    1. Verifies git working directory is clean
+    1. Verifies .cursor/ and .github/ directories are clean (unless --force)
     2. Creates target directories if needed
     3. Distributes commands from .ai/commands/ to:
        - .github/prompts/*.prompt.md
@@ -43,10 +47,15 @@ EOF
 
 # Parse arguments
 DRY_RUN=false
+FORCE=false
 for arg in "$@"; do
     case $arg in
         --dry-run|-n)
             DRY_RUN=true
+            shift
+            ;;
+        --force|-f)
+            FORCE=true
             shift
             ;;
         --help|-h)
@@ -78,23 +87,52 @@ if [ "$DRY_RUN" = true ]; then
 else
     echo -e "${BLUE}  AI Assistant Initialization${NC}"
 fi
+if [ "$FORCE" = true ]; then
+    echo -e "${YELLOW}  (FORCE MODE: Ignoring uncommitted changes)${NC}"
+fi
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 echo
 
-# Step 0: Check git status
-echo -e "${YELLOW}Step 0: Checking git working directory...${NC}"
-if [[ -n $(git status --porcelain) ]]; then
-    if [ "$DRY_RUN" = false ]; then
-        echo -e "${RED}✗ Git working directory is not clean.${NC}"
-        echo -e "${YELLOW}  Please commit or stash your changes before running init.${NC}"
-        echo -e "${YELLOW}  Or run with --dry-run to preview changes.${NC}"
+# Step 0: Check git status for target directories
+echo -e "${YELLOW}Step 0: Checking target directories...${NC}"
+
+# Check if .cursor/ or .github/ have uncommitted changes
+CURSOR_CHANGES=$(git status --porcelain .cursor/ 2>/dev/null || echo "")
+GITHUB_CHANGES=$(git status --porcelain .github/ 2>/dev/null || echo "")
+
+if [[ -n "$CURSOR_CHANGES" || -n "$GITHUB_CHANGES" ]]; then
+    if [ "$FORCE" = false ] && [ "$DRY_RUN" = false ]; then
+        echo -e "${RED}✗ Target directories have uncommitted changes:${NC}"
+        if [[ -n "$CURSOR_CHANGES" ]]; then
+            echo -e "${YELLOW}  .cursor/ has changes${NC}"
+        fi
+        if [[ -n "$GITHUB_CHANGES" ]]; then
+            echo -e "${YELLOW}  .github/ has changes${NC}"
+        fi
+        echo -e "${YELLOW}  Please commit or stash changes in these directories before running init.${NC}"
+        echo -e "${YELLOW}  Or use --force to override this check, or --dry-run to preview changes.${NC}"
         exit 1
-    else
-        echo -e "${YELLOW}⚠ Git working directory is not clean (dry run mode)${NC}"
+    elif [ "$FORCE" = true ]; then
+        echo -e "${YELLOW}⚠ Target directories have uncommitted changes (force mode enabled)${NC}"
+        if [[ -n "$CURSOR_CHANGES" ]]; then
+            echo -e "${YELLOW}  .cursor/ has changes (will be overwritten)${NC}"
+        fi
+        if [[ -n "$GITHUB_CHANGES" ]]; then
+            echo -e "${YELLOW}  .github/ has changes (will be overwritten)${NC}"
+        fi
+    elif [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}⚠ Target directories have uncommitted changes (dry run mode)${NC}"
+        if [[ -n "$CURSOR_CHANGES" ]]; then
+            echo -e "${YELLOW}  .cursor/ has changes${NC}"
+        fi
+        if [[ -n "$GITHUB_CHANGES" ]]; then
+            echo -e "${YELLOW}  .github/ has changes${NC}"
+        fi
     fi
 else
-    echo -e "${GREEN}✓ Git working directory is clean${NC}"
+    echo -e "${GREEN}✓ Target directories are clean${NC}"
 fi
+
 CURRENT_BRANCH=$(git branch --show-current)
 echo -e "  Current branch: ${BLUE}${CURRENT_BRANCH}${NC}"
 echo
