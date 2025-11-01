@@ -9,7 +9,9 @@
       "options": {
         "command": "pnpm build",
         "cwd": "apps/webapp"
-      }
+      },
+      "outputs": ["{projectRoot}/.next"],
+      "dependsOn": ["^build"]
     },
     "dev": {
       "executor": "nx:run-commands",
@@ -38,12 +40,7 @@
         "command": "pnpm typecheck",
         "cwd": "apps/webapp"
       },
-      "dependsOn": [
-        {
-          "projects": ["@workspace/backend"],
-          "target": "build"
-        }
-      ]
+      "dependsOn": ["^build"]
     }
   },
   "tags": []
