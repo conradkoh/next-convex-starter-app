@@ -16,7 +16,8 @@
     "default": {
       "runner": "nx/tasks-runners/default",
       "options": {
-        "cacheableOperations": ["build", "lint", "test", "typecheck"]
+        "cacheableOperations": ["build", "lint", "test", "typecheck"],
+        "outputStyle": "static"
       }
     }
   },
@@ -46,8 +47,5 @@
       "cache": false
     }
   },
-  "parallel": 3,
-  "tui": {
-    "enabled": false
-  }
+  "parallel": 3
 }
