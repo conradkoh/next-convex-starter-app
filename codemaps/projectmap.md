@@ -101,7 +101,7 @@ A full-stack web application starter template built with Next.js and Convex, fea
 
 #### Configuration Files
 
-- `package.json` - Backend dependencies including Convex 1.26.2, convex-helpers, and Zod validation
+- `package.json` - Backend dependencies including Convex 1.27.5, convex-helpers, and Zod validation
 - `tsconfig.json` - TypeScript configuration for backend with strict settings
 - `vitest.config.mts` - Vitest testing framework configuration
 - `test.setup.ts` - Testing environment setup and global test configuration
@@ -200,7 +200,7 @@ A full-stack web application starter template built with Next.js and Convex, fea
 
 ### Backend Framework
 
-- **Convex** (v1.26.2) - Serverless backend platform with real-time sync and built-in database
+- **Convex** (v1.27.5) - Serverless backend platform with real-time sync and built-in database
 - **convex-helpers** (v0.1.104) - Utility library for authentication, sessions, and common patterns
 - **Zod** (v4.0.5) - Schema validation library for runtime type checking
 
