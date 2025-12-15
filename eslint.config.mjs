@@ -195,7 +195,7 @@ export default [
             'internal', // Internal modules
             ['parent', 'sibling', 'index'], // Relative imports
           ],
-          'newlines-between': 'never',
+          'newlines-between': 'always', // Allow blank lines between groups
           alphabetize: {
             order: 'asc',
             caseInsensitive: true,

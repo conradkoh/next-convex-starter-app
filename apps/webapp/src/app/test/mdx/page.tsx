@@ -1,6 +1,7 @@
 'use client';
 
 import SampleMDX from './sample.mdx';
+
 import MdxLayout from '@/components/MdxLayout';
 
 /**

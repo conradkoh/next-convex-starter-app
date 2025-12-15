@@ -3,7 +3,9 @@
 import { EyeOffIcon as HideIcon, LockIcon, MoreVerticalIcon } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useState } from 'react';
+
 import { usePasswordProtection } from './PasswordProtectContext';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {

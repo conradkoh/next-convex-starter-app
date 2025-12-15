@@ -1,6 +1,7 @@
 import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache/provider';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+
 import './globals.css';
 import { ConvexClientProvider } from '@/app/ConvexClientProvider';
 import { Navigation } from '@/components/Navigation';

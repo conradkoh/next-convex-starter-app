@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const { promises: fsPromises } = require('node:fs');
 const path = require('node:path');
+
 const pngToIco = require('png-to-ico');
 const sharp = require('sharp');
 

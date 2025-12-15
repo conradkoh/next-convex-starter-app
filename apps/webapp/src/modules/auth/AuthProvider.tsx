@@ -4,6 +4,7 @@ import type { AuthState } from '@workspace/backend/modules/auth/types/AuthState'
 import { SessionProvider, type UseStorage, useSessionQuery } from 'convex-helpers/react/sessions';
 import type { SessionId } from 'convex-helpers/server/sessions';
 import { createContext, useContext, useEffect, useState } from 'react';
+
 import { generateUUID } from '@/lib/utils';
 
 const AuthContext = createContext<AuthState | undefined>(undefined);

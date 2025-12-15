@@ -2,6 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+
 import type { Theme } from './theme-utils';
 
 type ThemeProviderProps = {

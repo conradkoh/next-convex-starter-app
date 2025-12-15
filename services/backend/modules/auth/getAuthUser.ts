@@ -1,4 +1,5 @@
 import type { SessionId } from 'convex-helpers/server/sessions';
+
 import type { MutationCtx, QueryCtx } from '../../convex/_generated/server';
 
 export const getAuthUser = async (ctx: QueryCtx | MutationCtx, args: { sessionId: SessionId }) => {

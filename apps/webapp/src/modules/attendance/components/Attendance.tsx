@@ -1,9 +1,11 @@
 import { CheckCircle2, ChevronDown, Copy, MoreVertical, UserPlus, X, XCircle } from 'lucide-react';
 import { Suspense, useCallback, useEffect, useState } from 'react';
+
 import { AttendanceCopyDialog } from './AttendanceCopyDialog';
 import { AttendanceDialog } from './AttendanceDialog';
 import { AttendanceEmptyState } from './AttendanceEmptyState';
 import { isCurrentUser, useAttendanceData } from '../hooks/useAttendanceData';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

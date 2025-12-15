@@ -2,6 +2,7 @@
 import { api } from '@workspace/backend/convex/_generated/api';
 import { fetchAction } from 'convex/nextjs';
 import { Suspense } from 'react';
+
 import { CallbackErrorCard } from '@/components/CallbackErrorCard';
 import { CallbackSuccessCard } from '@/components/CallbackSuccessCard';
 
