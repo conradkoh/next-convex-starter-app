@@ -165,7 +165,7 @@ export const concludeDiscussion = mutation({
     }
 
     // Mark the discussion as inactive and add conclusions
-    return await ctx.db.patch(discussion._id, {
+    return await ctx.db.patch('discussionState', discussion._id, {
       isActive: false,
       conclusions: args.conclusions,
       concludedAt: Date.now(),
@@ -209,7 +209,7 @@ export const reopenDiscussion = mutation({
     }
 
     // Mark the discussion as active, retain conclusions
-    return await ctx.db.patch(discussion._id, {
+    return await ctx.db.patch('discussionState', discussion._id, {
       isActive: true,
     });
   },
@@ -223,7 +223,7 @@ export const deleteDiscussionMessage = mutation({
   },
   handler: async (ctx, args) => {
     // Get the message
-    const message = await ctx.db.get(args.messageId);
+    const message = await ctx.db.get('discussionMessages', args.messageId);
 
     if (!message) {
       throw new Error('Message not found');
@@ -244,7 +244,7 @@ export const deleteDiscussionMessage = mutation({
     }
 
     // Delete the message
-    await ctx.db.delete(args.messageId);
+    await ctx.db.delete('discussionMessages', args.messageId);
 
     return true;
   },
@@ -274,7 +274,7 @@ export const updateConclusions = mutation({
     }
 
     // Update the conclusions (works whether discussion is active or concluded)
-    return await ctx.db.patch(discussion._id, {
+    return await ctx.db.patch('discussionState', discussion._id, {
       conclusions: args.conclusions,
     });
   },

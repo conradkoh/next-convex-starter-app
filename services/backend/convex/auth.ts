@@ -44,7 +44,7 @@ export const getState = query({
       };
     }
 
-    const user = await ctx.db.get(exists.userId);
+    const user = await ctx.db.get('users', exists.userId);
 
     if (!user) {
       return {
@@ -106,7 +106,7 @@ export const loginAnon = mutation({
       });
     } else {
       // Update existing session with the new user and auth method
-      await ctx.db.patch(existingSession._id, {
+      await ctx.db.patch('sessions', existingSession._id, {
         userId: userId as Id<'users'>,
         authMethod: 'anonymous',
       });
@@ -131,7 +131,7 @@ export const logout = mutation({
       .first();
 
     if (existingSession) {
-      await ctx.db.delete(existingSession._id);
+      await ctx.db.delete('sessions', existingSession._id);
     }
 
     return { success: true };
@@ -179,7 +179,7 @@ export const updateUserName = mutation({
     }
 
     // Get the user
-    const user = await ctx.db.get(existingSession.userId);
+    const user = await ctx.db.get('users', existingSession.userId);
     if (!user) {
       return {
         success: false,
@@ -189,7 +189,7 @@ export const updateUserName = mutation({
     }
 
     // Update the user's name
-    await ctx.db.patch(existingSession.userId, {
+    await ctx.db.patch('users', existingSession.userId, {
       name: args.newName.trim(),
     });
 
@@ -279,7 +279,7 @@ export const createLoginCode = mutation({
     }
 
     // Get the user
-    const user = await ctx.db.get(existingSession.userId);
+    const user = await ctx.db.get('users', existingSession.userId);
     if (!user) {
       throw new ConvexError({
         code: 'NOT_FOUND',
@@ -297,7 +297,7 @@ export const createLoginCode = mutation({
 
     // Delete all existing codes for this user
     for (const code of existingCodes) {
-      await ctx.db.delete(code._id);
+      await ctx.db.delete('loginCodes', code._id);
     }
 
     // Generate a new login code
@@ -358,7 +358,7 @@ export const verifyLoginCode = mutation({
     // Check if the code is expired
     if (isCodeExpired(loginCode.expiresAt)) {
       // Delete the expired code
-      await ctx.db.delete(loginCode._id);
+      await ctx.db.delete('loginCodes', loginCode._id);
       return {
         success: false,
         reason: 'code_expired',
@@ -367,7 +367,7 @@ export const verifyLoginCode = mutation({
     }
 
     // Get the user associated with the code
-    const user = await ctx.db.get(loginCode.userId);
+    const user = await ctx.db.get('users', loginCode.userId);
     if (!user) {
       return {
         success: false,
@@ -377,7 +377,7 @@ export const verifyLoginCode = mutation({
     }
 
     // Delete the code once used
-    await ctx.db.delete(loginCode._id);
+    await ctx.db.delete('loginCodes', loginCode._id);
 
     // Check if the session exists
     const existingSession = await ctx.db
@@ -390,7 +390,7 @@ export const verifyLoginCode = mutation({
 
     if (existingSession) {
       // Update existing session to point to the user
-      await ctx.db.patch(existingSession._id, {
+      await ctx.db.patch('sessions', existingSession._id, {
         userId: loginCode.userId,
         authMethod: 'login_code',
       });
@@ -623,7 +623,7 @@ export const getSessionBySessionId = internalQuery({
 export const getUserById = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, args): Promise<Doc<'users'> | null> => {
-    return await ctx.db.get(args.userId);
+    return await ctx.db.get('users', args.userId);
   },
 });
 
@@ -646,7 +646,7 @@ export const getUserByRecoveryCode = internalQuery({
 export const updateUserRecoveryCode = internalMutation({
   args: { userId: v.id('users'), recoveryCode: v.string() },
   handler: async (ctx, args): Promise<void> => {
-    await ctx.db.patch(args.userId, { recoveryCode: args.recoveryCode });
+    await ctx.db.patch('users', args.userId, { recoveryCode: args.recoveryCode });
   },
 });
 
@@ -696,7 +696,7 @@ export const updateSession = internalMutation({
     ),
   },
   handler: async (ctx, args): Promise<void> => {
-    await ctx.db.patch(args.sessionId, {
+    await ctx.db.patch('sessions', args.sessionId, {
       userId: args.userId,
       authMethod: args.authMethod,
     });

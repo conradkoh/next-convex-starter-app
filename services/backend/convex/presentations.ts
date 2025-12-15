@@ -61,7 +61,7 @@ export const setCurrentSlide = mutation({
     // Only update if the incoming timestamp is newer than the existing one
     if (timestamp > state.lastUpdated) {
       // Update the existing state
-      return await ctx.db.patch(state._id, {
+      return await ctx.db.patch('presentationState', state._id, {
         currentSlide: args.slide,
         lastUpdated: timestamp,
       });
@@ -98,7 +98,7 @@ export const startPresenting = mutation({
     }
 
     // Update the existing state with the new presenter
-    return await ctx.db.patch(state._id, {
+    return await ctx.db.patch('presentationState', state._id, {
       activePresentation: {
         presenterId: args.sessionId,
       },
@@ -130,7 +130,7 @@ export const stopPresenting = mutation({
     }
 
     // Remove the activePresentation field
-    return await ctx.db.patch(state._id, {
+    return await ctx.db.patch('presentationState', state._id, {
       activePresentation: undefined,
     });
   },

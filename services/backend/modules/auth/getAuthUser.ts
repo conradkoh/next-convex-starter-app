@@ -10,7 +10,7 @@ export const getAuthUser = async (ctx: QueryCtx | MutationCtx, args: { sessionId
     throw new Error('Session not found');
   }
 
-  const user = await ctx.db.get(session.userId);
+  const user = await ctx.db.get('users', session.userId);
 
   if (!user) {
     throw new Error('User not found');

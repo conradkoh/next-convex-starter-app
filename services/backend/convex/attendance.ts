@@ -47,7 +47,9 @@ export const recordAttendance = mutation({
         )
         .collect();
       //delete all existing records
-      await Promise.all(existingRecords.map((record) => ctx.db.delete(record._id)));
+      await Promise.all(
+        existingRecords.map((record) => ctx.db.delete('attendanceRecords', record._id))
+      );
     }
 
     // delete any records with the same name
@@ -55,7 +57,9 @@ export const recordAttendance = mutation({
       .query('attendanceRecords')
       .withIndex('by_name_attendance', (q) => q.eq('attendanceKey', attendanceKey).eq('name', name))
       .collect();
-    await Promise.all(existingRecords.map((record) => ctx.db.delete(record._id)));
+    await Promise.all(
+      existingRecords.map((record) => ctx.db.delete('attendanceRecords', record._id))
+    );
     // Create a new record
     return ctx.db.insert('attendanceRecords', {
       attendanceKey,
@@ -78,7 +82,7 @@ export const deleteAttendanceRecord = mutation({
   },
   handler: async (ctx, args) => {
     // Get the record to check permissions
-    const record = await ctx.db.get(args.recordId);
+    const record = await ctx.db.get('attendanceRecords', args.recordId);
     if (!record) {
       throw new ConvexError('Attendance record not found');
     }
@@ -94,7 +98,7 @@ export const deleteAttendanceRecord = mutation({
     }
 
     // Delete the record
-    await ctx.db.delete(args.recordId);
+    await ctx.db.delete('attendanceRecords', args.recordId);
     return { success: true };
   },
 });
