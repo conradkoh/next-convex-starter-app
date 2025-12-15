@@ -1,8 +1,8 @@
 import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
-import { getAuthUserOptional } from '../modules/auth/getAuthUser';
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { getAuthUserOptional } from '../modules/auth/getAuthUser';
 
 // Hardcoded attendance key
 const ATTENDANCE_KEY = 'default-attendance';

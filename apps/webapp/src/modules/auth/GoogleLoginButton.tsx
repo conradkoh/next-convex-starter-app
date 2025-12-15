@@ -1,8 +1,8 @@
 'use client';
 
 import { ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useGoogleLoginFlow } from './useGoogleLoginFlow';
+import { Button } from '@/components/ui/button';
 
 export interface GoogleLoginButtonProps {
   className?: string;

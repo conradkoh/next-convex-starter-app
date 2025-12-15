@@ -1,9 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 import { featureFlags } from '../config/featureFlags';
-import { getAccessLevel, isSystemAdmin } from '../modules/auth/accessControl';
-import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
-import type { AuthState } from '../modules/auth/types/AuthState';
 import { api, internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import {
@@ -14,6 +11,9 @@ import {
   mutation,
   query,
 } from './_generated/server';
+import { getAccessLevel, isSystemAdmin } from '../modules/auth/accessControl';
+import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
+import type { AuthState } from '../modules/auth/types/AuthState';
 
 /**
  * Retrieves the current authentication state for a session.

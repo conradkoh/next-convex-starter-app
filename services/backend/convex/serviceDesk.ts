@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { featureFlags } from '../config/featureFlags';
-import { generateLoginCode } from '../modules/auth/codeUtils';
 import { internalMutation } from './_generated/server';
+import { generateLoginCode } from '../modules/auth/codeUtils';
 
 /**
  * Find users by exact name match and retrieve their session information

@@ -3,6 +3,7 @@ import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import type { ComponentProps, ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Navigation } from './Navigation';
+import { useAuthState } from '@/modules/auth/AuthProvider';
 
 // Mock the auth module
 vi.mock('@/modules/auth/AuthProvider', () => ({
@@ -33,8 +34,6 @@ vi.mock('@workspace/backend/config/featureFlags', () => ({
     disableLogin: false,
   },
 }));
-
-import { useAuthState } from '@/modules/auth/AuthProvider';
 
 describe('Navigation', () => {
   it('renders title link to "/" when user is not authenticated', () => {

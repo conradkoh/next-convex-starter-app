@@ -1,8 +1,9 @@
 import { CheckCircle2, ChevronDown, Copy, MoreVertical, UserPlus, X, XCircle } from 'lucide-react';
-// External imports
 import { Suspense, useCallback, useEffect, useState } from 'react';
-
-// UI component imports
+import { AttendanceCopyDialog } from './AttendanceCopyDialog';
+import { AttendanceDialog } from './AttendanceDialog';
+import { AttendanceEmptyState } from './AttendanceEmptyState';
+import { isCurrentUser, useAttendanceData } from '../hooks/useAttendanceData';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,10 +18,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Internal imports
-import { isCurrentUser, useAttendanceData } from '../hooks/useAttendanceData';
-import { AttendanceCopyDialog } from './AttendanceCopyDialog';
-import { AttendanceDialog } from './AttendanceDialog';
-import { AttendanceEmptyState } from './AttendanceEmptyState';
 
 /**
  * Props for the Attendance component.

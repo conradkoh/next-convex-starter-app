@@ -3,7 +3,6 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 import type * as React from 'react';
-
 import { useAllowTouchSelection } from '@/hooks/useAllowTouchSelection';
 import { cn } from '@/lib/utils';
 

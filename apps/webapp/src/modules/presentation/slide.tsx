@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { usePresentationContext } from '../../modules/presentation/presentation-container';
+import { cn } from '@/lib/utils';
 
 interface SlideProps {
   index: number;

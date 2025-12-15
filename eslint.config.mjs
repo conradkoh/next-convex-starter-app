@@ -1,9 +1,11 @@
-import globals from 'globals';
+import convexPlugin from '@convex-dev/eslint-plugin';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
+import importPlugin from 'eslint-plugin-import';
+import jsdocPlugin from 'eslint-plugin-jsdoc';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
-import convexPlugin from '@convex-dev/eslint-plugin';
+import globals from 'globals';
 
 /**
  * ESLint Configuration
@@ -64,6 +66,8 @@ export default [
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       '@convex-dev': convexPlugin,
+      jsdoc: jsdocPlugin,
+      import: importPlugin,
     },
     settings: {
       react: {
@@ -145,6 +149,75 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
+
+      // ============================================
+      // JSDoc rules (enforces cleanup guideline Step 1)
+      // Note: These are warnings to encourage documentation without blocking development
+      // ============================================
+      'jsdoc/require-jsdoc': [
+        'off', // Disabled by default - enable when doing cleanup
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: false,
+            FunctionExpression: false,
+          },
+          contexts: [
+            'ExportNamedDeclaration > TSInterfaceDeclaration',
+            'ExportNamedDeclaration > TSTypeAliasDeclaration',
+            'ExportNamedDeclaration > VariableDeclaration[kind="const"]',
+          ],
+          publicOnly: true,
+        },
+      ],
+      'jsdoc/require-param': 'off', // Enable during cleanup
+      'jsdoc/require-param-description': 'off', // Enable during cleanup
+      'jsdoc/require-param-type': 'off', // TypeScript handles this
+      'jsdoc/require-returns': 'off', // Enable during cleanup
+      'jsdoc/require-returns-description': 'off', // Enable during cleanup
+      'jsdoc/require-returns-type': 'off', // TypeScript handles this
+      'jsdoc/check-tag-names': 'error', // Always validate tag names
+      'jsdoc/check-types': 'off', // TypeScript handles this
+      'jsdoc/valid-types': 'off', // TypeScript handles this
+      'jsdoc/no-undefined-types': 'off', // TypeScript handles this
+
+      // ============================================
+      // Import ordering rules (enforces cleanup guideline Step 3)
+      // ============================================
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin', // Node.js built-in modules
+            'external', // External packages
+            'internal', // Internal modules
+            ['parent', 'sibling', 'index'], // Relative imports
+          ],
+          'newlines-between': 'never',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+        },
+      ],
+      'import/first': 'error',
+      'import/newline-after-import': 'error',
+      'import/no-duplicates': 'error',
+
+      // ============================================
+      // TypeScript-specific rules for better type safety
+      // ============================================
+      '@typescript-eslint/explicit-function-return-type': 'off', // Too noisy - TypeScript inference is good
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'separate-type-imports',
+        },
+      ],
     },
   },
 

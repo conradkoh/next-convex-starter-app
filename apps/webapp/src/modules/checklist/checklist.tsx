@@ -3,6 +3,9 @@
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { CheckCheck, GripVertical, Loader2, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChecklistInlineInput } from './checklist-inline-input';
+import type { ChecklistItemWithOptimistic, ChecklistProps } from './types';
+import { useChecklistSync } from './use-checklist-sync';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,9 +17,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
-import { ChecklistInlineInput } from './checklist-inline-input';
-import type { ChecklistItemWithOptimistic, ChecklistProps } from './types';
-import { useChecklistSync } from './use-checklist-sync';
 
 /**
  * Internal props for the ChecklistItemComponent.
