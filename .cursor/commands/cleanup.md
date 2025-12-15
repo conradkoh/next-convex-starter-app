@@ -35,11 +35,11 @@ For each file, work through the 6 cleanup steps below until all files are comple
 
 ## File Cleanup Steps (Apply to Each File)
 
-**For each file identified in step 1, follow these 6 steps in order:**
+**For each file identified in step 1, follow these 5 steps in order:**
 
 ### Step 1: Add Comprehensive TSDoc Documentation
 
-**Action**: Add comprehensive TSDoc documentation to all exported and internal elements.
+**Action**: Add comprehensive TSDoc documentation to all exported elements.
 
 **What to do:**
 
@@ -48,7 +48,7 @@ For each file, work through the 6 cleanup steps below until all files are comple
 - **Constants**: Explain purpose and usage context
 - **Components**: Include usage examples for complex public APIs
 - Use present tense ("Creates", "Validates", "Displays")
-- Note: Internal functions should already have `_` prefix (see Step 2)
+- Internal helper functions should have brief comments explaining their purpose
 
 **Functions:**
 
@@ -62,12 +62,8 @@ export async function createUser(userData: CreateUserRequest): Promise<string> {
   // Implementation
 }
 
-/**
- * Validates email format using regex pattern.
- * @param email - Email address to validate
- * @returns True if email format is valid
- */
-function _validateEmail(email: string): boolean {
+// Internal helper: validates email format using regex pattern
+function validateEmail(email: string): boolean {
   // Implementation
 }
 ```
@@ -113,29 +109,7 @@ export type UserRole = "admin" | "user" | "guest";
 export const DEFAULT_API_TIMEOUT = 5000;
 ```
 
-### Step 2: Prefix Internal Elements with Underscore
-
-**Action**: Add `_` prefix to all non-exported functions, interfaces, types, and constants.
-
-**What to do:**
-
-- Scan through the file for any function, interface, type, or constant that is NOT exported
-- Add `_` prefix to the name
-- Update all references to use the new prefixed name
-
-```typescript
-// Functions
-function _validateInput(input: string): boolean {}
-
-// Interfaces and Types
-interface _UserState {}
-type _ValidationResult = {};
-
-// Constants
-const _DEFAULT_TIMEOUT = 5000;
-```
-
-### Step 3: Eliminate All `any` Types
+### Step 2: Eliminate All `any` Types
 
 **Action**: Replace every instance of `any` with proper types.
 
@@ -163,7 +137,7 @@ function handleClick(event: React.MouseEvent<HTMLButtonElement>) {}
 import { type MutationCtx, type QueryCtx } from "./_generated/server";
 ```
 
-### Step 4: Reorganize File Structure
+### Step 3: Reorganize File Structure
 
 **Action**: Rearrange the entire file contents in this exact order.
 
@@ -171,37 +145,37 @@ import { type MutationCtx, type QueryCtx } from "./_generated/server";
 
 1. Move all imports to the top (external libraries first, then internal imports)
 2. Move all exported interfaces and types to the top (after imports)
-3. Move all internal interfaces and types (prefixed with `_`) next
+3. Move all internal interfaces and types next
 4. Move all exported functions/components next
 5. Move all internal helper functions to the bottom
 
-Note: comments containing rules should be omitted from the final output
+Note: Internal elements should use clear, descriptive names without special prefixes
 
 ```typescript
-// 1. Rule: Imports (external first, then internal)
+// 1. Imports (external first, then internal)
 import React from "react";
 import { api } from "@/convex/_generated/api";
 
-// 2. Rule: Public interfaces and types
+// 2. Public interfaces and types
 export interface UserProfileProps {}
 export type UserRole = "admin" | "user" | "guest";
 
-// 3. Rule: Internal interfaces and types (prefixed with _)
-interface _UserState {}
-type _ValidationResult = {};
+// 3. Internal interfaces and types
+interface UserState {}
+type ValidationResult = {};
 
-// 4. Rule: Main exported functions/components
+// 4. Main exported functions/components
 export function UserProfile({ userId }: UserProfileProps) {}
 export async function createUser(
   userData: CreateUserRequest
 ): Promise<string> {}
 
 // 5. Internal helper functions (at bottom)
-function _validateUserData(userData: CreateUserRequest): _ValidationResult {}
-function _formatDisplayName(firstName: string, lastName: string): string {}
+function validateUserData(userData: CreateUserRequest): ValidationResult {}
+function formatDisplayName(firstName: string, lastName: string): string {}
 ```
 
-### Step 5: Apply React Performance Optimizations
+### Step 4: Apply React Performance Optimizations
 
 **Action**: Add `useCallback` and `useMemo` where appropriate.
 
@@ -231,7 +205,7 @@ const isAdult = user.age >= 18; // Boolean - no useMemo
 const count = users.length; // Number - no useMemo
 ```
 
-### Step 6: Final Quality Check
+### Step 5: Final Quality Check
 
 **Action**: Verify the file meets all quality standards.
 
@@ -242,7 +216,7 @@ const count = users.length; // Number - no useMemo
 - [ ] All exports have comprehensive TSDoc documentation (functions, interfaces, types, constants)
 - [ ] Interface properties have individual property documentation
 - [ ] Complex APIs include usage examples with `@example`
-- [ ] All non-exported items are prefixed with `_`
+- [ ] Internal helper functions have brief comments explaining their purpose
 - [ ] File follows the exact organization structure (imports → public types → internal types → exported functions → internal functions)
 
 **TypeScript Quality:**
@@ -284,7 +258,7 @@ interface UserFormProps {
 }
 ```
 
-### After Cleanup (Following All 6 Steps)
+### After Cleanup (Following All 5 Steps)
 
 ````typescript
 // 1. Imports
@@ -304,7 +278,7 @@ export interface UserFormProps {
 }
 
 // 3. Internal types
-interface _FormData {
+interface FormData {
   email: string;
   name: string;
 }
@@ -314,12 +288,9 @@ interface _FormData {
  * User registration form with validation and submission handling.
  */
 export function UserForm({ onSubmit }: UserFormProps) {
-  /**
-   * Handles form submission with email validation.
-   */
   const handleSubmit = useCallback(
-    (data: _FormData) => {
-      if (_validateEmail(data.email)) {
+    (data: FormData) => {
+      if (validateEmail(data.email)) {
         onSubmit(data);
       }
     },
@@ -330,10 +301,8 @@ export function UserForm({ onSubmit }: UserFormProps) {
 }
 
 // 5. Internal helper functions
-/**
- * Validates email format using regex pattern.
- */
-function _validateEmail(email: string): boolean {
+// Validates email format using regex pattern
+function validateEmail(email: string): boolean {
   return /\S+@\S+\.\S+/.test(email);
 }
 ````
@@ -345,8 +314,8 @@ function _validateEmail(email: string): boolean {
 1. **Run git status command** to list all modified TypeScript/JavaScript files
 2. **Create todo tasks** - one task per file that needs cleanup
 3. **Process each file systematically**:
-   - Work through cleanup steps 1-6 in exact order for each file
-   - Complete the checklist in Step 6 before moving to the next file
+   - Work through cleanup steps 1-5 in exact order for each file
+   - Complete the checklist in Step 5 before moving to the next file
    - Mark the todo task as complete
    - Repeat until all files are processed
 
