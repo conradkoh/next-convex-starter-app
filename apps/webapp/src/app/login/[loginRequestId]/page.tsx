@@ -209,7 +209,7 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
-              <_GoogleIcon className="h-5 w-5" />
+              <GoogleIcon className="h-5 w-5" />
               Google Sign In
             </CardTitle>
             <CardDescription>
@@ -230,7 +230,7 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
                 </>
               ) : (
                 <>
-                  <_GoogleIcon className="mr-2 h-4 w-4" />
+                  <GoogleIcon className="mr-2 h-4 w-4" />
                   Continue with Google
                 </>
               )}
@@ -279,7 +279,7 @@ function _createLoginOAuthState(loginRequestId: string): string {
 /**
  * Renders the Google brand icon with proper colors and accessibility.
  */
-function _GoogleIcon({ className }: GoogleIconProps) {
+function GoogleIcon({ className }: GoogleIconProps) {
   return (
     <svg
       className={className}

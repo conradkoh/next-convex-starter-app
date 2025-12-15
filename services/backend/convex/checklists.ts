@@ -316,7 +316,7 @@ export const reorderChecklistItems = mutation({
  * Calculates the next order number for a new checklist item.
  * Internal helper function for item ordering.
  */
-function _calculateNextOrder(existingItems: Array<{ order: number }>): number {
+function _calculateNextOrder(existingItems: { order: number }[]): number {
   return existingItems.length > 0 ? Math.max(...existingItems.map((item) => item.order)) + 1 : 0;
 }
 

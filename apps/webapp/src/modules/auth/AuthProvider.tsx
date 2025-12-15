@@ -41,7 +41,7 @@ function _withSessionProvider(Component: React.ComponentType<{ children: React.R
     return (
       <SessionProvider
         storageKey="sessionId"
-        useStorage={_useLocalStorage}
+        useStorage={useLocalStorageSession}
         idGenerator={generateUUID}
       >
         <Component {...props} />
@@ -53,7 +53,7 @@ function _withSessionProvider(Component: React.ComponentType<{ children: React.R
 /**
  * Custom local storage hook for session management that handles client-side hydration.
  */
-const _useLocalStorage = (
+const useLocalStorageSession = (
   key: string,
   nextSessionId: SessionId | undefined
 ): ReturnType<UseStorage<SessionId | undefined>> => {

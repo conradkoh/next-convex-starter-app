@@ -36,7 +36,7 @@ export interface AttendanceModuleProps {
  * Main attendance content component that handles attendance list display and interactions.
  * Uses useSearchParams internally so it's wrapped in Suspense by the parent component.
  */
-const _AttendanceContent = ({
+const AttendanceContentInner = ({
   attendanceKey,
   title = 'Attendance',
   expectedNames = [],
@@ -535,7 +535,7 @@ export const Attendance = (props: AttendanceModuleProps) => {
         </div>
       }
     >
-      <_AttendanceContent {...props} />
+      <AttendanceContentInner {...props} />
     </Suspense>
   );
 };

@@ -81,7 +81,7 @@ if (!record) {
 // Get the record to check permissions
 const record = await ctx.db.get("attendanceRecords", args.recordId);
 if (!record) {
-  throw new ConvexError('Attendance record not found');
+  throw new ConvexError("Attendance record not found");
 }
 ```
 
@@ -108,7 +108,11 @@ await Promise.all(existingRecords.map((record) => ctx.db.delete(record._id)));
 **Should become:**
 
 ```typescript
-await Promise.all(existingRecords.map((record) => ctx.db.delete("attendanceRecords", record._id)));
+await Promise.all(
+  existingRecords.map((record) =>
+    ctx.db.delete("attendanceRecords", record._id)
+  )
+);
 ```
 
 Another example:
@@ -210,7 +214,9 @@ Use this checklist to ensure you've covered all the changes:
 await Promise.all(records.map((record) => ctx.db.delete(record._id)));
 
 // After
-await Promise.all(records.map((record) => ctx.db.delete("attendanceRecords", record._id)));
+await Promise.all(
+  records.map((record) => ctx.db.delete("attendanceRecords", record._id))
+);
 ```
 
 ### Pattern 2: Get Then Patch
@@ -218,12 +224,12 @@ await Promise.all(records.map((record) => ctx.db.delete("attendanceRecords", rec
 ```typescript
 // Before
 const item = await ctx.db.get(args.itemId);
-if (!item) throw new Error('Not found');
+if (!item) throw new Error("Not found");
 await ctx.db.patch(args.itemId, updateData);
 
 // After
 const item = await ctx.db.get("checklistItems", args.itemId);
-if (!item) throw new Error('Not found');
+if (!item) throw new Error("Not found");
 await ctx.db.patch("checklistItems", args.itemId, updateData);
 ```
 
@@ -232,12 +238,12 @@ await ctx.db.patch("checklistItems", args.itemId, updateData);
 ```typescript
 // Before
 const record = await ctx.db.get(args.recordId);
-if (!record) throw new Error('Not found');
+if (!record) throw new Error("Not found");
 await ctx.db.delete(args.recordId);
 
 // After
 const record = await ctx.db.get("attendanceRecords", args.recordId);
-if (!record) throw new Error('Not found');
+if (!record) throw new Error("Not found");
 await ctx.db.delete("attendanceRecords", args.recordId);
 ```
 
@@ -250,9 +256,11 @@ If you encounter type errors after running the migration tools, it's usually bec
 1. **Union types**: Your ID type is a union (e.g., `Id<"users" | "admins">`). You'll need to refactor to disambiguate the types.
 
 2. **Any types**: Your types aren't precise enough. The tools emit warnings like:
+
    ```
    Sorry, we can't infer the table type of `row._id` (which is a `any`)
    ```
+
    Solution: Add proper type annotations to your variables.
 
 3. **Custom GenericDatabaseReader/Writer**: If you have custom implementations, update them to support the new method signatures.
@@ -264,13 +272,17 @@ Both ESLint and the codemod tool use TypeScript types to determine table names. 
 ## Why This Change?
 
 ### 1. Consistency
+
 All `ctx.db` APIs now follow a consistent pattern with the table name as the first argument.
 
 ### 2. Security
+
 The new APIs are more secure when using `v.string()` instead of `v.id("tablename")` for validation. Previously, an attacker could pass an `Id<"someOtherTable">` when your code expected `Id<"someTable">`.
 
 ### 3. Future-Proofing
+
 This change prepares for the upcoming "Bring Your Own ID" (BYO-ID) feature, which will allow you to:
+
 - Migrate data from other databases with existing IDs
 - Generate IDs optimistically on clients for offline-first apps
 
@@ -285,7 +297,7 @@ With custom IDs, the Convex ID encoding won't contain table information, so the 
 ## Questions?
 
 If you encounter issues during migration, please:
+
 1. Check the TypeScript types are correct
 2. Review the troubleshooting section above
 3. Open an issue on the [Convex GitHub repository](https://github.com/get-convex/convex-js)
-
