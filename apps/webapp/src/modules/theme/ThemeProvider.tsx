@@ -107,7 +107,7 @@ export function ThemeProvider({ children, targetSelector }: ThemeProviderProps) 
   return (
     <>
       {/* Inject script to handle theme before React hydration */}
-      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: this script is controlled directly by source code inline */}
+      {}
       <script dangerouslySetInnerHTML={{ __html: themeScript }} suppressHydrationWarning />
 
       {mounted ? (

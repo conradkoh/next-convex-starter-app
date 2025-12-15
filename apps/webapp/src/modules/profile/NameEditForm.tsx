@@ -403,7 +403,6 @@ function _renderUserAvatar(user: { type: string; google?: { picture?: string }; 
 
   if (profilePicture) {
     return (
-      // biome-ignore lint/performance/noImgElement: this is an external image
       <img
         src={profilePicture}
         alt={`${user.name}'s profile`}

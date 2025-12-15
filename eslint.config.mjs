@@ -10,21 +10,20 @@ import globals from 'globals';
 /**
  * ESLint Configuration
  *
- * This configuration migrates rules from biome.json to ESLint.
- * It includes TypeScript, React, and Convex-specific rules.
+ * This configuration provides comprehensive linting for TypeScript, React, and Convex code.
+ * Note: Formatting is handled by Biome (see biome.json). ESLint focuses on code quality rules.
  *
- * Rule Mapping from Biome:
- * - noUnusedVariables -> @typescript-eslint/no-unused-vars
- * - noUnusedImports -> @typescript-eslint/no-unused-vars (with ignoreRestSiblings)
- * - noExplicitAny -> @typescript-eslint/no-explicit-any
- * - noParameterAssign -> no-param-reassign
- * - useAsConstAssertion -> @typescript-eslint/prefer-as-const
- * - useDefaultParameterLast -> @typescript-eslint/default-param-last
- * - useSelfClosingElements -> react/self-closing-comp
- * - useSingleVarDeclarator -> one-var
- * - noInferrableTypes -> @typescript-eslint/no-inferrable-types
- * - noUselessElse -> no-else-return
- * - useConsistentArrayType -> @typescript-eslint/array-type
+ * Key Rules:
+ * - @typescript-eslint/no-unused-vars - Detect unused variables
+ * - @typescript-eslint/no-explicit-any - Warn on explicit any types
+ * - no-param-reassign - Prevent parameter reassignment
+ * - @typescript-eslint/prefer-as-const - Prefer const assertions
+ * - @typescript-eslint/default-param-last - Require default parameters to be last
+ * - react/self-closing-comp - Enforce self-closing tags
+ * - one-var - Enforce single variable declarations
+ * - @typescript-eslint/no-inferrable-types - Disallow explicit types for inferrable values
+ * - no-else-return - Disallow unnecessary else blocks
+ * - @typescript-eslint/array-type - Enforce consistent array type syntax
  */
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -76,10 +75,10 @@ export default [
     },
     rules: {
       // ============================================
-      // Migrated from Biome: correctness rules
+      // TypeScript Rules
       // ============================================
 
-      // noUnusedVariables: error -> @typescript-eslint/no-unused-vars
+      // Detect unused variables
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -90,18 +89,14 @@ export default [
         },
       ],
 
-      // ============================================
-      // Migrated from Biome: suspicious rules
-      // ============================================
-
-      // noExplicitAny: warn
+      // Warn on explicit any types
       '@typescript-eslint/no-explicit-any': 'warn',
 
       // ============================================
-      // Migrated from Biome: style rules
+      // Code Style Rules
       // ============================================
 
-      // noParameterAssign: error
+      // Prevent parameter reassignment
       'no-param-reassign': 'error',
 
       // useAsConstAssertion: error
