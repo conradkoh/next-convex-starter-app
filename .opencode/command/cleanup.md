@@ -24,29 +24,29 @@ For each file, work through the 6 cleanup steps below until all files are comple
 
 ## Core Principles
 
-1. **Readability First**: Code must tell a story from top to bottom
-2. **Intentional Organization**: Most important elements must be immediately visible
-3. **Clear Boundaries**: Internal vs. external APIs must be obvious through TSDoc annotations
-4. **Self-Documenting**: Functions and interfaces must explain their purpose
-5. **Type Safety**: Zero tolerance for `any` types - use proper TypeScript types everywhere
+1. **Readability First**: Code MUST tell a story from top to bottom
+2. **Intentional Organization**: Most important elements MUST be immediately visible
+3. **Clear Boundaries**: Internal vs. external APIs MUST be obvious through TSDoc annotations
+4. **Self-Documenting**: Functions and interfaces MUST explain their purpose
+5. **Type Safety**: The `any` type MUST NOT be used - all code MUST use proper TypeScript types
 
 ## File Cleanup Steps (Apply to Each File)
 
-**For each file identified in step 1, follow these 5 steps in order:**
+**For each file identified in step 1, you MUST follow these 5 steps in order:**
 
 ### Step 1: Add Comprehensive TSDoc Documentation
 
-**Action**: Add comprehensive TSDoc documentation to all elements using proper TSDoc tags.
+**Action**: You MUST add comprehensive TSDoc documentation to all elements using proper TSDoc tags.
 
-**What to do:**
+**Requirements:**
 
-- **Public Functions**: Use `@public` tag with `@param`, `@returns`, `@throws`, and `@example`
-- **Internal Functions**: Use `@internal` tag to mark as private API
-- **Interfaces & Types**: Document purpose and all properties with meaningful descriptions
-- **Constants**: Use `@public` or `@internal` tags appropriately
-- **Components**: Include usage examples for complex public APIs
-- Use present tense ("Creates", "Validates", "Displays")
-- Mark deprecated APIs with `@deprecated` tag
+- **Public Functions**: MUST use `@public` tag with `@param`, `@returns`, and SHOULD include `@throws` and `@example` where applicable
+- **Internal Functions**: MUST use `@internal` tag to mark as private API
+- **Interfaces & Types**: MUST document purpose and all properties with meaningful descriptions
+- **Constants**: MUST use `@public` or `@internal` tags appropriately
+- **Components**: SHOULD include usage examples with `@example` for complex public APIs
+- Documentation MUST use present tense ("Creates", "Validates", "Displays")
+- Deprecated APIs MUST be marked with `@deprecated` tag
 
 **Public Functions:**
 
@@ -185,43 +185,44 @@ const MAX_RETRY_ATTEMPTS = 3;
 
 ### Step 2: Eliminate All `any` Types
 
-**Action**: Replace every instance of `any` with proper types.
+**Action**: You MUST replace every instance of `any` with proper types.
 
-**What to do:**
+**Requirements:**
 
-- Search for all occurrences of `any` in the file
-- Replace with specific interfaces, types, or `unknown` with type guards
-- Use proper React event types and Convex context types
+- You MUST search for all occurrences of `any` in the file
+- You MUST replace with specific interfaces, types, or `unknown` with type guards
+- You MUST use proper React event types (e.g., `React.MouseEvent<HTMLButtonElement>`)
+- You MUST use proper Convex context types (e.g., `QueryCtx`, `MutationCtx`)
 
 ```typescript
-// ❌ Replace this
+// ❌ MUST NOT use any
 function processData(data: any): any {}
 
-// ✅ With this
+// ✅ MUST use specific types
 interface DataItem {
   id: string;
   value: number;
 }
 function processData(data: DataItem[]): number[] {}
 
-// ✅ Use proper event types
+// ✅ MUST use proper React event types
 function handleClick(event: React.MouseEvent<HTMLButtonElement>) {}
 
-// ✅ Use proper Convex context types
+// ✅ MUST use proper Convex context types
 import { type MutationCtx, type QueryCtx } from "./_generated/server";
 ```
 
 ### Step 3: Reorganize File Structure
 
-**Action**: Rearrange the entire file contents in this exact order for optimal readability.
+**Action**: You MUST rearrange the entire file contents in this exact order for optimal readability.
 
-**What to do:**
+**Requirements:**
 
-1. Move all imports to the top (external libraries first, then internal imports)
-2. Move all exported interfaces and types to the top (after imports)
-3. Move all internal interfaces and types next (marked with `@internal`)
-4. Move all exported functions/components next
-5. Move all internal helper functions to the bottom (marked with `@internal`)
+1. Imports MUST be at the top (external libraries first, then internal imports)
+2. Exported interfaces and types MUST follow imports
+3. Internal interfaces and types (marked with `@internal`) MUST follow exported types
+4. Exported functions/components MUST follow all type definitions
+5. Internal helper functions (marked with `@internal`) MUST be at the bottom of the file
 
 **Properly Organized File:**
 
@@ -328,63 +329,64 @@ function formatDisplayName(firstName: string, lastName: string): string {
 
 ### Step 4: Apply React Performance Optimizations
 
-**Action**: Add `useCallback` and `useMemo` where appropriate.
+**Action**: You MUST add `useCallback` and `useMemo` where appropriate.
 
-**What to do:**
+**Requirements:**
 
-- Wrap functions passed as props in `useCallback`
-- Wrap functions used as dependencies in other hooks in `useCallback`
-- Wrap expensive calculations in `useMemo`
-- **Do NOT** wrap primitive values or simple operations
+- Functions passed as props MUST be wrapped in `useCallback`
+- Functions used as dependencies in other hooks MUST be wrapped in `useCallback`
+- Expensive calculations SHOULD be wrapped in `useMemo`
+- Primitive values (strings, booleans, numbers) MUST NOT be memoized
+- Simple operations (string concatenation, basic arithmetic) MUST NOT be memoized
 
 ```typescript
-// ✅ Use useCallback for functions passed as props
+// ✅ MUST wrap functions passed as props
 const handleUserClick = useCallback((userId: string) => {
   setSelectedId(userId);
 }, []);
 
-// ✅ Use useMemo for expensive calculations
+// ✅ SHOULD wrap expensive calculations
 const analytics = useMemo(() => {
   return users.reduce((acc, user) => {
     // Complex calculation
   }, {});
 }, [users, filter]);
 
-// ❌ Don't memoize these
-const displayName = `${user.firstName} ${user.lastName}`; // String - no useMemo
-const isAdult = user.age >= 18; // Boolean - no useMemo
-const count = users.length; // Number - no useMemo
+// ❌ MUST NOT memoize primitive values or simple operations
+const displayName = `${user.firstName} ${user.lastName}`; // Simple string concatenation
+const isAdult = user.age >= 18; // Simple boolean comparison
+const count = users.length; // Simple property access
 ```
 
 ### Step 5: Final Quality Check
 
-**Action**: Verify the file meets all quality standards.
+**Action**: You MUST verify the file meets all quality standards before proceeding.
 
-**Checklist for each file:**
+**Checklist for each file (all items MUST be satisfied):**
 
 **General Structure:**
 
-- [ ] All exports have comprehensive TSDoc documentation with `@public` tag
-- [ ] All internal elements are marked with `@internal` tag
-- [ ] Interface properties have individual property documentation
-- [ ] Complex APIs include usage examples with `@example`
-- [ ] Functions document parameters with `@param` and return values with `@returns`
-- [ ] Functions that throw errors document them with `@throws`
-- [ ] File follows the exact organization structure (imports → public types → internal types → exported functions → internal functions)
+- [ ] All exports MUST have comprehensive TSDoc documentation with `@public` tag
+- [ ] All internal elements MUST be marked with `@internal` tag
+- [ ] Interface properties MUST have individual property documentation
+- [ ] Complex APIs SHOULD include usage examples with `@example`
+- [ ] Functions MUST document parameters with `@param` and return values with `@returns`
+- [ ] Functions that throw errors MUST document them with `@throws`
+- [ ] File MUST follow the exact organization structure (imports → public types → internal types → exported functions → internal functions)
 
 **TypeScript Quality:**
 
-- [ ] Zero usage of `any` type anywhere in the file
-- [ ] All React event handlers use proper event types
-- [ ] All Convex functions use `QueryCtx`/`MutationCtx` types
-- [ ] All function parameters and return types are explicitly typed
+- [ ] The `any` type MUST NOT appear anywhere in the file
+- [ ] All React event handlers MUST use proper event types (e.g., `React.MouseEvent<T>`)
+- [ ] All Convex functions MUST use `QueryCtx`/`MutationCtx` types
+- [ ] All function parameters and return types MUST be explicitly typed
 
 **React Performance:**
 
-- [ ] Functions passed as props are wrapped in `useCallback`
-- [ ] Functions used as hook dependencies are wrapped in `useCallback`
-- [ ] Expensive calculations are wrapped in `useMemo`
-- [ ] Simple values (strings, booleans, numbers) are NOT memoized
+- [ ] Functions passed as props MUST be wrapped in `useCallback`
+- [ ] Functions used as hook dependencies MUST be wrapped in `useCallback`
+- [ ] Expensive calculations SHOULD be wrapped in `useMemo`
+- [ ] Simple values (strings, booleans, numbers) MUST NOT be memoized
 
 ## Complete Example: Before and After
 
@@ -508,17 +510,24 @@ function validateEmail(email: string): boolean {
 
 ## Usage Instructions
 
-**Execute the main 3-step process:**
+**You MUST execute the main 3-step process:**
 
 1. **Run git status command** to list all modified TypeScript/JavaScript files
-2. **Create todo tasks** - one task per file that needs cleanup
+2. **Create todo tasks** - You MUST create one task per file that needs cleanup
 3. **Process each file systematically**:
-   - Work through cleanup steps 1-5 in exact order for each file
-   - Complete the checklist in Step 5 before moving to the next file
-   - Mark the todo task as complete
-   - Repeat until all files are processed
+   - You MUST work through cleanup steps 1-5 in exact order for each file
+   - You MUST complete the checklist in Step 5 before moving to the next file
+   - You MUST mark the todo task as complete after verification
+   - You MUST repeat until all files are processed
 
 This systematic approach ensures no files are missed and all code meets consistent quality standards.
+
+## RFC 2119 Key Words
+
+This document uses RFC 2119 terminology:
+- **MUST** / **MUST NOT**: Absolute requirement
+- **SHOULD** / **SHOULD NOT**: Recommended but not required
+- **MAY**: Optional
 
 ---
 <!-- Ignore section if arguments are not replaced -->
