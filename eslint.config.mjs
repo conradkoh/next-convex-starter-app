@@ -180,7 +180,23 @@ export default [
 
   // Script files - console.log is expected
   {
-    files: ['**/scripts/**/*.{js,ts}', 'scripts/**/*.{js,ts}'],
+    files: ['**/scripts/**/*.{js,ts,mjs,cjs}'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Migration files - console.log is expected for debugging migrations
+  {
+    files: ['**/migration.ts', '**/migrations/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // API callback pages - console.log is expected for debugging OAuth flows
+  {
+    files: ['**/api/**/callback/**/*.{ts,tsx}'],
     rules: {
       'no-console': 'off',
     },
