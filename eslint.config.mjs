@@ -148,6 +148,16 @@ export default [
     },
   },
 
+  // TypeScript files - enable type-aware linting for Convex rules
+  {
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        project: true,
+      },
+    },
+  },
+
   // JavaScript files - disable TypeScript-specific rules
   {
     files: ['**/*.{js,jsx,mjs,cjs}'],
