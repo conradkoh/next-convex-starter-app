@@ -62,6 +62,8 @@ describe('Navigation', () => {
       },
       accessLevel: 'user',
       isSystemAdmin: false,
+      roles: ['user'],
+      permissions: [],
     });
 
     render(<Navigation />);

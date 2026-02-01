@@ -15,6 +15,8 @@ import {
 import { getAccessLevel, isSystemAdmin } from '../modules/auth/accessControl';
 import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
 import type { AuthState } from '../modules/auth/types/AuthState';
+import { getUserPermissionList } from '../modules/rbac/permissions';
+import { getUserRoleNames } from '../modules/rbac/roles';
 
 /**
  * Retrieves the current authentication state for a session.
@@ -55,6 +57,10 @@ export const getState = query({
       };
     }
 
+    // Get RBAC data
+    const roles = await getUserRoleNames(ctx, user._id);
+    const permissions = await getUserPermissionList(ctx, user._id);
+
     return {
       sessionId: args.sessionId,
       state: 'authenticated' as const,
@@ -62,6 +68,8 @@ export const getState = query({
       accessLevel: getAccessLevel(user),
       isSystemAdmin: isSystemAdmin(user),
       authMethod: exists.authMethod,
+      roles,
+      permissions,
     };
   },
 });

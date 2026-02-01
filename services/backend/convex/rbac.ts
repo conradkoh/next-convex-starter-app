@@ -2,6 +2,9 @@ import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { query, mutation, internalMutation } from './_generated/server';
+import { ALL_PERMISSIONS, ALL_ROLES, ALL_ROLE_PERMISSIONS } from '../config/rbac';
+import type { Id } from './_generated/dataModel';
+import type { MutationCtx } from './_generated/server';
 import { isSystemAdmin } from '../modules/auth/accessControl';
 import { getAuthUser } from '../modules/auth/getAuthUser';
 import { hasPermission, getUserPermissionList } from '../modules/rbac/permissions';
@@ -15,7 +18,8 @@ import {
   getRolePermissions,
   hasRole,
 } from '../modules/rbac/roles';
-import { INITIAL_PERMISSIONS, DEFAULT_ROLES, USER_ROLE_PERMISSIONS } from '../modules/rbac/types';
+
+// Import Id type for the helper function
 
 // ============================================================================
 // Queries
@@ -270,112 +274,109 @@ export const removeUserRole = mutation({
 // ============================================================================
 
 /**
+ * Helper function to seed RBAC data.
+ * Used by both internal and public mutations.
+ */
+async function _seedRbacData(ctx: { db: MutationCtx['db'] }) {
+  const now = Date.now();
+  const results = {
+    rolesCreated: 0,
+    permissionsCreated: 0,
+    rolePermissionsCreated: 0,
+  };
+
+  // Create all permissions (core + custom)
+  const permissionIdMap = new Map<string, Id<'rbac_permissions'>>();
+
+  for (const permDef of ALL_PERMISSIONS) {
+    const existing = await ctx.db
+      .query('rbac_permissions')
+      .withIndex('by_name', (q) => q.eq('name', permDef.name))
+      .unique();
+
+    if (!existing) {
+      const id = await ctx.db.insert('rbac_permissions', {
+        name: permDef.name,
+        displayName: permDef.displayName,
+        description: permDef.description,
+        resource: permDef.resource,
+        action: permDef.action,
+        createdAt: now,
+      });
+      permissionIdMap.set(permDef.name, id);
+      results.permissionsCreated++;
+    } else {
+      permissionIdMap.set(permDef.name, existing._id);
+    }
+  }
+
+  // Create all roles (core + custom)
+  const roleIdMap = new Map<string, Id<'rbac_roles'>>();
+
+  for (const roleDef of ALL_ROLES) {
+    const existing = await ctx.db
+      .query('rbac_roles')
+      .withIndex('by_name', (q) => q.eq('name', roleDef.name))
+      .unique();
+
+    if (!existing) {
+      const id = await ctx.db.insert('rbac_roles', {
+        name: roleDef.name,
+        displayName: roleDef.displayName,
+        description: roleDef.description,
+        isSystemRole: roleDef.isSystemRole,
+        createdAt: now,
+        updatedAt: now,
+      });
+      roleIdMap.set(roleDef.name, id);
+      results.rolesCreated++;
+    } else {
+      roleIdMap.set(roleDef.name, existing._id);
+    }
+  }
+
+  // Assign permissions to roles based on mappings
+  for (const [roleName, permissionNames] of Object.entries(ALL_ROLE_PERMISSIONS)) {
+    const roleId = roleIdMap.get(roleName);
+    if (!roleId) continue;
+
+    for (const permName of permissionNames) {
+      const permId = permissionIdMap.get(permName);
+      if (!permId) continue;
+
+      const existing = await ctx.db
+        .query('rbac_rolePermissions')
+        .withIndex('by_role_permission', (q) => q.eq('roleId', roleId).eq('permissionId', permId))
+        .unique();
+
+      if (!existing) {
+        await ctx.db.insert('rbac_rolePermissions', {
+          roleId,
+          permissionId: permId,
+        });
+        results.rolePermissionsCreated++;
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
  * Seed default roles and permissions.
  * This is an internal mutation that should be called during initial setup.
  */
 export const seedRbacData = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
-    const results = {
-      rolesCreated: 0,
-      permissionsCreated: 0,
-      rolePermissionsCreated: 0,
-    };
-
-    // Create default permissions
-    const permissionIdMap = new Map<
-      string,
-      typeof ctx.db extends { get: (id: infer T) => unknown } ? T : never
-    >();
-
-    for (const permDef of INITIAL_PERMISSIONS) {
-      // Check if permission already exists
-      const existing = await ctx.db
-        .query('rbac_permissions')
-        .withIndex('by_name', (q) => q.eq('name', permDef.name))
-        .unique();
-
-      if (!existing) {
-        const id = await ctx.db.insert('rbac_permissions', {
-          name: permDef.name,
-          displayName: permDef.displayName,
-          description: permDef.description,
-          resource: permDef.resource,
-          action: permDef.action,
-          createdAt: now,
-        });
-        permissionIdMap.set(permDef.name, id);
-        results.permissionsCreated++;
-      } else {
-        permissionIdMap.set(permDef.name, existing._id);
-      }
-    }
-
-    // Create default roles
-    const roleIdMap = new Map<
-      string,
-      typeof ctx.db extends { get: (id: infer T) => unknown } ? T : never
-    >();
-
-    for (const roleDef of DEFAULT_ROLES) {
-      // Check if role already exists
-      const existing = await ctx.db
-        .query('rbac_roles')
-        .withIndex('by_name', (q) => q.eq('name', roleDef.name))
-        .unique();
-
-      if (!existing) {
-        const id = await ctx.db.insert('rbac_roles', {
-          name: roleDef.name,
-          displayName: roleDef.displayName,
-          description: roleDef.description,
-          isSystemRole: roleDef.isSystemRole ?? false,
-          createdAt: now,
-          updatedAt: now,
-        });
-        roleIdMap.set(roleDef.name, id);
-        results.rolesCreated++;
-      } else {
-        roleIdMap.set(roleDef.name, existing._id);
-      }
-    }
-
-    // Assign permissions to user role
-    const userRoleId = roleIdMap.get('user');
-    if (userRoleId) {
-      for (const permName of USER_ROLE_PERMISSIONS) {
-        const permId = permissionIdMap.get(permName);
-        if (permId) {
-          // Check if mapping already exists
-          const existing = await ctx.db
-            .query('rbac_rolePermissions')
-            .withIndex('by_role_permission', (q) =>
-              q.eq('roleId', userRoleId).eq('permissionId', permId)
-            )
-            .unique();
-
-          if (!existing) {
-            await ctx.db.insert('rbac_rolePermissions', {
-              roleId: userRoleId,
-              permissionId: permId,
-            });
-            results.rolePermissionsCreated++;
-          }
-        }
-      }
-    }
-
-    // Note: system_admin role doesn't need explicit permissions
-    // as it uses wildcard (*) permission
-
-    return results;
+    return await _seedRbacData(ctx);
   },
 });
 
 /**
  * Public mutation to seed RBAC data (admin only).
  * Use this to initialize the RBAC system.
+ * Also migrates existing users to have RBAC roles based on accessLevel.
  */
 export const initializeRbac = mutation({
   args: { ...SessionIdArg },
@@ -390,94 +391,25 @@ export const initializeRbac = mutation({
       throw new Error('Only system administrators can initialize RBAC');
     }
 
-    // Run the internal seed mutation
-    const now = Date.now();
-    const results = {
-      rolesCreated: 0,
-      permissionsCreated: 0,
-      rolePermissionsCreated: 0,
+    // Seed roles and permissions
+    const seedResults = await _seedRbacData(ctx);
+
+    // Migrate all existing users to RBAC
+    const allUsers = await ctx.db.query('users').collect();
+    let usersAssigned = 0;
+
+    for (const existingUser of allUsers) {
+      const roleName = existingUser.accessLevel === 'system_admin' ? 'system_admin' : 'user';
+      const result = await assignRoleByName(ctx, existingUser._id, roleName);
+      if (result !== null) {
+        usersAssigned++;
+      }
+    }
+
+    return {
+      ...seedResults,
+      usersMigrated: usersAssigned,
+      totalUsers: allUsers.length,
     };
-
-    // Create default permissions
-    const permissionIdMap = new Map<
-      string,
-      typeof ctx.db extends { get: (id: infer T) => unknown } ? T : never
-    >();
-
-    for (const permDef of INITIAL_PERMISSIONS) {
-      const existing = await ctx.db
-        .query('rbac_permissions')
-        .withIndex('by_name', (q) => q.eq('name', permDef.name))
-        .unique();
-
-      if (!existing) {
-        const id = await ctx.db.insert('rbac_permissions', {
-          name: permDef.name,
-          displayName: permDef.displayName,
-          description: permDef.description,
-          resource: permDef.resource,
-          action: permDef.action,
-          createdAt: now,
-        });
-        permissionIdMap.set(permDef.name, id);
-        results.permissionsCreated++;
-      } else {
-        permissionIdMap.set(permDef.name, existing._id);
-      }
-    }
-
-    // Create default roles
-    const roleIdMap = new Map<
-      string,
-      typeof ctx.db extends { get: (id: infer T) => unknown } ? T : never
-    >();
-
-    for (const roleDef of DEFAULT_ROLES) {
-      const existing = await ctx.db
-        .query('rbac_roles')
-        .withIndex('by_name', (q) => q.eq('name', roleDef.name))
-        .unique();
-
-      if (!existing) {
-        const id = await ctx.db.insert('rbac_roles', {
-          name: roleDef.name,
-          displayName: roleDef.displayName,
-          description: roleDef.description,
-          isSystemRole: roleDef.isSystemRole ?? false,
-          createdAt: now,
-          updatedAt: now,
-        });
-        roleIdMap.set(roleDef.name, id);
-        results.rolesCreated++;
-      } else {
-        roleIdMap.set(roleDef.name, existing._id);
-      }
-    }
-
-    // Assign permissions to user role
-    const userRoleId = roleIdMap.get('user');
-    if (userRoleId) {
-      for (const permName of USER_ROLE_PERMISSIONS) {
-        const permId = permissionIdMap.get(permName);
-        if (permId) {
-          const existing = await ctx.db
-            .query('rbac_rolePermissions')
-            .withIndex('by_role_permission', (q) =>
-              q.eq('roleId', userRoleId).eq('permissionId', permId)
-            )
-            .unique();
-
-          if (!existing) {
-            await ctx.db.insert('rbac_rolePermissions', {
-              roleId: userRoleId,
-              permissionId: permId,
-            });
-            results.rolePermissionsCreated++;
-          }
-        }
-      }
-    }
-
-    return results;
   },
 });

@@ -15,9 +15,15 @@ export type AuthState =
       sessionId: string;
       state: 'authenticated';
       user: Doc<'users'>;
+      /** @deprecated Use `permissions` array and `hasPermission()` instead */
       accessLevel: AccessLevel;
+      /** @deprecated Use `hasPermission('*')` or check roles instead */
       isSystemAdmin: boolean;
       authMethod?: 'google' | 'login_code' | 'recovery_code' | 'anonymous' | 'username_password';
+      /** User's assigned role names */
+      roles: string[];
+      /** User's effective permissions (resolved from all roles) */
+      permissions: string[];
     };
 
 /**
