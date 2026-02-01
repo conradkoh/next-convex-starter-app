@@ -230,4 +230,64 @@ export default defineSchema({
     expiresAt: v.number(), // When this connect request expires (15 minutes from creation)
     redirectUri: v.string(), // The OAuth redirect URI used for this connect request
   }),
+
+  // ============================================================================
+  // RBAC (Role-Based Access Control) Tables
+  // ============================================================================
+
+  /**
+   * RBAC Roles - Named collections of permissions.
+   * Roles group permissions together for easier management.
+   * System roles (isSystemRole=true) cannot be deleted.
+   */
+  rbac_roles: defineTable({
+    name: v.string(), // Unique role name (e.g., 'admin', 'moderator')
+    displayName: v.string(), // Human-readable name
+    description: v.string(), // Description of what this role allows
+    isSystemRole: v.boolean(), // If true, cannot be deleted (system_admin, user)
+    createdAt: v.number(), // When the role was created
+    updatedAt: v.number(), // When the role was last updated
+  }).index('by_name', ['name']),
+
+  /**
+   * RBAC Permissions - Granular permission definitions.
+   * Permissions define individual actions that can be performed.
+   * Format: {resource}.{action} (e.g., 'users.read', 'settings.write')
+   */
+  rbac_permissions: defineTable({
+    name: v.string(), // Unique permission identifier (e.g., 'users.read')
+    displayName: v.string(), // Human-readable name
+    description: v.string(), // What this permission allows
+    resource: v.string(), // Resource category (e.g., 'users', 'settings')
+    action: v.string(), // Action type (e.g., 'read', 'write', 'delete', 'manage')
+    createdAt: v.number(), // When the permission was created
+  })
+    .index('by_name', ['name'])
+    .index('by_resource', ['resource']),
+
+  /**
+   * RBAC Role-Permission mapping (many-to-many).
+   * Links roles to the permissions they grant.
+   */
+  rbac_rolePermissions: defineTable({
+    roleId: v.id('rbac_roles'), // The role
+    permissionId: v.id('rbac_permissions'), // The permission granted by this role
+  })
+    .index('by_role', ['roleId'])
+    .index('by_permission', ['permissionId'])
+    .index('by_role_permission', ['roleId', 'permissionId']),
+
+  /**
+   * User-Role assignments (many-to-many).
+   * Links users to their assigned roles.
+   */
+  rbac_userRoles: defineTable({
+    userId: v.id('users'), // The user
+    roleId: v.id('rbac_roles'), // The assigned role
+    assignedAt: v.number(), // When the role was assigned
+    assignedBy: v.optional(v.id('users')), // Who assigned this role (null for system)
+  })
+    .index('by_user', ['userId'])
+    .index('by_role', ['roleId'])
+    .index('by_user_role', ['userId', 'roleId']),
 });
