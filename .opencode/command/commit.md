@@ -37,7 +37,6 @@ This document uses RFC 2119 terminology:
    - Identify the testing framework (vitest, jest, bun:test, or none)
    - Identify the linting tool (eslint, biome, or none)
    - Check for monorepo tools (nx, turborepo, pnpm workspaces, npm workspaces)
-   
 2. You MUST NOT assume validation tools exist
 3. You MUST NOT execute validation commands that are not configured in the project
 
@@ -133,7 +132,6 @@ npx turbo build            # If using Turborepo
    - Uses imperative mood (e.g., "Add feature" not "Added feature")
    - Is 1-2 sentences maximum for the subject line
    - Accurately reflects the nature of changes (add, update, fix, refactor, etc.)
-   
 2. You MUST NOT use generic messages like "Update files" or "Fix issues"
 
 3. You SHOULD review recent commit history to match the repository's commit style:
@@ -169,10 +167,9 @@ git status
 1. If the commit fails due to pre-commit hook changes:
    - You MAY retry the commit ONCE to include automated changes
    - If it fails again, you MUST investigate the pre-commit hook requirements
-   
 2. If the commit succeeds but pre-commit hooks modified files:
    - You MUST amend the commit to include the hook modifications:
-   
+
    ```bash
    git add <modified-files>
    git commit --amend --no-edit
@@ -361,6 +358,7 @@ A successful execution MUST meet all of the following criteria:
 - [ ] If PR requested: PR created and URL returned to user
 
 ---
+
 <!-- Ignore section if arguments are not replaced -->
 <userinput>
 $ARGUMENTS

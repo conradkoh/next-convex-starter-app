@@ -15,6 +15,7 @@ When running multiple development servers in a monorepo, child processes may not
 - Multiple dev servers in separate projects
 
 Check your Nx version:
+
 ```bash
 nx --version
 ```
@@ -22,6 +23,7 @@ nx --version
 ## Solution: Nx Continuous Tasks
 
 Nx 21 introduced continuous tasks, a native feature that properly manages long-running processes with:
+
 - ✅ Automatic signal forwarding to child processes
 - ✅ Task dependency ordering (start dependencies before dependents)
 - ✅ Clean shutdown when interrupted (Ctrl+C)
@@ -35,6 +37,7 @@ Nx 21 introduced continuous tasks, a native feature that properly manages long-r
 Add `"continuous": true` to any task that runs indefinitely (dev servers, watch tasks, etc).
 
 **services/backend/project.json**:
+
 ```json
 {
   "targets": {
@@ -55,6 +58,7 @@ Add `"continuous": true` to any task that runs indefinitely (dev servers, watch 
 If a task depends on other services being ready, declare the dependency. The dependent task will not start until its dependencies are running.
 
 **apps/webapp/project.json**:
+
 ```json
 {
   "targets": {
@@ -77,6 +81,7 @@ If a task depends on other services being ready, declare the dependency. The dep
 ```
 
 Key points:
+
 - List dependencies in `dependsOn` array
 - Use full project name: `@workspace/backend`
 - Reference the target name: `"target": "dev"`
@@ -95,6 +100,7 @@ Update your root `package.json` to run the main project (which will pull in depe
 ```
 
 Nx automatically:
+
 1. Starts backend:dev first (because webapp:dev depends on it)
 2. Waits for backend to be running (continuous task)
 3. Starts webapp:dev
@@ -128,6 +134,7 @@ Nx 21 includes a new Terminal UI for managing multiple concurrent tasks:
 - **q** - Quit and exit all tasks
 
 The UI displays:
+
 - Running tasks on the left
 - Selected task's logs on the right
 
@@ -166,6 +173,7 @@ Both services will start before e2e tests run.
 ### Processes still running after Ctrl+C?
 
 1. Verify continuous flag is set:
+
    ```bash
    nx show project @workspace/backend
    ```
@@ -178,6 +186,7 @@ Both services will start before e2e tests run.
 ### Port conflicts on restart?
 
 Kill processes on specific ports:
+
 ```bash
 lsof -ti:3000 | xargs kill -9
 lsof -ti:3001 | xargs kill -9
