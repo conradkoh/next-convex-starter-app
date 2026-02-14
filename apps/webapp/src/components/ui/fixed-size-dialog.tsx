@@ -112,7 +112,7 @@ export const FixedSizeDialog = React.forwardRef<
             className={cn(
               'absolute top-4 right-4 z-10',
               'rounded-xs opacity-70 transition-opacity hover:opacity-100',
-              'ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
+              'ring-offset-background focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus:outline-hidden',
               'data-[state=open]:bg-accent data-[state=open]:text-muted-foreground',
               'disabled:pointer-events-none',
               '[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4'
@@ -310,4 +310,4 @@ export const FixedSizeDialogActions = React.forwardRef<HTMLDivElement, FixedSize
 FixedSizeDialogActions.displayName = 'FixedSizeDialogActions';
 
 // Re-export base Dialog components for convenience
-export { Dialog, DialogTrigger, DialogClose } from './dialog';
+export { Dialog, DialogTrigger, DialogClose, DialogDescription } from './dialog';
