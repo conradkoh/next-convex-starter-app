@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
  *
  * Features:
  * - Fixed large size on desktop, fullscreen on mobile
- * - Sticky header (title) and footer (actions)
+ * - Fixed header (title) and footer (actions) via flexbox layout
  * - Scrollable content area
  * - Optional sidebar support
  * - Dark mode compatible with semantic tokens
@@ -26,6 +26,9 @@ import { cn } from '@/lib/utils';
  *   <DialogTrigger>Open</DialogTrigger>
  *   <FixedSizeDialog>
  *     <FixedSizeDialogTitle>Dialog Title</FixedSizeDialogTitle>
+ *     <FixedSizeDialogDescription>
+ *       Optional description for accessibility
+ *     </FixedSizeDialogDescription>
  *     <FixedSizeDialogContent>
  *       Main content goes here...
  *     </FixedSizeDialogContent>
@@ -44,7 +47,7 @@ import { cn } from '@/lib/utils';
  *   <FixedSizeDialog>
  *     <FixedSizeDialogTitle>Main Title</FixedSizeDialogTitle>
  *     <div className="flex">
- *       <FixedSizeDialogSidebar title="Sidebar Title">
+ *       <FixedSizeDialogSidebar title="Sidebar Title" widthClassName="w-80">
  *         Sidebar content...
  *       </FixedSizeDialogSidebar>
  *       <FixedSizeDialogContent>
@@ -109,7 +112,7 @@ export const FixedSizeDialog = React.forwardRef<
             className={cn(
               'absolute top-4 right-4 z-10',
               'rounded-xs opacity-70 transition-opacity hover:opacity-100',
-              'ring-offset-background focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-hidden',
+              'ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
               'data-[state=open]:bg-accent data-[state=open]:text-muted-foreground',
               'disabled:pointer-events-none',
               '[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4'
@@ -126,22 +129,22 @@ export const FixedSizeDialog = React.forwardRef<
 });
 FixedSizeDialog.displayName = 'FixedSizeDialog';
 
-interface FixedSizeDialogTitleProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> {}
-
 /**
- * FixedSizeDialogTitle - Sticky header section that stays at the top
+ * FixedSizeDialogTitle - Fixed header section that stays at the top
+ *
+ * The title remains at the top of the dialog (doesn't scroll) due to the parent's
+ * flexbox layout with `flex-col` and this element's `shrink-0` property.
  */
 export const FixedSizeDialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
-  FixedSizeDialogTitleProps
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => {
   return (
     <DialogPrimitive.Title
       ref={ref}
       data-slot="fixed-size-dialog-title"
       className={cn(
-        // Sticky positioning at top
+        // Fixed at top via parent flexbox (shrink-0 prevents shrinking)
         'shrink-0 border-b border-border',
         // Padding and spacing
         'px-6 py-4',
@@ -156,6 +159,31 @@ export const FixedSizeDialogTitle = React.forwardRef<
   );
 });
 FixedSizeDialogTitle.displayName = 'FixedSizeDialogTitle';
+
+/**
+ * FixedSizeDialogDescription - Optional description for accessibility
+ *
+ * Provides additional context for screen readers (WCAG requirement).
+ */
+export const FixedSizeDialogDescription = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+>(({ className, ...props }, ref) => {
+  return (
+    <DialogPrimitive.Description
+      ref={ref}
+      data-slot="fixed-size-dialog-description"
+      className={cn(
+        'text-sm text-muted-foreground',
+        // Padding to match dialog spacing
+        'px-6 pb-4',
+        className
+      )}
+      {...props}
+    />
+  );
+});
+FixedSizeDialogDescription.displayName = 'FixedSizeDialogDescription';
 
 interface FixedSizeDialogContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -189,13 +217,18 @@ interface FixedSizeDialogSidebarProps extends Omit<React.HTMLAttributes<HTMLDivE
    * Optional title for the sidebar that aligns with the main dialog title
    */
   title?: React.ReactNode;
+  /**
+   * Custom width classes for the sidebar
+   * @default 'w-full sm:w-64'
+   */
+  widthClassName?: string;
 }
 
 /**
  * FixedSizeDialogSidebar - Optional sidebar with its own title that aligns with main title
  */
 export const FixedSizeDialogSidebar = React.forwardRef<HTMLDivElement, FixedSizeDialogSidebarProps>(
-  ({ className, title, children, ...props }, ref) => {
+  ({ className, title, widthClassName = 'w-full sm:w-64', children, ...props }, ref) => {
     return (
       <div
         ref={ref}
@@ -203,8 +236,8 @@ export const FixedSizeDialogSidebar = React.forwardRef<HTMLDivElement, FixedSize
         className={cn(
           // Flex layout
           'flex shrink-0 flex-col',
-          // Width
-          'w-full sm:w-64',
+          // Width (customizable via widthClassName)
+          widthClassName,
           // Border
           'border-r border-border',
           // Background
@@ -247,7 +280,10 @@ FixedSizeDialogSidebar.displayName = 'FixedSizeDialogSidebar';
 interface FixedSizeDialogActionsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 /**
- * FixedSizeDialogActions - Sticky footer section for action buttons
+ * FixedSizeDialogActions - Fixed footer section for action buttons
+ *
+ * The actions remain at the bottom of the dialog (doesn't scroll) due to the parent's
+ * flexbox layout with `flex-col` and this element's `shrink-0` property.
  */
 export const FixedSizeDialogActions = React.forwardRef<HTMLDivElement, FixedSizeDialogActionsProps>(
   ({ className, ...props }, ref) => {
@@ -256,7 +292,7 @@ export const FixedSizeDialogActions = React.forwardRef<HTMLDivElement, FixedSize
         ref={ref}
         data-slot="fixed-size-dialog-actions"
         className={cn(
-          // Sticky positioning at bottom
+          // Fixed at bottom via parent flexbox (shrink-0 prevents shrinking)
           'shrink-0 border-t border-border',
           // Padding and spacing
           'px-6 py-4',
@@ -272,3 +308,6 @@ export const FixedSizeDialogActions = React.forwardRef<HTMLDivElement, FixedSize
   }
 );
 FixedSizeDialogActions.displayName = 'FixedSizeDialogActions';
+
+// Re-export base Dialog components for convenience
+export { Dialog, DialogTrigger, DialogClose } from './dialog';
