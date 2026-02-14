@@ -176,7 +176,7 @@ export const FixedSizeDialogDescription = React.forwardRef<
       className={cn(
         'text-sm text-muted-foreground',
         // Padding to match dialog spacing
-        'px-6 pb-4',
+        'px-6 pt-4 pb-4',
         className
       )}
       {...props}
