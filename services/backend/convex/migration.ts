@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 
 import { internal } from './_generated/api';
 import { internalAction, internalMutation, internalQuery } from './_generated/server';
+import { assignRoleByName } from '../modules/rbac/roles';
 
 const BATCH_SIZE = 100; // Process 100 sessions per batch
 
@@ -191,5 +192,122 @@ export const getUsersBatch = internalQuery({
   },
   handler: async (ctx, args) => {
     return await ctx.db.query('users').paginate(args.paginationOpts);
+  },
+});
+
+// ========================================
+// RBAC MIGRATION
+// ========================================
+
+/**
+ * Internal mutation to assign RBAC roles to a user based on their accessLevel.
+ * Part of the migration from accessLevel to RBAC system.
+ */
+export const assignRbacRoleToUser = internalMutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get('users', args.userId);
+    if (!user) {
+      return { success: false, reason: 'user_not_found' };
+    }
+
+    // Determine which role to assign based on accessLevel
+    const roleName = user.accessLevel === 'system_admin' ? 'system_admin' : 'user';
+
+    // Assign the role
+    const result = await assignRoleByName(ctx, args.userId, roleName);
+
+    return {
+      success: true,
+      roleName,
+      alreadyAssigned: result === null,
+    };
+  },
+});
+
+/**
+ * Internal action to migrate all users to RBAC by assigning roles based on accessLevel.
+ * Processes users in batches to handle large datasets safely.
+ */
+export const migrateUsersToRbac = internalAction({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const paginationOpts: PaginationOpts = {
+      numItems: BATCH_SIZE,
+      cursor: args.cursor ?? null,
+    };
+
+    // Fetch a batch of users
+    const results = await ctx.runQuery(internal.migration.getUsersBatch, {
+      paginationOpts,
+    });
+
+    // Assign RBAC roles to all users in the batch in parallel
+    const migrationResults = await Promise.all(
+      results.page.map((user) =>
+        ctx.runMutation(internal.migration.assignRbacRoleToUser, {
+          userId: user._id,
+        })
+      )
+    );
+
+    const assignedCount = migrationResults.filter((r) => r.success && !r.alreadyAssigned).length;
+    const alreadyAssignedCount = migrationResults.filter(
+      (r) => r.success && r.alreadyAssigned
+    ).length;
+
+    console.log(
+      `RBAC Migration batch: ${results.page.length} users processed, ` +
+        `${assignedCount} roles assigned, ${alreadyAssignedCount} already had roles`
+    );
+
+    // If there are more users, schedule the next batch
+    if (!results.isDone) {
+      await ctx.runAction(internal.migration.migrateUsersToRbac, {
+        cursor: results.continueCursor,
+      });
+    } else {
+      console.log('RBAC migration completed');
+    }
+  },
+});
+
+/**
+ * Internal mutation to migrate all users to RBAC in a single batch.
+ * WARNING: This processes all users at once and may timeout for large user bases.
+ * For large datasets, use migrateUsersToRbac (action) instead.
+ */
+export const migrateAllUsersToRbac = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Fetch all users
+    const allUsers = await ctx.db.query('users').collect();
+
+    let assignedCount = 0;
+    let alreadyAssignedCount = 0;
+
+    // Assign roles to all users
+    for (const user of allUsers) {
+      const roleName = user.accessLevel === 'system_admin' ? 'system_admin' : 'user';
+      const result = await assignRoleByName(ctx, user._id, roleName);
+
+      if (result !== null) {
+        assignedCount++;
+      } else {
+        alreadyAssignedCount++;
+      }
+    }
+
+    console.log(
+      `RBAC Migration complete: ${allUsers.length} users processed, ` +
+        `${assignedCount} roles assigned, ${alreadyAssignedCount} already had roles`
+    );
+
+    return {
+      success: true,
+      totalUsers: allUsers.length,
+      assignedCount,
+      alreadyAssignedCount,
+    };
   },
 });
