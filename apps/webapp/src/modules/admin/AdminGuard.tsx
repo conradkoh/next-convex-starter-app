@@ -8,19 +8,44 @@ import { type ReactNode, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuthState } from '@/modules/auth/AuthProvider';
+import { useHasPermission, useHasRole } from '@/modules/auth/permissions';
 
 export interface AdminGuardProps {
   children: ReactNode;
   fallbackTo?: string;
+  /**
+   * Optional permission required to access this area.
+   * If not specified, defaults to checking for 'system_admin' role.
+   */
+  requiredPermission?: string;
 }
 
 /**
- * Admin guard component that restricts access to system administrators only.
- * Redirects unauthenticated users to login and shows access denied for non-admin users.
+ * Admin guard component that restricts access based on RBAC permissions.
+ * Redirects unauthenticated users to login and shows access denied for unauthorized users.
+ *
+ * @example
+ * // Require system_admin role (default)
+ * <AdminGuard>
+ *   <AdminDashboard />
+ * </AdminGuard>
+ *
+ * @example
+ * // Require specific permission
+ * <AdminGuard requiredPermission="settings.write">
+ *   <SettingsPage />
+ * </AdminGuard>
  */
-export function AdminGuard({ children, fallbackTo = '/app' }: AdminGuardProps) {
+export function AdminGuard({ children, fallbackTo = '/app', requiredPermission }: AdminGuardProps) {
   const authState = useAuthState();
   const router = useRouter();
+
+  // Check permission or role based on what's required
+  const hasRequiredPermission = useHasPermission(requiredPermission ?? 'users.manage');
+  const isSystemAdmin = useHasRole('system_admin');
+
+  // Determine if user has access
+  const hasAccess = requiredPermission ? hasRequiredPermission : isSystemAdmin;
 
   /**
    * Redirects unauthenticated users to the login page.
@@ -35,7 +60,7 @@ export function AdminGuard({ children, fallbackTo = '/app' }: AdminGuardProps) {
     }
   }, [authState, redirectToLogin]);
 
-  if (authState === undefined) {
+  if (authState === undefined || hasAccess === undefined) {
     return _renderLoadingState('Checking access permissions...');
   }
 
@@ -43,8 +68,10 @@ export function AdminGuard({ children, fallbackTo = '/app' }: AdminGuardProps) {
     return _renderLoadingState('Redirecting to login...');
   }
 
-  if (!authState.isSystemAdmin) {
-    return _renderAccessDeniedState(authState.accessLevel, fallbackTo);
+  if (!hasAccess) {
+    const currentRoles = authState.roles.join(', ') || 'none';
+    const required = requiredPermission ?? 'system_admin role';
+    return _renderAccessDeniedState(currentRoles, required, fallbackTo);
   }
 
   return <>{children}</>;
@@ -65,9 +92,9 @@ function _renderLoadingState(message: string) {
 }
 
 /**
- * Renders the access denied state for non-admin users.
+ * Renders the access denied state for unauthorized users.
  */
-function _renderAccessDeniedState(currentAccessLevel: string, fallbackTo: string) {
+function _renderAccessDeniedState(currentRoles: string, required: string, fallbackTo: string) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -77,16 +104,16 @@ function _renderAccessDeniedState(currentAccessLevel: string, fallbackTo: string
               <ShieldX className="mx-auto h-16 w-16 text-destructive/60" />
               <h1 className="text-2xl font-semibold">Access Denied</h1>
               <p className="text-muted-foreground">
-                You need system administrator privileges to access this area.
+                You don&apos;t have permission to access this area.
               </p>
             </div>
 
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Current access level: <span className="font-medium">{currentAccessLevel}</span>
+                Your roles: <span className="font-medium">{currentRoles}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                Required access level: <span className="font-medium">system_admin</span>
+                Required: <span className="font-medium">{required}</span>
               </p>
             </div>
 

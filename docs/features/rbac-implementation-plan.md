@@ -312,12 +312,124 @@ const roles = await ctx.runQuery(api.rbac.getUserRoles, {
 
 ---
 
+## Implementation Status
+
+### Phase 1: Foundation - COMPLETE
+
+- Added RBAC tables to schema (rbac_roles, rbac_permissions, rbac_rolePermissions, rbac_userRoles)
+- Created RBAC module with utilities in `services/backend/modules/rbac/`
+- Created seed data mutation for default roles/permissions
+- Maintained backward compatibility with `isSystemAdmin`
+
+### Phase 2: Migration - COMPLETE
+
+- Created migration functions in `services/backend/convex/migration.ts`
+- Updated `AuthState` to include roles and permissions
+- Added RBAC data to auth responses
+
+### Phase 3: Integration - COMPLETE
+
+- Created frontend permission utilities in `apps/webapp/src/modules/auth/permissions.ts`
+- Updated `AdminGuard` to use RBAC permissions
+- Added hooks: `useHasPermission`, `useHasRole`, `usePermissions`, `useRoles`
+
+### Phase 4: Admin UI - DEFERRED
+
+- Role management UI can be added as needed
+- API endpoints are ready (`assignUserRole`, `removeUserRole`, `listRoles`)
+
+---
+
+## Extending RBAC for Your Project
+
+Projects that fork this starter can easily add custom roles and permissions.
+
+### Configuration File
+
+Edit `services/backend/config/rbac.ts` to add your custom permissions and roles:
+
+```typescript
+// Add custom permissions
+export const CUSTOM_PERMISSIONS: PermissionDefinition[] = [
+  {
+    name: 'billing.read',
+    displayName: 'View Billing',
+    description: 'View billing information',
+    resource: 'billing',
+    action: 'read',
+  },
+  {
+    name: 'billing.write',
+    displayName: 'Manage Billing',
+    description: 'Manage billing settings',
+    resource: 'billing',
+    action: 'write',
+  },
+];
+
+// Add custom roles
+export const CUSTOM_ROLES: RoleDefinition[] = [
+  {
+    name: 'billing_admin',
+    displayName: 'Billing Administrator',
+    description: 'Manages billing and subscriptions',
+    isSystemRole: false,
+  },
+];
+
+// Map permissions to roles
+export const CUSTOM_ROLE_PERMISSIONS: RolePermissionMapping = {
+  billing_admin: ['billing.read', 'billing.write', 'users.read'],
+};
+```
+
+### Seeding Your Database
+
+After adding custom permissions/roles, run the initialization:
+
+```typescript
+// From the Convex dashboard or via API
+await ctx.runMutation(api.rbac.initializeRbac, { sessionId });
+```
+
+### Using Permissions in Backend
+
+```typescript
+import { hasPermission, requirePermission } from '../modules/rbac';
+
+// Check permission
+if (await hasPermission(ctx, user._id, 'billing.read')) {
+  // User can view billing
+}
+
+// Throw if missing
+await requirePermission(ctx, user._id, 'billing.write');
+```
+
+### Using Permissions in Frontend
+
+```typescript
+import { useHasPermission, useHasRole } from '@/modules/auth/permissions';
+
+function BillingPage() {
+  const canViewBilling = useHasPermission('billing.read');
+  
+  if (canViewBilling === undefined) return <Loading />;
+  if (!canViewBilling) return <AccessDenied />;
+  
+  return <BillingDashboard />;
+}
+```
+
+---
+
 ## Next Steps
 
-1. **Review this plan** with stakeholders
-2. **Finalize permission list** based on application features
-3. **Begin Phase 1** implementation
-4. **Create migration script** for existing users
+1. ~~**Review this plan** with stakeholders~~ COMPLETE
+2. ~~**Finalize permission list** based on application features~~ COMPLETE
+3. ~~**Begin Phase 1** implementation~~ COMPLETE
+4. ~~**Create migration script** for existing users~~ COMPLETE
+5. **Add Admin UI** for role management (optional, as needed)
 
 ---
 
