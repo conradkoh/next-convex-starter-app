@@ -27,7 +27,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
     "@eslint/eslintrc": "^3",
