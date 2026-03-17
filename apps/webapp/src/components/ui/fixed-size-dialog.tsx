@@ -62,8 +62,9 @@ import { cn } from '@/lib/utils';
  * ```
  */
 
-interface FixedSizeDialogProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+interface FixedSizeDialogProps extends React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+> {
   /**
    * Whether to show the close button in the top-right corner
    * @default true
