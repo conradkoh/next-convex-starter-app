@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy",
+    "migrate": "convex run migrations:runAll",
     "typecheck": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest"
