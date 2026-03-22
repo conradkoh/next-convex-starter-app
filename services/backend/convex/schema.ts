@@ -172,7 +172,19 @@ export default defineSchema({
     ), // How the user authenticated for this session
     expiresAt: v.optional(v.number()), // DEPRECATED: No longer used for session expiry. Kept for migration compatibility.
     expiresAtLabel: v.optional(v.string()), // DEPRECATED: No longer used for session expiry. Kept for migration compatibility.
-  }).index('by_sessionId', ['sessionId']),
+    // Device and activity tracking for session management
+    lastActivityAt: v.optional(v.number()), // Timestamp of last activity
+    deviceInfo: v.optional(
+      v.object({
+        userAgent: v.optional(v.string()), // Raw user agent string
+        browser: v.optional(v.string()), // Browser name (e.g., "Chrome", "Firefox")
+        os: v.optional(v.string()), // Operating system (e.g., "Windows", "macOS", "iOS")
+        device: v.optional(v.string()), // Device type (e.g., "Desktop", "Mobile", "Tablet")
+      })
+    ),
+  })
+    .index('by_sessionId', ['sessionId'])
+    .index('by_userId', ['userId']),
 
   /**
    * Temporary login codes for cross-device authentication.
