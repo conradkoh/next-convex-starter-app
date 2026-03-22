@@ -1,6 +1,6 @@
 {
   "name": "next-convex-starter-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "packageManager": "pnpm@10.15.1",
   "main": "index.js",
@@ -21,7 +21,7 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "**/*.{json,md,css,scss}": [
+    "**/*.{json,md,css,scss,yml,mdx}": [
       "prettier --write"
     ]
   },

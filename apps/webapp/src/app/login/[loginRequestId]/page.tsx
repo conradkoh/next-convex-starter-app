@@ -112,16 +112,21 @@ export default function LoginRequestPage({ params }: LoginRequestPageProps) {
       return;
     }
 
+    // Clear any previous poll interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
     // Poll for popup closure
-    const checkClosed = setInterval(() => {
+    pollIntervalRef.current = setInterval(() => {
       if (popup.closed) {
-        clearInterval(checkClosed);
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
         setIsPopupOpen(false);
       }
     }, 1000);
-
-    // The status polling is handled by the useQuery which automatically re-queries
-    // We don't need manual polling since Convex handles real-time updates
   }, [buildGoogleOAuthUrl]);
 
   const loginStatus = loginRequest?.status;

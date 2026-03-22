@@ -97,6 +97,7 @@ export function ThemeProvider({ children, targetSelector }: ThemeProviderProps) 
     window.__theme.setTheme(theme);
   }, []);
 
+
   // We need to use this component pattern for hydration safety
   return (
     <>
