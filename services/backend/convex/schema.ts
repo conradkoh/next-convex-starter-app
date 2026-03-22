@@ -186,6 +186,17 @@ export default defineSchema({
   }).index('by_code', ['code']),
 
   /**
+   * Rate limiting for login attempts to prevent brute force attacks.
+   * Tracks failed login attempts per session with automatic lockout.
+   */
+  loginAttempts: defineTable({
+    sessionId: v.string(), // The session making the attempt
+    attemptCount: v.number(), // Number of failed attempts in the window
+    lastAttemptAt: v.number(), // Timestamp of the last attempt
+    lockedUntil: v.optional(v.number()), // If locked out, when the lockout expires
+  }).index('by_sessionId', ['sessionId']),
+
+  /**
    * Authentication provider configuration for dynamic auth provider setup.
    * Supports multiple auth providers (Google, GitHub, etc.) with unified structure.
    */
