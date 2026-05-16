@@ -14,7 +14,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "typecheck": "turbo run typecheck",
-    "find-deadcode": "knip",
+    "find-deadcode": "knip --reporter=github-actions",
     "prepare": "husky"
   },
   "lint-staged": {

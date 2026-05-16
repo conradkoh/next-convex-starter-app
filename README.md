@@ -153,8 +153,8 @@ To deploy your Convex backend to production:
 
 1. Generate a deployment key from the Convex dashboard:
    - Go to your project in the [Convex dashboard](https://dashboard.convex.dev)
-   - Navigate to Project Settings > Settings > General > Generate Production Deploy Key
-   - Create a new deployment key
+   - Navigate to Settings > Create Deploy Key
+   - Name the key (e.g. "Github Actions") and create it
 
 2. Add the deployment key to GitHub Secrets:
    - Go to your GitHub repository

@@ -1,13 +1,22 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  
-  // Ignore dev dependencies from being reported as unused  
+
+  // Entry files to include (empty = auto-detect)
+  "include": [],
+
+  // Files/patterns to exclude from analysis
+  "exclude": [],
+
+  // Dependencies to ignore (not reported as unused)
   "ignoreDependencies": [
     "husky",
     "lint-staged"
   ],
-  
-  // Workspace configurations  
+
+  // Workspaces to ignore (don't lint these)
+  "ignoreWorkspaces": [],
+
+  // Per-workspace source file patterns
   "workspaces": {
     "apps/webapp": {
       "project": ["src/**/*.{ts,tsx}"]
