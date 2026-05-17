@@ -15,6 +15,7 @@
     "format:fix": "prettier --write .",
     "typecheck": "turbo run typecheck",
     "find-deadcode": "knip",
+    "e2e": "turbo run e2e",
     "prepare": "husky"
   },
   "lint-staged": {
