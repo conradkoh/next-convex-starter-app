@@ -58,6 +58,10 @@ export default function GoogleAuthConfigPage() {
     if (typeof window === 'undefined') return [];
     return [`${window.location.origin}/api/auth/google/callback`];
   }, []);
+  const javascriptOrigins = useMemo(() => {
+    if (typeof window === 'undefined') return [];
+    return [window.location.origin];
+  }, []);
   const isConfigLoading = configData === undefined;
   const isPageLoading = appInfoLoading || isConfigLoading;
   const isFullyConfigured = isConfigured && enabled;
@@ -476,6 +480,35 @@ export default function GoogleAuthConfigPage() {
                 ? 'A client secret is already configured. Click to enter a new secret, or leave empty to keep the current one.'
                 : 'Copy this from your Google Cloud Console OAuth 2.0 Client IDs'}
             </p>
+          </div>
+
+          <Separator />
+
+          {/* Authorised JavaScript Origins */}
+          <div className="space-y-4">
+            <div>
+              <Label>Authorised JavaScript origins</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Copy this value and add it to your Google Cloud Console OAuth configuration
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {javascriptOrigins.map((origin) => (
+                <div key={origin} className="flex gap-2">
+                  <Input value={origin} readOnly className="font-mono text-sm" />
+                  <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(origin)}>
+                    Copy
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {javascriptOrigins.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                JavaScript origins will be generated automatically based on your current domain.
+              </p>
+            )}
           </div>
 
           <Separator />
