@@ -40,6 +40,7 @@ function SearchParamsHandler() {
  */
 function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const authState = useAuthState();
   const googleAuthAvailable = useGoogleAuthAvailable();
   const [sessionId] = useState<string | null>(() =>
@@ -48,18 +49,22 @@ function LoginPageContent() {
   const isLoading = authState === undefined;
 
   /**
-   * Redirects authenticated users to the main application.
+   * Redirects authenticated users — prefers returnTo param, falls back to /app.
    */
-  const redirectAuthenticated = useCallback(() => {
-    router.push('/app');
-  }, [router]);
+  const redirectAuthenticated = useCallback(
+    (returnTo?: string | null) => {
+      router.push(returnTo || '/app');
+    },
+    [router]
+  );
 
-  // Redirect authenticated users to app
+  // Redirect authenticated users to app (or returnTo)
   useEffect(() => {
     if (authState?.state === 'authenticated') {
-      redirectAuthenticated();
+      const returnTo = searchParams.get('returnTo');
+      redirectAuthenticated(returnTo);
     }
-  }, [authState, redirectAuthenticated]);
+  }, [authState, searchParams, redirectAuthenticated]);
 
   if (isLoading) {
     return _renderLoadingState();
