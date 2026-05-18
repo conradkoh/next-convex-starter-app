@@ -29,3 +29,8 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_PROD }}
         run: pnpm --filter @workspace/backend run deploy
+
+      - name: Run migrations
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_PROD }}
+        run: pnpm --filter @workspace/backend run migrate
