@@ -17,7 +17,15 @@ export interface LLMStreamTextChunk {
   done: boolean;
 }
 
+export interface LLMGatewayModel {
+  id: string;
+  name: string;
+  providerSlug: string;
+  modelSlug: string;
+}
+
 export interface LLMGatewayPort {
   generateText(req: LLMGenerateTextRequest): Promise<LLMGenerateTextResult>;
   streamText(req: LLMGenerateTextRequest): AsyncIterable<LLMStreamTextChunk>;
+  listAvailableModels(): Promise<LLMGatewayModel[]>;
 }

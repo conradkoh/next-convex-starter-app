@@ -11,3 +11,10 @@ export function getLLMGateway(): LLMGatewayPort {
   }
   return cachedGateway;
 }
+
+export function createGatewayPort(kind: string): LLMGatewayPort {
+  if (kind === 'vercel-ai-gateway') {
+    return new VercelAIGatewayAdapter();
+  }
+  throw new Error(`Unsupported gateway kind: ${kind}`);
+}

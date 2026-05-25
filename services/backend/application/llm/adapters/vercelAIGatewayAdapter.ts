@@ -1,7 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { generateText, streamText } from 'ai';
+import { gateway as aiGateway, generateText, streamText } from 'ai';
 
 import type {
+  LLMGatewayModel,
   LLMGatewayPort,
   LLMGenerateTextRequest,
   LLMGenerateTextResult,
@@ -40,6 +41,21 @@ export class VercelAIGatewayAdapter implements LLMGatewayPort {
           }
         : undefined,
     };
+  }
+
+  async listAvailableModels(): Promise<LLMGatewayModel[]> {
+    const result = await aiGateway.getAvailableModels();
+    return result.models.map((model) => {
+      const firstSlash = model.id.indexOf('/');
+      const providerSlug = firstSlash === -1 ? model.id : model.id.slice(0, firstSlash);
+      const modelSlug = firstSlash === -1 ? model.id : model.id.slice(firstSlash + 1);
+      return {
+        id: model.id,
+        name: model.name,
+        providerSlug,
+        modelSlug,
+      };
+    });
   }
 
   async *streamText(req: LLMGenerateTextRequest): AsyncIterable<LLMStreamTextChunk> {

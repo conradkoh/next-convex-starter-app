@@ -1,8 +1,12 @@
 import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
+import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
+import { action, internalQuery, mutation, query } from './_generated/server';
+import { createGatewayPort } from '../application/llm/index';
+import type { LLMGatewayModel } from '../application/llm/ports/llmGatewayPort';
+import { enableCatalogModel, getCatalog } from '../application/llm/useCases/catalogUseCases';
 import {
   listGateways,
   upsertGateway,
@@ -169,5 +173,92 @@ export const makeDefaultModel = mutation({
     const user = await getAuthUserOptional(ctx, args);
     requireAdmin(user);
     return setDefaultModel(ctx.db, args.modelId, args.providerId);
+  },
+});
+
+export const getCatalogQuery = query({
+  args: {
+    gatewayId: v.id('llmGateways'),
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthUserOptional(ctx, args);
+    requireAdmin(user);
+    return getCatalog(ctx.db, args.gatewayId);
+  },
+});
+
+export const setCatalogModelEnabled = mutation({
+  args: {
+    gatewayId: v.id('llmGateways'),
+    providerSlug: v.string(),
+    providerLabel: v.string(),
+    modelSlug: v.string(),
+    modelLabel: v.string(),
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthUserOptional(ctx, args);
+    requireAdmin(user);
+    return enableCatalogModel(ctx.db, {
+      gatewayId: args.gatewayId,
+      providerSlug: args.providerSlug,
+      providerLabel: args.providerLabel,
+      modelSlug: args.modelSlug,
+      modelLabel: args.modelLabel,
+    });
+  },
+});
+
+export const requireAdminAck = internalQuery({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getAuthUserOptional(ctx, { sessionId: args.sessionId } as never);
+    if (!user) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Session not found',
+      });
+    }
+    if (!isSystemAdmin(user)) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Only system administrators can manage LLM configuration',
+      });
+    }
+    return true;
+  },
+});
+
+export const getGatewayKind = internalQuery({
+  args: { gatewayId: v.id('llmGateways') },
+  handler: async (ctx, args) => {
+    const gateway = await ctx.db.get('llmGateways', args.gatewayId);
+    if (!gateway) {
+      throw new ConvexError({
+        code: 'NOT_FOUND',
+        message: 'Gateway not found',
+      });
+    }
+    return gateway.kind;
+  },
+});
+
+export const getAvailableModelsFromGateway = action({
+  args: {
+    gatewayId: v.id('llmGateways'),
+    ...SessionIdArg,
+  },
+  handler: async (ctx, args): Promise<LLMGatewayModel[]> => {
+    await ctx.runQuery(internal.llmAdmin.requireAdminAck, {
+      sessionId: args.sessionId,
+    });
+
+    const kind = await ctx.runQuery(internal.llmAdmin.getGatewayKind, {
+      gatewayId: args.gatewayId,
+    });
+
+    const port = createGatewayPort(kind);
+    return port.listAvailableModels();
   },
 });

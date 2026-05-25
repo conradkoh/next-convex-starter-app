@@ -21,32 +21,37 @@ This infrastructure provides a **centralised, admin-managed** configuration laye
 - A built-in chat UI
 - Multi-tenant provider configurations
 
+> **Model discovery is dynamic.** Models are fetched from the Vercel AI Gateway via `gateway.getAvailableModels()` and surfaced in the admin UI. Admins enable models from the live list — no manual slug entry.
+
 ## Architecture
 
 ```mermaid
 graph TB
     subgraph "Frontend (Admin)"
-        UI["/app/admin/llm<br/>Gateway / Provider / Model UI"]
+        UI["/app/admin/llm<br/>3-card UX:<br/>GatewayStatusCard<br/>ModelCatalog<br/>ConfigSummaryCard"]
     end
 
     subgraph "Convex Backend"
+        Action["getAvailableModelsFromGateway<br/>(action — HTTP call)"]
         AdminAPI["llmAdmin.ts<br/>(queries + mutations)<br/>Admin-gated via SessionIdArg"]
-        UseCases["useCases/<br/>listGateways, upsertGateway,<br/>setActiveGateway, etc."]
+        UseCases["useCases/<br/>enableCatalogModel, getCatalog,<br/>listGateways, upsertGateway, etc."]
         Schema["schema.ts<br/>llmGateways · llmProviders · llmModels"]
+        Action -->|ctx.runQuery (requireAdminAck)| AdminAPI
         AdminAPI --> UseCases --> Schema
-        UI -->|useSessionQuery / useSessionMutation| AdminAPI
+        UI -->|useSessionQuery / useSessionMutation<br/>useSessionAction| AdminAPI
+        UI -->|useSessionAction| Action
     end
 
     subgraph "LLM Port / Adapter"
         Port["LLMGatewayPort<br/>(ports/llmGatewayPort.ts)"]
         Adapter["VercelAIGatewayAdapter<br/>(adapters/vercelAIGatewayAdapter.ts)"]
-        Factory["getLLMGateway()<br/>(index.ts)"]
+        Factory["createGatewayPort() + getLLMGateway()<br/>(index.ts)"]
         Port --> Factory
         Adapter -.->|implements| Port
     end
 
     subgraph "Vendor SDK"
-        VercelSDK["ai + @ai-sdk/openai"]
+        VercelSDK["ai + @ai-sdk/openai<br/>gateway.getAvailableModels()"]
     end
 
     subgraph "Persistent Streaming"
@@ -56,6 +61,7 @@ graph TB
         Component --> Schema
     end
 
+    Action --> Factory --> Adapter --> VercelSDK
     Adapter --> VercelSDK
 ```
 
@@ -70,6 +76,24 @@ graph LR
     Product -->|streaming use case| Helper
     Helper --> Component
 ```
+
+## Admin Flow
+
+The admin UI at `/app/admin/llm` uses a three-card layout:
+
+| Card                      | Component           | Purpose                                                        |
+| ------------------------- | ------------------- | -------------------------------------------------------------- |
+| **Gateway**               | `GatewayStatusCard` | Connect to Vercel AI Gateway, sync models                      |
+| **Available Models**      | `ModelCatalog`      | Browse models grouped by provider, enable/disable, set default |
+| **Current Configuration** | `ConfigSummaryCard` | Read-only summary of what the application will use             |
+
+**Key behaviours:**
+
+- Admins do **not** manually type model slugs — the catalog is populated by calling `gateway.getAvailableModels()` via the `getAvailableModelsFromGateway` action.
+- The `setCatalogModelEnabled` mutation auto-creates the provider and model records on first enable. Toggling a second time disables without deleting.
+- The "Sync available models" button fetches the full list from the Vercel AI Gateway. This requires the `AI_GATEWAY_API_KEY` environment variable to be set.
+
+**Admin gating:** All admin endpoints use `SessionIdArg` + `isSystemAdmin()`. The action gates before any external HTTP call via an internal query (`requireAdminAck`).
 
 ## Entities
 
@@ -89,29 +113,31 @@ Three tables form the configuration hierarchy: **Gateway → Provider → Model*
 
 ### `llmProviders`
 
-| Field          | Type                | Notes                          |
-| -------------- | ------------------- | ------------------------------ |
-| `gatewayId`    | `Id<"llmGateways">` | FK to parent gateway           |
-| `slug`         | `string`            | e.g. `"openai"`, `"anthropic"` |
-| `label`        | `string`            | Display name                   |
-| `apiKeyEnvVar` | `string?`           | Env var holding the API key    |
-| `isEnabled`    | `boolean`           | Admin toggle                   |
-| `createdAt`    | `number`            |                                |
-| `updatedAt`    | `number`            |                                |
+| Field          | Type                | Notes                                                                 |
+| -------------- | ------------------- | --------------------------------------------------------------------- |
+| `gatewayId`    | `Id<"llmGateways">` | FK to parent gateway                                                  |
+| `slug`         | `string`            | Sourced from the gateway model id (before first `/`). e.g. `"openai"` |
+| `label`        | `string`            | Provider slug used as default label; can be overridden                |
+| `apiKeyEnvVar` | `string?`           | Env var holding the API key                                           |
+| `isEnabled`    | `boolean`           | Admin toggle                                                          |
+| `createdAt`    | `number`            |                                                                       |
+| `updatedAt`    | `number`            |                                                                       |
 
 Index: `by_gatewayId` on `["gatewayId"]`.
 
+Providers are **auto-created** by `enableCatalogModel` when an admin enables the first model for a given provider slug.
+
 ### `llmModels`
 
-| Field        | Type                 | Notes                                  |
-| ------------ | -------------------- | -------------------------------------- |
-| `providerId` | `Id<"llmProviders">` | FK to parent provider                  |
-| `slug`       | `string`             | e.g. `"gpt-4o"`, `"claude-sonnet-4-5"` |
-| `label`      | `string`             | Display name                           |
-| `isEnabled`  | `boolean`            | Admin toggle                           |
-| `isDefault`  | `boolean`            | One per provider may be default        |
-| `createdAt`  | `number`             |                                        |
-| `updatedAt`  | `number`             |                                        |
+| Field        | Type                 | Notes                                                                |
+| ------------ | -------------------- | -------------------------------------------------------------------- |
+| `providerId` | `Id<"llmProviders">` | FK to parent provider                                                |
+| `slug`       | `string`             | Sourced from the gateway model id (after first `/`). e.g. `"gpt-4o"` |
+| `label`      | `string`             | Sourced from the gateway model `name`. e.g. `"GPT-4o"`               |
+| `isEnabled`  | `boolean`            | Admin toggle                                                         |
+| `isDefault`  | `boolean`            | One per provider may be default                                      |
+| `createdAt`  | `number`             |                                                                      |
+| `updatedAt`  | `number`             |                                                                      |
 
 Index: `by_providerId` on `["providerId"]`.
 
@@ -138,11 +164,17 @@ Index: `by_providerId` on `["providerId"]`.
 
 3. **Register in the factory** — Update `services/backend/application/llm/index.ts` so `getLLMGateway()` can return your adapter. Today the factory always returns `VercelAIGatewayAdapter`; the intent is to eventually read the active gateway from the database and instantiate the matching adapter.
 
-4. **Surface in the admin UI** — The gateway picker in `GatewaySection.tsx` reads from `llmGateways`. No code changes needed if your adapter is returned by the factory based on the active gateway's `kind`.
+4. **Surface in the admin UI** — The gateway status is displayed in `GatewayStatusCard.tsx`. No code changes needed if your adapter is returned by the factory based on the active gateway's `kind`.
 
 ## Adding a New Provider
 
-The adapter's `PROVIDER_FACTORIES` map in `services/backend/application/llm/adapters/vercelAIGatewayAdapter.ts` currently only supports `openai`. To add a new provider (e.g. Anthropic):
+The adapter's `PROVIDER_FACTORIES` map in `services/backend/application/llm/adapters/vercelAIGatewayAdapter.ts` governs which provider slugs can be used with `generateText` and `streamText`. The gateway's `getAvailableModels()` may return models from many providers — the factory map must be extended for each one product features intend to call.
+
+| Provider slug | SDK package      | Factory function | Env var          |
+| ------------- | ---------------- | ---------------- | ---------------- |
+| `openai`      | `@ai-sdk/openai` | `createOpenAI`   | `OPENAI_API_KEY` |
+
+To add a new provider (e.g. Anthropic):
 
 1. Install the provider SDK:
 
@@ -163,9 +195,33 @@ The adapter's `PROVIDER_FACTORIES` map in `services/backend/application/llm/adap
      };
    ```
 
-3. Add the provider via the admin UI (`/app/admin/llm`) with slug `"anthropic"` and the appropriate API key env var.
+3. Models for that provider will appear in the admin catalog on the next sync. Enable them from the UI — no manual slug entry needed.
 
-## Consuming the LLM in a Product Feature
+## Why a Port / Adapter?
+
+The `LLMGatewayPort` interface is a **hexagonal boundary**. All product code depends on the port, never on a specific vendor SDK.
+
+- **Swappability** — Switch from Vercel AI Gateway to a direct provider or self-hosted model by writing a new adapter.
+- **Testability** — Mock the port in unit tests without spinning up a real LLM.
+- **Vendor lock-in prevention** — The Vercel AI SDK (`ai`, `@ai-sdk/*`) must only be imported inside `adapters/vercelAIGatewayAdapter.ts`. Any import of these packages elsewhere is a violation.
+
+## Admin Operations
+
+System admins manage the LLM configuration at **`/app/admin/llm`** (requires `system_admin` access level).
+
+| Action               | UI                                                     | Convex function                                |
+| -------------------- | ------------------------------------------------------ | ---------------------------------------------- |
+| Set up gateway       | "Set up Vercel AI Gateway" button in GatewayStatusCard | `createOrUpdateGateway`, `activateGateway`     |
+| Sync models          | "Sync available models" button in GatewayStatusCard    | `getAvailableModelsFromGateway` (action)       |
+| Enable/disable model | Switch in ModelCatalog per-model row                   | `setCatalogModelEnabled`                       |
+| Set default model    | Radio in ModelCatalog per-provider RadioGroup          | `makeDefaultModel`                             |
+| View configuration   | ConfigSummaryCard (read-only)                          | `getCatalogQuery`, `getProviders`, `getModels` |
+
+All admin endpoints are gated by `SessionIdArg` + `isSystemAdmin()`. The `getAvailableModelsFromGateway` action gates via `requireAdminAck` internal query before making any external HTTP call. Non-admin requests receive a `FORBIDDEN` ConvexError.
+
+## Consumption Pattern (Recap)
+
+For product features consuming the LLM infrastructure, the port/adapter boundary abstracts away the provider SDK:
 
 ### One-shot generation
 
@@ -179,13 +235,9 @@ const result = await gateway.generateText({
   prompt: 'Summarise this document...',
   system: 'You are a helpful assistant.',
 });
-// result.text → the generated text
-// result.usage → token counts (if available)
 ```
 
 ### Streaming via persistent-text-streaming
-
-For features that need **durable streaming** (survives disconnects, page reloads, viewable by multiple users):
 
 ```ts
 import { PersistentTextStreaming } from '@convex-dev/persistent-text-streaming';
@@ -200,11 +252,7 @@ export const myStreamAction = httpAction(async (ctx, request) => {
   return streaming.stream(ctx, request, streamId, async (_ctx, _req, _id, append) => {
     await streamLLMToAppender(
       gateway,
-      {
-        modelSlug: 'gpt-4o',
-        providerSlug: 'openai',
-        prompt: 'Tell me a story...',
-      },
+      { modelSlug: 'gpt-4o', providerSlug: 'openai', prompt: 'Tell me a story...' },
       append
     );
   });
@@ -212,30 +260,6 @@ export const myStreamAction = httpAction(async (ctx, request) => {
 ```
 
 On the client, use the `useStream` hook from `@convex-dev/persistent-text-streaming/react` to subscribe to the stream.
-
-## Why a Port / Adapter?
-
-The `LLMGatewayPort` interface is a **hexagonal boundary**. All product code depends on the port, never on a specific vendor SDK.
-
-- **Swappability** — Switch from Vercel AI Gateway to a direct provider or self-hosted model by writing a new adapter.
-- **Testability** — Mock the port in unit tests without spinning up a real LLM.
-- **Vendor lock-in prevention** — The Vercel AI SDK (`ai`, `@ai-sdk/*`) must only be imported inside `adapters/vercelAIGatewayAdapter.ts`. Any import of these packages elsewhere is a violation.
-
-## Admin Operations
-
-System admins manage the LLM configuration at **`/app/admin/llm`** (requires `system_admin` access level).
-
-| Action             | UI                            | Convex function          |
-| ------------------ | ----------------------------- | ------------------------ |
-| Add a gateway      | Click "Add Vercel AI Gateway" | `createOrUpdateGateway`  |
-| Set active gateway | Radio group selection         | `activateGateway`        |
-| Add a provider     | "Add Provider" dialog         | `createOrUpdateProvider` |
-| Toggle provider    | Switch in providers table     | `enableProvider`         |
-| Add a model        | "Add Model" dialog            | `createOrUpdateModel`    |
-| Toggle model       | Switch in models table        | `enableModel`            |
-| Set default model  | Star button in models table   | `makeDefaultModel`       |
-
-All admin endpoints are gated by `SessionIdArg` + `isSystemAdmin()`. Non-admin requests receive a `FORBIDDEN` ConvexError.
 
 ## File Reference
 
@@ -247,8 +271,10 @@ All admin endpoints are gated by `SessionIdArg` + `isSystemAdmin()`. Non-admin r
 | Adapter       | `services/backend/application/llm/adapters/vercelAIGatewayAdapter.ts`                   |
 | Factory       | `services/backend/application/llm/index.ts`                                             |
 | Use cases     | `services/backend/application/llm/useCases/`                                            |
+| Catalog       | `services/backend/application/llm/useCases/catalogUseCases.ts`                          |
 | Streaming     | `services/backend/application/llm/streaming/persistentStream.ts`                        |
 | Admin API     | `services/backend/convex/llmAdmin.ts`                                                   |
-| Admin UI      | `apps/webapp/src/app/app/admin/llm/page.tsx`                                            |
-| UI components | `apps/webapp/src/application/llm-admin/`                                                |
-| Component     | `services/backend/convex/convex.config.ts` (registered as `persistentTextStreaming`)    |
+| Admin UI page | `apps/webapp/src/app/app/admin/llm/page.tsx`                                            |
+| UI Gateway    | `apps/webapp/src/application/llm-admin/GatewayStatusCard.tsx`                           |
+| UI Catalog    | `apps/webapp/src/application/llm-admin/ModelCatalog.tsx`                                |
+| UI Summary    | `apps/webapp/src/application/llm-admin/ConfigSummaryCard.tsx`                           |
