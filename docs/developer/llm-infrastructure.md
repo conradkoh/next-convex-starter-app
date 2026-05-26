@@ -28,7 +28,7 @@ This infrastructure provides a **centralised, admin-managed** configuration laye
 ```mermaid
 graph TB
     subgraph "Frontend (Admin)"
-        UI["/app/admin/llm<br/>3-card UX:<br/>GatewayStatusCard<br/>ModelCatalog<br/>ConfigSummaryCard"]
+        UI["/app/admin/llm<br/>3-card UX:<br/>GatewaySetupCard<br/>ModelCatalog<br/>ConfigSummaryCard"]
     end
 
     subgraph "Convex Backend"
@@ -81,15 +81,16 @@ graph LR
 
 The admin UI at `/app/admin/llm` uses a three-card layout:
 
-| Card                      | Component           | Purpose                                                        |
-| ------------------------- | ------------------- | -------------------------------------------------------------- |
-| **Gateway**               | `GatewayStatusCard` | Connect to Vercel AI Gateway, sync models                      |
-| **Available Models**      | `ModelCatalog`      | Browse models grouped by provider, enable/disable, set default |
-| **Current Configuration** | `ConfigSummaryCard` | Read-only summary of what the application will use             |
+| Card                      | Component           | Purpose                                                               |
+| ------------------------- | ------------------- | --------------------------------------------------------------------- |
+| **Gateway**               | `GatewaySetupCard`  | Connect to Vercel AI Gateway, sync models                             |
+| **Available Models**      | `ModelCatalog`      | Browse models grouped by provider, toggle enable/disable, set default |
+| **Current Configuration** | `ConfigSummaryCard` | Read-only summary of what the application will use                    |
 
 **Key behaviours:**
 
 - Admins do **not** manually type model slugs — the catalog is populated by calling `gateway.getAvailableModels()` via the `getAvailableModelsFromGateway` action.
+- The admin UI uses toggle switches for enable/disable and star icons for default model selection. Each provider section shows its enabled/total model count.
 - The `setCatalogModelEnabled` mutation auto-creates the provider and model records on first enable. Toggling a second time disables without deleting.
 - The "Sync available models" button fetches the full list from the Vercel AI Gateway. This requires the `AI_GATEWAY_API_KEY` environment variable to be set.
 
@@ -164,7 +165,7 @@ Index: `by_providerId` on `["providerId"]`.
 
 3. **Register in the factory** — Update `services/backend/application/llm/index.ts` so `getLLMGateway()` can return your adapter. Today the factory always returns `VercelAIGatewayAdapter`; the intent is to eventually read the active gateway from the database and instantiate the matching adapter.
 
-4. **Surface in the admin UI** — The gateway status is displayed in `GatewayStatusCard.tsx`. No code changes needed if your adapter is returned by the factory based on the active gateway's `kind`.
+4. **Surface in the admin UI** — The gateway status is displayed in `GatewaySetupCard.tsx`. No code changes needed if your adapter is returned by the factory based on the active gateway's `kind`.
 
 ## Adding a New Provider
 
@@ -209,13 +210,13 @@ The `LLMGatewayPort` interface is a **hexagonal boundary**. All product code dep
 
 System admins manage the LLM configuration at **`/app/admin/llm`** (requires `system_admin` access level).
 
-| Action               | UI                                                     | Convex function                                |
-| -------------------- | ------------------------------------------------------ | ---------------------------------------------- |
-| Set up gateway       | "Set up Vercel AI Gateway" button in GatewayStatusCard | `createOrUpdateGateway`, `activateGateway`     |
-| Sync models          | "Sync available models" button in GatewayStatusCard    | `getAvailableModelsFromGateway` (action)       |
-| Enable/disable model | Switch in ModelCatalog per-model row                   | `setCatalogModelEnabled`                       |
-| Set default model    | Radio in ModelCatalog per-provider RadioGroup          | `makeDefaultModel`                             |
-| View configuration   | ConfigSummaryCard (read-only)                          | `getCatalogQuery`, `getProviders`, `getModels` |
+| Action               | UI                                                    | Convex function                                |
+| -------------------- | ----------------------------------------------------- | ---------------------------------------------- |
+| Set up gateway       | "Set up Vercel AI Gateway" button in GatewaySetupCard | `createOrUpdateGateway`, `activateGateway`     |
+| Sync models          | "Sync available models" button in GatewaySetupCard    | `getAvailableModelsFromGateway` (action)       |
+| Enable/disable model | Switch toggle per model row in ModelCatalog           | `setCatalogModelEnabled`                       |
+| Set default model    | Star icon per model row in ModelCatalog               | `makeDefaultModel`                             |
+| View configuration   | ConfigSummaryCard (read-only)                         | `getCatalogQuery`, `getProviders`, `getModels` |
 
 All admin endpoints are gated by `SessionIdArg` + `isSystemAdmin()`. The `getAvailableModelsFromGateway` action gates via `requireAdminAck` internal query before making any external HTTP call. Non-admin requests receive a `FORBIDDEN` ConvexError.
 
@@ -275,6 +276,6 @@ On the client, use the `useStream` hook from `@convex-dev/persistent-text-stream
 | Streaming     | `services/backend/application/llm/streaming/persistentStream.ts`                        |
 | Admin API     | `services/backend/convex/llmAdmin.ts`                                                   |
 | Admin UI page | `apps/webapp/src/app/app/admin/llm/page.tsx`                                            |
-| UI Gateway    | `apps/webapp/src/application/llm-admin/GatewayStatusCard.tsx`                           |
+| UI Gateway    | `apps/webapp/src/application/llm-admin/GatewaySetupCard.tsx`                            |
 | UI Catalog    | `apps/webapp/src/application/llm-admin/ModelCatalog.tsx`                                |
 | UI Summary    | `apps/webapp/src/application/llm-admin/ConfigSummaryCard.tsx`                           |
