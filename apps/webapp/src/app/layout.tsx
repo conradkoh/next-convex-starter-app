@@ -67,9 +67,11 @@ export default function RootLayout({
             <AppInfoProvider>
               <AuthProvider>
                 <ThemeProvider>
-                  <div className="flex flex-col h-screen overflow-hidden">
+                  <div className="flex h-dvh flex-col overflow-hidden">
                     <Navigation />
-                    <main className="flex-1 flex flex-col overflow-scroll">{children}</main>
+                    <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+                      {children}
+                    </main>
                   </div>
                 </ThemeProvider>
               </AuthProvider>
