@@ -17,9 +17,6 @@
     "services/backend/modules/auth/getAuthUser.ts:getAuthUser"
   ],
   "unused_types": [
-    "apps/webapp/src/app/api/auth/google/callback/page.tsx:CallbackResult",
-    "apps/webapp/src/app/login/[loginRequestId]/page.tsx:GoogleIconProps",
-    "apps/webapp/src/modules/attendance/components/AttendanceCopyDialog.tsx:CopyOptions",
     "apps/webapp/src/modules/attendance/types.ts:AttendanceMode",
     "apps/webapp/src/modules/attendance/types.ts:AttendanceRecord",
     "apps/webapp/src/modules/checklist/types.ts:ChecklistItemProps",
@@ -29,27 +26,15 @@
     "services/backend/modules/auth/types/AuthState.ts:GoogleUserProfile"
   ],
   "private_type_leaks": [],
-  "unused_dependencies": [
-    "apps/webapp/package.json:@hookform/resolvers",
-    "apps/webapp/package.json:@mdx-js/loader",
-    "apps/webapp/package.json:react-icons"
-  ],
-  "unused_dev_dependencies": [
-    "apps/webapp/package.json:@mdx-js/react",
-    "apps/webapp/package.json:bun",
-    "apps/webapp/package.json:remark-gfm"
-  ],
+  "unused_dependencies": [],
+  "unused_dev_dependencies": [],
   "circular_dependencies": [],
   "re_export_cycles": [],
   "unused_optional_dependencies": [],
   "unused_enum_members": [],
   "unused_class_members": [],
-  "unresolved_imports": [
-    "services/backend/convex/_generated/api.d.ts:../migration.js",
-    "services/backend/convex/_generated/server.d.ts:./dataModel.js",
-    "services/backend/convex/migrations.ts:./_generated/dataModel.js"
-  ],
-  "unlisted_dependencies": ["@radix-ui/react-tooltip"],
+  "unresolved_imports": [],
+  "unlisted_dependencies": [],
   "duplicate_exports": [],
   "type_only_dependencies": [],
   "test_only_dependencies": [],

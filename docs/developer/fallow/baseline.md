@@ -37,10 +37,11 @@ apps/webapp/src/modules/checklist/checklist-empty-state.tsx
 ## Configuration
 
 - [`.fallowrc.jsonc`](../../../.fallowrc.jsonc) — migrated from `knip.jsonc`
-- `ignoreDependencies`: `husky`, `lint-staged` (dev tooling, not imported in app code)
-- `ignorePatterns`: test files (`*.test.*`, `*.spec.*`, `tests/`, vitest setup/config, `test-utils`)
+- `ignoreDependencies`: dev tooling (husky, lint-staged, ESLint stack, MDX/Next config packages, test runners, planned deps like `@hookform/resolvers`)
+- `ignorePatterns`: test files, `**/_generated/**`, Next/ESLint/Playwright config files
 - `ignoreExports`: all exports under `**/components/ui/**` (ShadCN composition primitives and duplicate-export barrels)
-- `ignoreUnresolvedImports`: `**/convex/_generated/**`
+- `ignoreUnresolvedImports`: Convex generated `.js` re-exports and `**/convex/_generated/**`
+- `ignoreExportsUsedInFile`: type/interface exports only used in the same file
 - `duplicates.ignore` / `health.ignore`: same UI and test globs for `pnpm code-quality`
 
 Fallow auto-discovers workspace packages from `pnpm-workspace.yaml` (`apps/*`, `services/*`).

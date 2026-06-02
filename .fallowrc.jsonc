@@ -4,30 +4,60 @@
   "ignoreDependencies": [
     "husky",
     "lint-staged",
+    "eslint",
     "eslint-config-next",
     "eslint-config-prettier",
     "@eslint/eslintrc",
+    "@convex-dev/eslint-plugin",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "eslint-plugin-import",
+    "eslint-plugin-jsdoc",
+    "eslint-plugin-react",
+    "eslint-plugin-react-hooks",
+    "eslint-plugin-react-you-might-not-need-an-effect",
+    "globals",
     "convex-test",
-    "@edge-runtime/vm"
+    "@edge-runtime/vm",
+    "@hookform/resolvers",
+    "@mdx-js/loader",
+    "@mdx-js/react",
+    "remark-gfm",
+    "react-icons",
+    "bun",
+    "@radix-ui/react-tooltip"
   ],
   "ignoreUnresolvedImports": [
-    "**/convex/_generated/**"
+    "**/convex/_generated/**",
+    "../migration.js",
+    "./dataModel.js",
+    "./_generated/dataModel.js"
   ],
-  // Test files and ShadCN export barrels (keep UI in graph so Radix deps resolve)
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  // Test files, generated code, and ShadCN export barrels (UI stays in import graph)
   "ignorePatterns": [
+    "**/_generated/**",
+    "**/convex/_generated/**",
     "**/*.test.{ts,tsx}",
     "**/*.spec.{ts,tsx}",
     "**/__tests__/**",
     "**/tests/**",
     "**/test.setup.{ts,mts}",
     "**/test-utils.{ts,tsx}",
-    "**/vitest.config.{ts,mts}"
+    "**/vitest.config.{ts,mts}",
+    "**/next.config.{ts,js,mjs}",
+    "**/playwright.config.{ts,js}",
+    "**/eslint.config.{ts,js,mjs}"
   ],
   "ignoreExports": [
     { "file": "**/components/ui/**", "exports": ["*"] }
   ],
   "duplicates": {
     "ignore": [
+      "**/_generated/**",
       "**/components/ui/**",
       "**/*.test.{ts,tsx}",
       "**/*.spec.{ts,tsx}",
@@ -36,6 +66,7 @@
   },
   "health": {
     "ignore": [
+      "**/_generated/**",
       "**/components/ui/**",
       "**/*.test.{ts,tsx}",
       "**/*.spec.{ts,tsx}",
