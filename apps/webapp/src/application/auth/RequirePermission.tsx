@@ -18,7 +18,7 @@ export interface RequirePermissionProps {
 /**
  * Renders children only when the authenticated user has the required permission.
  */
-// fallow-ignore-next-line complexity — permission gate with auth loading states
+// fallow-ignore-next-line complexity
 export function RequirePermission({ permission, children, fallback }: RequirePermissionProps) {
   const authState = useAuthState();
   const allowed = authState?.state === 'authenticated' && hasPermission(authState.user, permission);
