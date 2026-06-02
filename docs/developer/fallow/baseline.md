@@ -14,19 +14,16 @@ To refresh the baseline after intentional cleanup:
 pnpm exec fallow dead-code --save-baseline .fallow/baseline.json
 ```
 
-## Unused files (8)
+## Unused files (3)
 
 These files exist but are not reachable from any entry point. They may be placeholders, deprecated code, or loaded only via configuration.
+
+Test files are excluded from analysis via `.fallowrc.jsonc`. ShadCN UI export noise is suppressed with `ignoreExports` only (UI stays in the import graph).
 
 ```
 apps/webapp/src/components/DateRangePicker.tsx
 apps/webapp/src/components/ThemeToggle.tsx
-apps/webapp/src/components/ui/alert.tsx
-apps/webapp/src/components/ui/collapsible.tsx
-apps/webapp/src/components/ui/fixed-size-dialog.mdx
-apps/webapp/src/components/ui/fixed-size-dialog.tsx
 apps/webapp/src/modules/checklist/checklist-empty-state.tsx
-apps/webapp/src/test-utils.tsx
 ```
 
 ## Scripts
@@ -41,6 +38,10 @@ apps/webapp/src/test-utils.tsx
 
 - [`.fallowrc.jsonc`](../../../.fallowrc.jsonc) — migrated from `knip.jsonc`
 - `ignoreDependencies`: `husky`, `lint-staged` (dev tooling, not imported in app code)
+- `ignorePatterns`: test files (`*.test.*`, `*.spec.*`, `tests/`, vitest setup/config, `test-utils`)
+- `ignoreExports`: all exports under `**/components/ui/**` (ShadCN composition primitives and duplicate-export barrels)
+- `ignoreUnresolvedImports`: `**/convex/_generated/**`
+- `duplicates.ignore` / `health.ignore`: same UI and test globs for `pnpm code-quality`
 
 Fallow auto-discovers workspace packages from `pnpm-workspace.yaml` (`apps/*`, `services/*`).
 

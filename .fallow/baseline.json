@@ -6,40 +6,15 @@
     "apps/webapp/src/components/ui/collapsible.tsx",
     "apps/webapp/src/components/ui/fixed-size-dialog.mdx",
     "apps/webapp/src/components/ui/fixed-size-dialog.tsx",
-    "apps/webapp/src/modules/checklist/checklist-empty-state.tsx",
-    "apps/webapp/src/test-utils.tsx"
+    "apps/webapp/src/modules/checklist/checklist-empty-state.tsx"
   ],
   "unused_exports": [
-    "apps/webapp/src/components/ui/alert-dialog.tsx:AlertDialogPortal",
-    "apps/webapp/src/components/ui/alert-dialog.tsx:AlertDialogOverlay",
-    "apps/webapp/src/components/ui/badge.tsx:badgeVariants",
-    "apps/webapp/src/components/ui/card.tsx:CardAction",
-    "apps/webapp/src/components/ui/dialog.tsx:FullscreenDialogContent",
-    "apps/webapp/src/components/ui/dialog.tsx:DialogClose",
-    "apps/webapp/src/components/ui/dialog.tsx:DialogTrigger",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuPortal",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuGroup",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuCheckboxItem",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuRadioGroup",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuRadioItem",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuShortcut",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuSub",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuSubTrigger",
-    "apps/webapp/src/components/ui/dropdown-menu.tsx:DropdownMenuSubContent",
-    "apps/webapp/src/components/ui/popover.tsx:PopoverAnchor",
-    "apps/webapp/src/components/ui/scroll-area.tsx:ScrollBar",
-    "apps/webapp/src/components/ui/select.tsx:SelectGroup",
-    "apps/webapp/src/components/ui/select.tsx:SelectLabel",
-    "apps/webapp/src/components/ui/select.tsx:SelectScrollDownButton",
-    "apps/webapp/src/components/ui/select.tsx:SelectScrollUpButton",
-    "apps/webapp/src/components/ui/select.tsx:SelectSeparator",
     "apps/webapp/src/modules/password-protection/index.ts:generatePasswordHash",
     "apps/webapp/src/modules/password-protection/index.ts:verifyPassword",
     "apps/webapp/src/modules/password-protection/password-utils.ts:generatePasswordHash",
     "services/backend/modules/auth/accessControl.ts:hasAccessLevel",
     "services/backend/modules/auth/accessControl.ts:getUserAccessLevel",
-    "services/backend/modules/auth/getAuthUser.ts:getAuthUser",
-    "services/backend/test.setup.ts:modules"
+    "services/backend/modules/auth/getAuthUser.ts:getAuthUser"
   ],
   "unused_types": [
     "apps/webapp/src/app/api/auth/google/callback/page.tsx:CallbackResult",
@@ -62,11 +37,7 @@
   "unused_dev_dependencies": [
     "apps/webapp/package.json:@mdx-js/react",
     "apps/webapp/package.json:bun",
-    "apps/webapp/package.json:remark-gfm",
-    "package.json:@eslint/eslintrc",
-    "package.json:eslint-config-next",
-    "package.json:eslint-config-prettier",
-    "services/backend/package.json:@edge-runtime/vm"
+    "apps/webapp/package.json:remark-gfm"
   ],
   "circular_dependencies": [],
   "re_export_cycles": [],

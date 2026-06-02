@@ -3,6 +3,43 @@
   // Migrated from knip.jsonc
   "ignoreDependencies": [
     "husky",
-    "lint-staged"
-  ]
+    "lint-staged",
+    "eslint-config-next",
+    "eslint-config-prettier",
+    "@eslint/eslintrc",
+    "convex-test",
+    "@edge-runtime/vm"
+  ],
+  "ignoreUnresolvedImports": [
+    "**/convex/_generated/**"
+  ],
+  // Test files and ShadCN export barrels (keep UI in graph so Radix deps resolve)
+  "ignorePatterns": [
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "**/__tests__/**",
+    "**/tests/**",
+    "**/test.setup.{ts,mts}",
+    "**/test-utils.{ts,tsx}",
+    "**/vitest.config.{ts,mts}"
+  ],
+  "ignoreExports": [
+    { "file": "**/components/ui/**", "exports": ["*"] }
+  ],
+  "duplicates": {
+    "ignore": [
+      "**/components/ui/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+      "**/tests/**"
+    ]
+  },
+  "health": {
+    "ignore": [
+      "**/components/ui/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+      "**/tests/**"
+    ]
+  }
 }
