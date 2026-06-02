@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
+import { requirePermissionForUser } from '../../../application/auth';
 import { isSystemAdmin } from '../../../modules/auth/accessControl';
 import { getAuthUserOptional } from '../../../modules/auth/getAuthUser';
 import { api, internal } from '../../_generated/api';
@@ -40,14 +41,14 @@ export const getConfig = query({
     ...SessionIdArg,
   },
   handler: async (ctx, args): Promise<GoogleAuthConfigData | null> => {
-    // Verify system admin access
     const user = await getAuthUserOptional(ctx, args);
-    if (!user || !isSystemAdmin(user)) {
+    if (!user) {
       throw new ConvexError({
         code: 'FORBIDDEN',
         message: 'Only system administrators can view Google Auth configuration',
       });
     }
+    requirePermissionForUser(user, 'auth:provider:manage');
 
     // Get the configuration for Google auth
     const config = await ctx.db

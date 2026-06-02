@@ -1,7 +1,7 @@
 # RBAC Foundation — Design Sketch
 
-> **Status:** Proposal for review (PR #TBD)  
-> **Scope:** Application-layer auth module + `requirePermission` API. Implementation follows approval of this shape.
+> **Status:** Foundation implemented (scaffolds + helpers); migration of call sites is incremental.  
+> **Scope:** Application-layer auth module + `requirePermission` API.
 
 ## Summary
 
@@ -287,14 +287,15 @@ Foundation keeps the API **flat** (`permission` string only); context policies w
 
 ---
 
-## Implementation Checklist (Post-Approval)
+## Implementation Checklist
 
-- [ ] `services/backend/application/auth/*` — permissions, roles, resolve, requirePermission
-- [ ] Unit tests for wildcard + role union logic
-- [ ] `apps/webapp/src/application/auth/*` — hooks + component
-- [ ] Wire one reference endpoint (e.g. admin users list) to validate pattern
-- [ ] Update `AGENTS.md` / application README with auth extension guide
-- [ ] `pnpm typecheck && pnpm test`
+- [x] `services/backend/application/auth/*` — permissions, roles, resolve, requirePermission
+- [x] Unit tests for wildcard + role union logic
+- [x] `apps/webapp/src/application/auth/*` — hooks + component
+- [x] Reference: `system/auth/google.getConfig` uses `requirePermissionForUser(..., 'auth:provider:manage')`
+- [x] Application README auth extension guides
+- [ ] Replace remaining `isSystemAdmin` / `AdminGuard` call sites (incremental)
+- [ ] `pnpm typecheck && pnpm test` on each PR
 
 ---
 

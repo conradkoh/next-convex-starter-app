@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+import { hasPermission } from '@/application/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,7 +118,7 @@ function _renderUserDropdownMenu(
   showLogoutConfirmation: () => void,
   isLoggingOut: boolean
 ) {
-  const isSystemAdmin = authState.user.accessLevel === 'system_admin';
+  const showAdminLink = hasPermission(authState.user, 'auth:provider:manage');
 
   return (
     <DropdownMenu>
@@ -138,7 +139,7 @@ function _renderUserDropdownMenu(
         <Link href="/app">
           <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
         </Link>
-        {isSystemAdmin && (
+        {showAdminLink && (
           <Link href="/app/admin">
             <DropdownMenuItem className="cursor-pointer">
               <Settings className="h-4 w-4" />
