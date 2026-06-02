@@ -1,11 +1,13 @@
 /**
  * Application role definitions (keep in sync with services/backend/application/auth/roles.ts).
  */
-import type { Permission } from './permissions';
+import { allPermissions, type Permission } from './permissions';
 
 export type WildcardGrant = '*' | `${string}:*`;
 
 export type RolePermissionGrant = Permission | WildcardGrant;
+
+export const systemAdminPermissions = [...allPermissions] as const satisfies readonly Permission[];
 
 export const roleDefinitions = [
   {
@@ -22,7 +24,7 @@ export const roleDefinitions = [
   },
   {
     role: 'system_admin',
-    permissions: ['*'] as const satisfies readonly WildcardGrant[],
+    permissions: systemAdminPermissions,
   },
 ] as const;
 

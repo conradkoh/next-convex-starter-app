@@ -1,9 +1,15 @@
-import type { Permission } from './permissions';
+import { allPermissions, type Permission } from './permissions';
 
 /** Wildcard grants used in role definitions (not in the permission registry). */
 export type WildcardGrant = '*' | `${string}:*`;
 
 export type RolePermissionGrant = Permission | WildcardGrant;
+
+/**
+ * Explicit permission set for system administrators (no wildcard).
+ * Must include every key in `permissions` — update when adding new permissions.
+ */
+export const systemAdminPermissions = [...allPermissions] as const satisfies readonly Permission[];
 
 export const roleDefinitions = [
   {
@@ -20,7 +26,7 @@ export const roleDefinitions = [
   },
   {
     role: 'system_admin',
-    permissions: ['*'] as const satisfies readonly WildcardGrant[],
+    permissions: systemAdminPermissions,
   },
 ] as const;
 

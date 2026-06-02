@@ -4,6 +4,7 @@ export {
   getPermissionsForRole,
   roleDefinitions,
   type RolePermissionGrant,
+  systemAdminPermissions,
   type WildcardGrant,
 } from './roles';
 export {
@@ -15,4 +16,8 @@ export {
   unionPermissionsForRoles,
   type UserForPermissions,
 } from './resolve';
-export { requirePermission, requirePermissionForUser } from './requirePermission';
+export {
+  requireAuthenticatedPermission,
+  requirePermission,
+  requirePermissionForUser,
+} from './requirePermission';

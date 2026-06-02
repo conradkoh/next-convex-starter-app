@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Permission } from '../permissions';
+import { allPermissions, type Permission } from '../permissions';
 import {
   getPermissionsForUser,
   getRolesForUser,
@@ -8,6 +8,7 @@ import {
   permissionGrantMatches,
   unionPermissionsForRoles,
 } from '../resolve';
+import { systemAdminPermissions } from '../roles';
 
 describe('permissionGrantMatches', () => {
   it('matches exact permissions', () => {
@@ -39,12 +40,22 @@ describe('hasPermission', () => {
     const user = { accessLevel: 'user' as const };
     expect(hasPermission(user, 'attendance:read')).toBe(true);
     expect(hasPermission(user, 'users:list')).toBe(false);
+    expect(hasPermission(user, 'admin:access')).toBe(false);
   });
 
-  it('grants all permissions to system_admin via wildcard', () => {
+  it('grants explicit system_admin permissions', () => {
     const user = { accessLevel: 'system_admin' as const };
-    expect(hasPermission(user, 'users:list')).toBe(true);
+    for (const permission of systemAdminPermissions) {
+      expect(hasPermission(user, permission)).toBe(true);
+    }
     expect(hasPermission(user, 'auth:provider:manage')).toBe(true);
+    expect(hasPermission(user, 'admin:access')).toBe(true);
+  });
+});
+
+describe('systemAdminPermissions', () => {
+  it('includes every registered permission', () => {
+    expect(new Set(systemAdminPermissions)).toEqual(new Set(allPermissions));
   });
 });
 
@@ -57,9 +68,9 @@ describe('unionPermissionsForRoles', () => {
 });
 
 describe('getPermissionsForUser', () => {
-  it('returns a stable grant set for system admin', () => {
+  it('returns explicit grants for system admin (no wildcard)', () => {
     const grants = getPermissionsForUser({ accessLevel: 'system_admin' });
-    expect(grants.has('*')).toBe(true);
+    expect(grants.has('*')).toBe(false);
     expect(hasPermission({ accessLevel: 'system_admin' }, 'settings:write' as Permission)).toBe(
       true
     );

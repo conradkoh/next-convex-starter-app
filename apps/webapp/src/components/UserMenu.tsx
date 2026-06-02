@@ -118,7 +118,7 @@ function _renderUserDropdownMenu(
   showLogoutConfirmation: () => void,
   isLoggingOut: boolean
 ) {
-  const showAdminLink = hasPermission(authState.user, 'auth:provider:manage');
+  const showAdminLink = hasPermission(authState.user, 'admin:access');
 
   return (
     <DropdownMenu>

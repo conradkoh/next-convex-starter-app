@@ -123,7 +123,7 @@ export const roleDefinitions = [
   },
   {
     role: 'system_admin',
-    permissions: ['*'] as const,
+    permissions: systemAdminPermissions, // explicit list of all registry permissions
   },
 ] as const;
 
@@ -294,7 +294,9 @@ Foundation keeps the API **flat** (`permission` string only); context policies w
 - [x] `apps/webapp/src/application/auth/*` — hooks + component
 - [x] Reference: `system/auth/google.getConfig` uses `requirePermissionForUser(..., 'auth:provider:manage')`
 - [x] Application README auth extension guides
-- [ ] Replace remaining `isSystemAdmin` / `AdminGuard` call sites (incremental)
+- [x] Formalize `system_admin` with explicit `systemAdminPermissions` (no `*` wildcard)
+- [x] Google auth admin endpoints use `requireAuthenticatedPermission(..., 'auth:provider:manage')`
+- [ ] Replace remaining `isSystemAdmin` / `AdminGuard` call sites on frontend (incremental)
 - [ ] `pnpm typecheck && pnpm test` on each PR
 
 ---

@@ -19,6 +19,7 @@ export function getAccessLevel(user: Doc<'users'>): AccessLevel {
 
 /**
  * Checks if a user has system administrator access level.
+ * Maps to the `system_admin` application role (see `application/auth/roles.ts`).
  * @param user - The user document to check
  * @returns true if the user is a system administrator, false otherwise
  */

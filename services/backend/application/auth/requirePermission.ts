@@ -28,6 +28,26 @@ export async function requirePermission(
  */
 export function requirePermissionForUser(user: UserForPermissions, permission: Permission): void {
   if (!hasPermission(user, permission)) {
-    throw new ConvexError(`Forbidden: missing permission ${permission}`);
+    throw new ConvexError({
+      code: 'FORBIDDEN',
+      message: `Forbidden: missing permission ${permission}`,
+    });
   }
+}
+
+/**
+ * Requires an authenticated user with the given permission.
+ */
+export function requireAuthenticatedPermission<T extends UserForPermissions>(
+  user: T | null | undefined,
+  permission: Permission,
+  options?: { unauthorizedMessage?: string }
+): asserts user is T {
+  if (!user) {
+    throw new ConvexError({
+      code: 'UNAUTHORIZED',
+      message: options?.unauthorizedMessage ?? 'You must be logged in',
+    });
+  }
+  requirePermissionForUser(user, permission);
 }

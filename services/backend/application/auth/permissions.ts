@@ -3,6 +3,7 @@
  * Add new permissions here before referencing them in roles.
  */
 export const permissions = {
+  'admin:access': { description: 'Access system administration areas' },
   'users:list': { description: 'List users' },
   'users:read': { description: 'View user details' },
   'users:write': { description: 'Create or update users' },
