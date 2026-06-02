@@ -28,11 +28,14 @@ apps/webapp/src/modules/checklist/checklist-empty-state.tsx
 
 ## Scripts
 
-| Script             | Command                                             | Purpose                                        |
-| ------------------ | --------------------------------------------------- | ---------------------------------------------- |
-| `find-deadcode`    | `fallow dead-code --baseline .fallow/baseline.json` | Dead code + deps; fails only on regressions    |
-| `code-quality`     | `fallow`                                            | Full analysis: dead code, duplication, health  |
-| `code-quality:fix` | `fallow fix --dry-run`                              | Preview automatic cleanup of dead exports/deps |
+| Script             | Command                                                   | Purpose                                        |
+| ------------------ | --------------------------------------------------------- | ---------------------------------------------- |
+| `find-deadcode`    | `fallow dead-code --baseline .fallow/baseline.json`       | Dead code + deps; fails only on regressions    |
+| `audit`            | `fallow audit --dead-code-baseline .fallow/baseline.json` | Changed-file review (also runs in pre-commit)  |
+| `code-quality`     | `fallow`                                                  | Full analysis: dead code, duplication, health  |
+| `code-quality:fix` | `fallow fix --dry-run`                                    | Preview automatic cleanup of dead exports/deps |
+
+Pre-commit (`.husky/pre-commit`) runs `fallow audit` after lint-staged. It compares against the upstream merge-base (or `master`) and fails only on **new** issues (`audit.gate: new-only`), with dead-code checked against `.fallow/baseline.json`.
 
 ## Configuration
 

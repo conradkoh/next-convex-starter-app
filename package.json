@@ -15,6 +15,7 @@
     "format:fix": "prettier --write .",
     "typecheck": "turbo run typecheck",
     "find-deadcode": "fallow dead-code --baseline .fallow/baseline.json",
+    "audit": "fallow audit --dead-code-baseline .fallow/baseline.json",
     "code-quality": "fallow",
     "code-quality:fix": "fallow fix --dry-run",
     "e2e": "turbo run e2e",

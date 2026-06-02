@@ -72,5 +72,8 @@
       "**/*.spec.{ts,tsx}",
       "**/tests/**"
     ]
+  },
+  "audit": {
+    "gate": "new-only"
   }
 }
