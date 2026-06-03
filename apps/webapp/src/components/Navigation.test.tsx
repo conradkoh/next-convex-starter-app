@@ -61,6 +61,7 @@ describe('Navigation', () => {
         name: 'Test User',
       },
       accessLevel: 'user',
+      permissions: ['attendance:read', 'presentation:read'],
       isSystemAdmin: false,
     });
 

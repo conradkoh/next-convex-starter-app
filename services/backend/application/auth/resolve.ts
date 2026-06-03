@@ -1,4 +1,4 @@
-import type { Permission } from './permissions';
+import { allPermissions, type Permission } from './permissions';
 import {
   type AppRole,
   getPermissionsForRole,
@@ -63,6 +63,11 @@ export function hasPermission(user: UserForPermissions, permission: Permission):
     }
   }
   return false;
+}
+
+/** Resolves concrete registry permissions held by the user (for AuthState and APIs). */
+export function getResolvedPermissionsForUser(user: UserForPermissions): Permission[] {
+  return allPermissions.filter((permission) => hasPermission(user, permission));
 }
 
 /** All defined application roles (for documentation and future admin UI). */

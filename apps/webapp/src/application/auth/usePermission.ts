@@ -1,12 +1,11 @@
 'use client';
 
 import type { Permission } from './permissions';
-import { hasPermission } from './resolve';
 
 import { useAuthState } from '@/modules/auth/AuthProvider';
 
 /**
- * Returns whether the authenticated user holds the given permission.
+ * Returns whether the authenticated user holds the given permission (from AuthState.permissions).
  */
 export function useHasPermission(permission: Permission): boolean {
   const authState = useAuthState();
@@ -15,5 +14,5 @@ export function useHasPermission(permission: Permission): boolean {
     return false;
   }
 
-  return hasPermission(authState.user, permission);
+  return authState.permissions.includes(permission);
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect } from 'react';
 
+import { useHasPermission } from '@/application/auth';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuthState } from '@/modules/auth/AuthProvider';
@@ -15,16 +16,14 @@ export interface AdminGuardProps {
 }
 
 /**
- * Admin guard component that restricts access to system administrators only.
- * Redirects unauthenticated users to login and shows access denied for non-admin users.
+ * Restricts access to users with `admin:access` (from AuthState.permissions).
+ * Redirects unauthenticated users to login.
  */
 export function AdminGuard({ children, fallbackTo = '/app' }: AdminGuardProps) {
   const authState = useAuthState();
+  const hasAdminAccess = useHasPermission('admin:access');
   const router = useRouter();
 
-  /**
-   * Redirects unauthenticated users to the login page.
-   */
   const redirectToLogin = useCallback(() => {
     router.push('/login');
   }, [router]);
@@ -43,16 +42,13 @@ export function AdminGuard({ children, fallbackTo = '/app' }: AdminGuardProps) {
     return _renderLoadingState('Redirecting to login...');
   }
 
-  if (!authState.isSystemAdmin) {
-    return _renderAccessDeniedState(authState.accessLevel, fallbackTo);
+  if (!hasAdminAccess) {
+    return _renderAccessDeniedState(fallbackTo);
   }
 
   return <>{children}</>;
 }
 
-/**
- * Renders a loading state with spinner and message.
- */
 function _renderLoadingState(message: string) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -64,10 +60,7 @@ function _renderLoadingState(message: string) {
   );
 }
 
-/**
- * Renders the access denied state for non-admin users.
- */
-function _renderAccessDeniedState(currentAccessLevel: string, fallbackTo: string) {
+function _renderAccessDeniedState(fallbackTo: string) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -77,16 +70,8 @@ function _renderAccessDeniedState(currentAccessLevel: string, fallbackTo: string
               <ShieldX className="mx-auto h-16 w-16 text-destructive/60" />
               <h1 className="text-2xl font-semibold">Access Denied</h1>
               <p className="text-muted-foreground">
-                You need system administrator privileges to access this area.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Current access level: <span className="font-medium">{currentAccessLevel}</span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Required access level: <span className="font-medium">system_admin</span>
+                You need the <span className="font-medium">admin:access</span> permission to access
+                this area.
               </p>
             </div>
 

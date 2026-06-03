@@ -4,11 +4,15 @@ Application-specific (non-framework) backend code.
 
 ## Auth (`application/auth/`)
 
-Declarative RBAC: define permissions and roles in code, then guard Convex handlers with `requirePermission`.
+Declarative RBAC — permissions and roles in code, guards in Convex.
 
-- **`permissions.ts`** — permission registry; add keys before using in roles
-- **`roles.ts`** — `roleDefinitions`; append roles and their permission grants
-- **`resolve.ts`** — `hasPermission`, `getPermissionsForUser` (maps `accessLevel` → roles today)
-- **`requirePermission.ts`** — `requirePermission(ctx, userId, permission)` for queries/mutations
+| File                   | Purpose                                               |
+| ---------------------- | ----------------------------------------------------- |
+| `permissions.ts`       | Registry; add keys here first                         |
+| `roles.ts`             | `roleDefinitions` and grants                          |
+| `resolve.ts`           | `hasPermission`, `getResolvedPermissionsForUser`      |
+| `requirePermission.ts` | `requirePermission`, `requireAuthenticatedPermission` |
 
-See [RBAC foundation](../../../../docs/application/auth/rbac-foundation.md).
+**Extend:** see [RBAC developer guide](../../../../docs/application/auth/rbac-foundation.md) — add permission → grant role → guard handler.
+
+`auth.getState` exposes `permissions: Permission[]` for the webapp.

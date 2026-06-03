@@ -1,4 +1,4 @@
-import type { Permission } from './permissions';
+import { allPermissions, type Permission } from './permissions';
 import {
   type AppRole,
   getPermissionsForRole,
@@ -54,6 +54,11 @@ export function hasPermission(user: UserForPermissions, permission: Permission):
     }
   }
   return false;
+}
+
+/** Resolves concrete registry permissions held by the user (mirrors backend). */
+export function getResolvedPermissionsForUser(user: UserForPermissions): Permission[] {
+  return allPermissions.filter((permission) => hasPermission(user, permission));
 }
 
 export const appRoles = roleDefinitions.map((definition) => definition.role);

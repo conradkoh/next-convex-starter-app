@@ -9,6 +9,7 @@ export {
 export {
   appRoles,
   getPermissionsForUser,
+  getResolvedPermissionsForUser,
   getRolesForUser,
   hasPermission,
   permissionGrantMatches,

@@ -1,308 +1,165 @@
-# RBAC Foundation — Design Sketch
+# RBAC Foundation — Developer Guide
 
-> **Status:** Foundation implemented (scaffolds + helpers); migration of call sites is incremental.  
-> **Scope:** Application-layer auth module + `requirePermission` API.
+Application-layer roles and permissions live in **`application/auth`** (backend + webapp). The registry is type-safe, version-controlled, and extended in code — not in the database.
 
-## Summary
+| Layer    | Location                                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
+| Backend  | `services/backend/application/auth/`                                                                            |
+| Frontend | `apps/webapp/src/application/auth/` (mirror backend `permissions.ts` + `roles.ts`)                              |
+| Legacy   | `modules/auth/accessControl.ts` — `accessLevel` / `isSystemAdmin` (still used; prefer permissions for new code) |
 
-Introduce an **`application/auth`** module in both the Convex backend and Next.js webapp where the app team **declares roles and permissions in code**. A small permission engine resolves a user's effective permissions and exposes:
-
-- **Backend:** `requirePermission(ctx, userId, permission)` — throws when denied
-- **Frontend:** `useHasPermission(permission)` / `<RequirePermission>` — UI gating
-
-This is intentionally **lighter** than the database-first plan in [`docs/features/rbac-implementation-plan.md`](../../features/rbac-implementation-plan.md). That document remains valid for a future phase (admin UI, dynamic roles in DB). This foundation optimizes for **type-safe, version-controlled, easy-to-extend** role definitions first.
+Full DB-backed RBAC (admin UI, dynamic roles) is a separate effort: [`docs/features/rbac-implementation-plan.md`](../../features/rbac-implementation-plan.md).
 
 ---
 
-## Current State
+## Add a permission
 
-| Piece      | Location                                         | Behavior                                                  |
-| ---------- | ------------------------------------------------ | --------------------------------------------------------- |
-| User field | `users.accessLevel`                              | `'user' \| 'system_admin'`, optional (defaults to `user`) |
-| Helpers    | `services/backend/modules/auth/accessControl.ts` | `isSystemAdmin`, `hasAccessLevel`                         |
-| Frontend   | `AdminGuard.tsx`                                 | Binary admin check via auth state                         |
+**1. Register** in both `permissions.ts` files (backend and webapp — keep them identical):
 
-**Gap:** No granular permissions, no custom roles, no shared permission vocabulary between frontend and backend.
+```typescript
+export const permissions = {
+  'reports:export': { description: 'Export reports' },
+  // ...
+} as const;
+```
+
+**2. Grant to role(s)** in both `roles.ts` files:
+
+```typescript
+{
+  role: 'user',
+  permissions: ['attendance:read', 'presentation:read', 'reports:export'] as const,
+},
+```
+
+For `system_admin`, add the key to the registry only — `systemAdminPermissions` is derived from `allPermissions` automatically.
+
+**3. Guard Convex** (queries/mutations):
+
+```typescript
+import { requireAuthenticatedPermission } from '../application/auth/requirePermission';
+
+const user = await getAuthUser(ctx, args);
+requireAuthenticatedPermission(user, 'reports:export');
+```
+
+Or when you have only `userId`: `await requirePermission(ctx, userId, 'reports:export')`.
+
+**4. Guard UI**:
+
+```typescript
+const canExport = useHasPermission('reports:export');
+
+// or
+<RequirePermission permission="reports:export" fallback={<AccessDenied />}>
+  ...
+</RequirePermission>
+```
+
+`useHasPermission` and `RequirePermission` read **`authState.permissions`** from `auth.getState` (server-resolved). Do not re-resolve from `accessLevel` in new UI code.
 
 ---
 
-## Goals (Foundation Phase)
+## Add a role
 
-1. **Single place to extend roles** — add a role and its permissions in `application/auth/roles.ts`
-2. **Typed permissions** — permission strings are a union type derived from the registry
-3. **`requirePermission`** — one-line guard in Convex handlers
-4. **Backward compatible** — map existing `accessLevel` to built-in roles (`user`, `system_admin`)
-5. **Frontend parity** — same permission names for hooks and guards
+Append to `roleDefinitions` in **both** `roles.ts` files:
 
-## Non-Goals (This Phase)
+```typescript
+{
+  role: 'billing_admin',
+  permissions: ['users:read', 'settings:read'] as const satisfies readonly Permission[],
+},
+```
 
-- Database tables for roles/permissions (see rbac-implementation-plan.md)
-- Admin UI to assign roles
-- Resource-instance scopes (e.g. "edit only my row") — noted as **Phase 2**
-- Permission negation or role hierarchies
+**Assignment today:** only `users.accessLevel` maps to roles (`user` | `system_admin`) in `resolve.ts` → `getRolesForUser`. Custom roles are defined but not assignable until Phase 1b (`users.roleNames`). Do not ship placeholder roles uncommented in `roleDefinitions` until assignment exists.
+
+**Phase 1b (planned):** extend `getRolesForUser` to return `user.roleNames ?? ['user']` and migrate assignment off `accessLevel` where needed.
 
 ---
 
-## Permission Naming
+## Permission naming
 
-Use **`resource:action`** (colon), aligned with your example:
+Use **`resource:action`** (colon):
 
 ```
 users:list
-users:write
-settings:read
 auth:provider:manage
 ```
 
-- **resource** — domain noun (`users`, `settings`, `attendance`)
-- **action** — verb (`list`, `read`, `write`, `delete`, `manage`)
-- Nested resources use extra segments: `auth:provider:manage`
+Wildcards in role grants (rare; `system_admin` uses an explicit full list instead):
 
-**Wildcards (system_admin only):**
-
-- `*` — all permissions
-- `users:*` — all actions on `users`
+- `*` — any permission
+- `users:*` — any `users:` permission
 
 ---
 
-## Proposed File Structure
+## Auth state
 
-### Backend (`services/backend/application/auth/`)
-
-```
-application/auth/
-├── permissions.ts      # Permission registry + Permission type union
-├── roles.ts            # Role definitions (extend here)
-├── resolve.ts            # getPermissionsForUser(user) → Set<Permission>
-├── requirePermission.ts  # requirePermission(ctx, userId, permission)
-└── index.ts            # Public exports
-```
-
-### Frontend (`apps/webapp/src/application/auth/`)
-
-```
-application/auth/
-├── permissions.ts      # Re-export or mirror Permission type (see Shared Types)
-├── roles.ts            # Same role definitions as backend (or imported from shared)
-├── usePermission.ts    # useHasPermission(permission)
-├── RequirePermission.tsx
-└── index.ts
-```
-
-### Documentation
-
-```
-docs/application/auth/
-└── rbac-foundation.md    # This file
-```
-
-### Framework vs application
-
-| Layer               | Responsibility                                                                   |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `modules/auth/`     | Session, `getAuthUser`, legacy `accessLevel` helpers (unchanged until migration) |
-| `application/auth/` | **App-specific** roles, permissions, guards — **you edit this**                  |
-
----
-
-## Role Definitions (Shape)
-
-Roles are declared as a **const array** merged into a lookup map at build time:
+Authenticated sessions include:
 
 ```typescript
-// application/auth/roles.ts (illustrative)
-
-export const roleDefinitions = [
-  {
-    role: 'user',
-    permissions: ['attendance:read', 'presentation:read'] as const,
-  },
-  {
-    role: 'manager',
-    permissions: ['users:list', 'users:read', 'attendance:manage'] as const,
-  },
-  {
-    role: 'system_admin',
-    permissions: systemAdminPermissions, // explicit list of all registry permissions
-  },
-] as const;
-
-export type AppRole = (typeof roleDefinitions)[number]['role'];
-```
-
-**Extension model:** To add a role, append an object to `roleDefinitions`. Permissions must exist in `permissions.ts` registry (or be added there first) so TypeScript catches typos.
-
----
-
-## Permission Registry
-
-```typescript
-// application/auth/permissions.ts (illustrative)
-
-export const permissions = {
-  'users:list': { description: 'List users' },
-  'users:read': { description: 'View user details' },
-  'users:write': { description: 'Create or update users' },
-  // ...
-} as const;
-
-export type Permission = keyof typeof permissions;
-```
-
-Optional: `allPermissions` array for admin UIs later.
-
----
-
-## Resolving User → Permissions
-
-**Phase 1 (foundation):** Derive roles from existing `users.accessLevel`:
-
-| `accessLevel`        | Assigned roles |
-| -------------------- | -------------- |
-| `undefined` / `user` | `user`         |
-| `system_admin`       | `system_admin` |
-
-**Phase 1b (soon after):** Support multiple roles per user via optional `users.roleNames: string[]` field (migration adds column; code-defined roles still authoritative for _what each role grants_).
-
-```typescript
-// application/auth/resolve.ts (illustrative)
-
-export function getRolesForUser(user: Doc<'users'>): AppRole[] {
-  if (user.accessLevel === 'system_admin') return ['system_admin'];
-  // Future: return user.roleNames ?? ['user'];
-  return ['user'];
-}
-
-export function getPermissionsForUser(user: Doc<'users'>): Set<Permission> {
-  const roles = getRolesForUser(user);
-  return unionPermissionsForRoles(roles, roleDefinitions);
-}
-```
-
----
-
-## `requirePermission` (Backend API)
-
-```typescript
-// application/auth/requirePermission.ts (illustrative)
-
-import { ConvexError } from 'convex/values';
-import type { QueryCtx | MutationCtx } from '../../convex/_generated/server';
-import type { Id } from '../../convex/_generated/dataModel';
-
-export async function requirePermission(
-  ctx: QueryCtx | MutationCtx,
-  userId: Id<'users'>,
-  permission: Permission,
-): Promise<void> {
-  const user = await ctx.db.get(userId);
-  if (!user) throw new ConvexError('User not found');
-
-  if (!hasPermission(user, permission)) {
-    throw new ConvexError(`Forbidden: missing permission ${permission}`);
-  }
-}
-
-// Convenience when you already have the user document
-export function requirePermissionForUser(
+{
+  state: 'authenticated',
   user: Doc<'users'>,
-  permission: Permission,
-): void { /* same check, sync */ }
+  accessLevel: 'user' | 'system_admin',
+  permissions: Permission[],  // use this for UI checks
+  isSystemAdmin: boolean,     // legacy; prefer permissions.includes('admin:access')
+}
 ```
 
-**Usage in a mutation:**
+Admin areas use **`admin:access`**. `AdminGuard` checks `permissions.includes('admin:access')`.
 
-```typescript
-import { requirePermission } from '../application/auth/requirePermission';
+---
 
-export const listUsers = query({
-  args: { ...SessionIdArg },
-  handler: async (ctx, args) => {
-    const user = await getAuthUser(ctx, args);
-    await requirePermission(ctx, user._id, 'users:list');
-    // ...
-  },
-});
+## Keep backend and webapp in sync
+
+Option A (current): duplicate `permissions.ts` and `roles.ts` with a sync comment at the top of each file.
+
+**CI safety:** `apps/webapp/src/application/auth/__tests__/rbac-registry-sync.spec.ts` fails if keys or role grants diverge.
+
+When adding permissions, run:
+
+```bash
+pnpm typecheck && pnpm test
 ```
 
-**Wildcard handling:** `system_admin` with `*` grants any permission; `users:*` grants any `users:` permission.
+---
+
+## Reference implementations
+
+| Use case           | Where to look                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Convex admin API   | `services/backend/convex/system/auth/google.ts` — `requireAuthenticatedPermission(..., 'auth:provider:manage')` |
+| Admin UI link      | `apps/webapp/src/components/UserMenu.tsx` — `admin:access`                                                      |
+| Admin layout guard | `apps/webapp/src/modules/admin/AdminGuard.tsx`                                                                  |
+| Resolve / tests    | `application/auth/resolve.ts`, `__tests__/resolve.spec.ts` (both packages)                                      |
 
 ---
 
-## Frontend API
+## APIs (backend)
 
-```typescript
-// useHasPermission('users:list') → boolean
-// <RequirePermission permission="users:list" fallback={<AccessDenied />}>
-```
-
-Permissions come from the same `getPermissionsForUser` logic, fed by auth state (extend `AuthState` with `permissions: Permission[]` or compute client-side from `accessLevel` + shared role map).
-
----
-
-## Shared Types Between Webapp and Backend
-
-**Option A (recommended for foundation):** Duplicate `permissions.ts` + `roles.ts` in both packages with a comment to keep in sync. Lowest friction, no new package.
-
-**Option B:** `packages/auth-contract/` workspace package exporting roles + permission types only. Better DRY; add when duplication hurts.
-
-Start with **Option A**; extract to **Option B** if the team wants a single source of truth before Phase 2.
+| Export                                             | Purpose                                |
+| -------------------------------------------------- | -------------------------------------- |
+| `hasPermission(user, permission)`                  | Boolean check                          |
+| `getResolvedPermissionsForUser(user)`              | `Permission[]` for auth state          |
+| `requirePermission(ctx, userId, permission)`       | Async guard; throws `ConvexError`      |
+| `requireAuthenticatedPermission(user, permission)` | Sync guard when user is already loaded |
 
 ---
 
-## Migration Path
+## Deferred (not in foundation)
 
-| Step | Change                                                                    | Breaking? |
-| ---- | ------------------------------------------------------------------------- | --------- |
-| 1    | Add `application/auth` + docs (this PR)                                   | No        |
-| 2    | Implement resolve + `requirePermission`; use alongside `isSystemAdmin`    | No        |
-| 3    | Replace `AdminGuard` / `hasAccessLevel` call sites with permission checks | Soft      |
-| 4    | Optional DB roles (rbac-implementation-plan.md)                           | No        |
-
-`isSystemAdmin` remains as sugar for `hasPermission(user, '*')` or checking `system_admin` role.
+- Database roles / admin UI
+- `users.roleNames` / multi-role assignment (Phase 1b)
+- Resource-instance scopes (`attendance:write:own`) — wrap `hasPermission` in policy functions
+- Shared `packages/auth-contract` — extract if duplication becomes painful
 
 ---
 
-## Context-Scoped Permissions (Phase 2 — Open)
+## Checklist for a feature PR
 
-Your note: _"hasn't considered how to apply permissions to diff contexts"_.
-
-Possible shapes (pick one in a follow-up PR):
-
-1. **Scoped permission strings:** `attendance:write:own` vs `attendance:write:any`
-2. **Second argument:** `requirePermission(ctx, userId, 'attendance:write', { resourceId, ownerId })`
-3. **Policy functions:** `canEditAttendance(user, record)` built on top of base permissions
-
-Foundation keeps the API **flat** (`permission` string only); context policies wrap `requirePermission` where needed.
-
----
-
-## Open Questions for Review
-
-1. **Permission delimiter:** Confirm `resource:action` (colon) vs `resource.action` (dot) from the older RBAC plan doc.
-2. **Multiple roles:** Add `users.roleNames` in foundation, or stay on `accessLevel` until DB phase?
-3. **Shared package:** Option A (duplicate) vs Option B (`packages/auth-contract`) for v1?
-4. **Auth state:** Push `permissions[]` from backend on login, or compute on client from roles?
-5. **Relation to DB RBAC plan:** Proceed code-first only, or align schema early with `rbac-implementation-plan.md`?
-
----
-
-## Implementation Checklist
-
-- [x] `services/backend/application/auth/*` — permissions, roles, resolve, requirePermission
-- [x] Unit tests for wildcard + role union logic
-- [x] `apps/webapp/src/application/auth/*` — hooks + component
-- [x] Reference: `system/auth/google.getConfig` uses `requirePermissionForUser(..., 'auth:provider:manage')`
-- [x] Application README auth extension guides
-- [x] Formalize `system_admin` with explicit `systemAdminPermissions` (no `*` wildcard)
-- [x] Google auth admin endpoints use `requireAuthenticatedPermission(..., 'auth:provider:manage')`
-- [ ] Replace remaining `isSystemAdmin` / `AdminGuard` call sites on frontend (incremental)
-- [ ] `pnpm typecheck && pnpm test` on each PR
-
----
-
-## References
-
-- Current access control: `services/backend/modules/auth/accessControl.ts`
-- Full DB RBAC plan: `docs/features/rbac-implementation-plan.md`
-- Application code placeholders: `services/backend/application/README.md`, `apps/webapp/src/application/README.md`
+- [ ] Permission key in **both** `permissions.ts` files
+- [ ] Role grant in **both** `roles.ts` files (if not only `system_admin`)
+- [ ] Convex handler guarded with `requirePermission` / `requireAuthenticatedPermission`
+- [ ] UI gated with `useHasPermission` or `RequirePermission` where needed
+- [ ] `pnpm typecheck && pnpm test` (includes registry sync test)

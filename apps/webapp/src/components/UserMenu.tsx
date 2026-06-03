@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-import { hasPermission } from '@/application/auth';
+import { useHasPermission } from '@/application/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +36,7 @@ import { useAuthState } from '@/modules/auth/AuthProvider';
  */
 export function UserMenu() {
   const authState = useAuthState();
+  const showAdminLink = useHasPermission('admin:access');
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -71,7 +72,7 @@ export function UserMenu() {
         handleLogout,
         isLoggingOut
       )}
-      {_renderUserDropdownMenu(authState, showLogoutConfirmation, isLoggingOut)}
+      {_renderUserDropdownMenu(authState, showLogoutConfirmation, isLoggingOut, showAdminLink)}
     </>
   );
 }
@@ -116,10 +117,9 @@ function _renderLogoutConfirmDialog(
 function _renderUserDropdownMenu(
   authState: Extract<NonNullable<ReturnType<typeof useAuthState>>, { state: 'authenticated' }>,
   showLogoutConfirmation: () => void,
-  isLoggingOut: boolean
+  isLoggingOut: boolean,
+  showAdminLink: boolean
 ) {
-  const showAdminLink = hasPermission(authState.user, 'admin:access');
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
