@@ -2,6 +2,9 @@
 
 Application-specific (non-framework) documentation.
 
-## Auth
+## Auth (RBAC)
 
-- [RBAC foundation sketch](./auth/rbac-foundation.md) — roles, permissions, and `requirePermission` shape (proposal)
+Developer guides live next to the code:
+
+- Backend: `services/backend/application/README.md`
+- Frontend: `apps/webapp/src/application/README.md`
