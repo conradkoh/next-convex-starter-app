@@ -2,7 +2,10 @@
  * Application permission registry (keep in sync with services/backend/application/auth/permissions.ts).
  */
 export const permissions = {
-  'admin:access': { description: 'Access system administration areas' },
+  'system_admin:access': {
+    description:
+      'Access platform system administration UI (system administrators only — not business/org admin roles)',
+  },
   'users:list': { description: 'List users' },
   'users:read': { description: 'View user details' },
   'users:write': { description: 'Create or update users' },
@@ -17,3 +20,6 @@ export const permissions = {
 export type Permission = keyof typeof permissions;
 
 export const allPermissions = Object.keys(permissions) as Permission[];
+
+/** Platform system administration UI — use for authorization checks, not the `system_admin` role name. */
+export const SYSTEM_ADMIN_ACCESS_PERMISSION = 'system_admin:access' as const satisfies Permission;

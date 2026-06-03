@@ -1,19 +1,19 @@
 import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
-import { requireAuthenticatedPermission } from '../../../application/auth';
+import {
+  AUTH_PROVIDER_MANAGE_PERMISSION,
+  requireAuthenticatedPermission,
+} from '../../../application/auth';
 import { getAuthUserOptional } from '../../../modules/auth/getAuthUser';
 import { api, internal } from '../../_generated/api';
 import type { Id } from '../../_generated/dataModel';
 import { action, internalMutation, mutation, query } from '../../_generated/server';
 
-const AUTH_PROVIDER_MANAGE = 'auth:provider:manage' as const;
-
 /**
- * SYSTEM ADMIN ONLY: Google Authentication Provider Configuration Management
+ * Google Authentication Provider Configuration Management
  *
- * All functions in this module require the `auth:provider:manage` permission
- * (held by the `system_admin` role).
+ * All functions require the `auth:provider:manage` permission (not a role name check).
  */
 
 /**
@@ -41,7 +41,7 @@ export const getConfig = query({
   },
   handler: async (ctx, args): Promise<GoogleAuthConfigData | null> => {
     const user = await getAuthUserOptional(ctx, args);
-    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE, {
+    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE_PERMISSION, {
       unauthorizedMessage: 'Only system administrators can view Google Auth configuration',
     });
 
@@ -86,7 +86,7 @@ export const updateConfig = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getAuthUserOptional(ctx, args);
-    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE, {
+    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE_PERMISSION, {
       unauthorizedMessage: 'You must be logged in to configure Google Auth',
     });
 
@@ -159,7 +159,7 @@ export const toggleEnabled = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getAuthUserOptional(ctx, args);
-    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE, {
+    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE_PERMISSION, {
       unauthorizedMessage: 'You must be logged in to toggle Google Auth',
     });
 
@@ -219,7 +219,7 @@ export const testConfig = action({
       });
     }
 
-    requireAuthenticatedPermission(authState.user, AUTH_PROVIDER_MANAGE);
+    requireAuthenticatedPermission(authState.user, AUTH_PROVIDER_MANAGE_PERMISSION);
 
     let clientSecret = args.clientSecret;
 
@@ -255,7 +255,7 @@ export const getClientSecretForTesting = internalMutation({
   },
   handler: async (ctx, args): Promise<string | null> => {
     const user = await getAuthUserOptional(ctx, args);
-    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE, {
+    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE_PERMISSION, {
       unauthorizedMessage: 'Only system administrators can access client secret for testing',
     });
 
@@ -366,7 +366,7 @@ export const resetConfig = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getAuthUserOptional(ctx, args);
-    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE, {
+    requireAuthenticatedPermission(user, AUTH_PROVIDER_MANAGE_PERMISSION, {
       unauthorizedMessage: 'You must be logged in to reset Google Auth configuration',
     });
 

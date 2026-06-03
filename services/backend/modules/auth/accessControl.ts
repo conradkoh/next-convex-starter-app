@@ -19,9 +19,8 @@ export function getAccessLevel(user: Doc<'users'>): AccessLevel {
 
 /**
  * Checks if a user has at least the specified access level.
- * @param user - The user document to check
- * @param requiredLevel - The minimum required access level
- * @returns true if the user meets the access level requirement, false otherwise
+ * @deprecated Prefer `hasPermission` from `application/auth` for authorization checks.
+ * `accessLevel` is legacy assignment data that maps to roles — do not use for new guards.
  */
 export function hasAccessLevel(user: Doc<'users'>, requiredLevel: AccessLevel): boolean {
   if (requiredLevel === 'user') {

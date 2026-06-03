@@ -70,5 +70,5 @@ export function getResolvedPermissionsForUser(user: UserForPermissions): Permiss
   return allPermissions.filter((permission) => hasPermission(user, permission));
 }
 
-/** All defined application roles (for documentation and future admin UI). */
+/** All defined application roles (for documentation and future role-management UI). */
 export const appRoles = roleDefinitions.map((definition) => definition.role);

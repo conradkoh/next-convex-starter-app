@@ -3,7 +3,10 @@
  * Add new permissions here before referencing them in roles.
  */
 export const permissions = {
-  'admin:access': { description: 'Access system administration areas' },
+  'system_admin:access': {
+    description:
+      'Access platform system administration UI (system administrators only — not business/org admin roles)',
+  },
   'users:list': { description: 'List users' },
   'users:read': { description: 'View user details' },
   'users:write': { description: 'Create or update users' },
@@ -18,3 +21,6 @@ export const permissions = {
 export type Permission = keyof typeof permissions;
 
 export const allPermissions = Object.keys(permissions) as Permission[];
+
+/** Configure authentication providers — use instead of checking roles in handlers. */
+export const AUTH_PROVIDER_MANAGE_PERMISSION = 'auth:provider:manage' as const satisfies Permission;

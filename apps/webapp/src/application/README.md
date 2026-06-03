@@ -10,7 +10,7 @@ Mirrors backend `permissions.ts` and `roles.ts` (must stay in sync — `__tests_
 | ------------------------------------ | -------------------------------------------------------- |
 | `useHasPermission(permission)`       | Hook; reads `authState.permissions` from `auth.getState` |
 | `<RequirePermission permission="…">` | Conditional render                                       |
-| `AdminGuard`                         | `modules/admin/AdminGuard.tsx` — requires `admin:access` |
+| `<RequirePermission permission="…">` | Conditional render from `authState.permissions`          |
 
 ### Add a permission
 
@@ -18,7 +18,7 @@ Mirrors backend `permissions.ts` and `roles.ts` (must stay in sync — `__tests_
 2. Grant in **both** `roles.ts` files.
 3. UI: `useHasPermission('your:permission')` or `<RequirePermission permission="…">`.
 
-Use `authState.permissions` (server-resolved). Do not re-derive from `accessLevel` in new code.
+Use `authState.permissions` (server-resolved). **Never** gate on `accessLevel` or role names — use `useHasPermission` / `RequirePermission` with keys from `permissions.ts` (e.g. `SYSTEM_ADMIN_ACCESS_PERMISSION`).
 
 ### Add a role
 
@@ -26,5 +26,8 @@ Append to `roleDefinitions` in both packages. Custom roles are not assignable un
 
 ### Reference
 
-- Admin link: `components/UserMenu.tsx` (`admin:access`)
-- Admin layout: `modules/admin/AdminGuard.tsx`
+- Guide: `docs/features/rbac/define-new-role.md`
+- System admin link: `components/UserMenu.tsx` (`system_admin:access`)
+- System admin layout: `app/app/admin/layout.tsx` (`RequirePermission` + `system_admin:access`)
+
+Do not use bare `admin` for permissions or roles — see `docs/features/rbac/define-new-role.md` (system admin vs business admin).

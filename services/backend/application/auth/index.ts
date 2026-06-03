@@ -1,4 +1,9 @@
-export { allPermissions, permissions, type Permission } from './permissions';
+export {
+  allPermissions,
+  AUTH_PROVIDER_MANAGE_PERMISSION,
+  permissions,
+  type Permission,
+} from './permissions';
 export {
   type AppRole,
   getPermissionsForRole,

@@ -41,7 +41,7 @@ describe('hasPermission', () => {
     const user = { accessLevel: 'user' as const };
     expect(hasPermission(user, 'attendance:read')).toBe(true);
     expect(hasPermission(user, 'users:list')).toBe(false);
-    expect(hasPermission(user, 'admin:access')).toBe(false);
+    expect(hasPermission(user, 'system_admin:access')).toBe(false);
   });
 
   it('grants explicit system_admin permissions', () => {
@@ -50,7 +50,7 @@ describe('hasPermission', () => {
       expect(hasPermission(user, permission)).toBe(true);
     }
     expect(hasPermission(user, 'auth:provider:manage')).toBe(true);
-    expect(hasPermission(user, 'admin:access')).toBe(true);
+    expect(hasPermission(user, 'system_admin:access')).toBe(true);
   });
 });
 
