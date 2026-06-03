@@ -19,8 +19,6 @@ export type AuthState =
       accessLevel: AccessLevel;
       /** Effective permissions from application/auth role resolution. */
       permissions: Permission[];
-      /** @deprecated Prefer `permissions.includes('admin:access')` — kept for backward compatibility. */
-      isSystemAdmin: boolean;
       authMethod?: 'google' | 'login_code' | 'recovery_code' | 'anonymous' | 'username_password';
     };
 

@@ -4,7 +4,7 @@ Application-specific (non-framework) backend code.
 
 ## Auth (`application/auth/`)
 
-Declarative RBAC — permissions and roles in code, guards in Convex. Legacy `modules/auth/accessControl.ts` (`accessLevel`, `isSystemAdmin`) remains; prefer permissions for new code.
+Declarative RBAC — permissions and roles in code, guards in Convex. `accessLevel` on users remains for role mapping; use `permissions` on `AuthState` and `requirePermission` for authorization.
 
 | File                   | Purpose                                               |
 | ---------------------- | ----------------------------------------------------- |

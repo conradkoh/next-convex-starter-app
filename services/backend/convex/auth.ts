@@ -6,7 +6,7 @@ import { api, internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { getResolvedPermissionsForUser } from '../application/auth/resolve';
-import { getAccessLevel, isSystemAdmin } from '../modules/auth/accessControl';
+import { getAccessLevel } from '../modules/auth/accessControl';
 import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
 import type { AuthState } from '../modules/auth/types/AuthState';
 
@@ -55,7 +55,6 @@ export const getState = query({
       user,
       accessLevel: getAccessLevel(user),
       permissions: getResolvedPermissionsForUser(user),
-      isSystemAdmin: isSystemAdmin(user),
       authMethod: exists.authMethod,
     };
   },

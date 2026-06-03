@@ -18,16 +18,6 @@ export function getAccessLevel(user: Doc<'users'>): AccessLevel {
 }
 
 /**
- * Checks if a user has system administrator access level.
- * Maps to the `system_admin` application role (see `application/auth/roles.ts`).
- * @param user - The user document to check
- * @returns true if the user is a system administrator, false otherwise
- */
-export function isSystemAdmin(user: Doc<'users'>): boolean {
-  return getAccessLevel(user) === 'system_admin';
-}
-
-/**
  * Checks if a user has at least the specified access level.
  * @param user - The user document to check
  * @param requiredLevel - The minimum required access level
@@ -39,7 +29,7 @@ export function hasAccessLevel(user: Doc<'users'>, requiredLevel: AccessLevel): 
   }
 
   if (requiredLevel === 'system_admin') {
-    return isSystemAdmin(user);
+    return getAccessLevel(user) === 'system_admin';
   }
 
   return false;

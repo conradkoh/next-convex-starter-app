@@ -18,14 +18,18 @@ This document outlines the plan to migrate from the current simple `accessLevel`
 **Access Control (`services/backend/modules/auth/accessControl.ts`):**
 
 - `getAccessLevel(user)` - Returns user's access level (defaults to 'user')
-- `isSystemAdmin(user)` - Checks if user is system_admin
 - `hasAccessLevel(user, requiredLevel)` - Checks if user meets required level
+
+**Application RBAC foundation (`application/auth/`):**
+
+- Typed permissions, roles, `requirePermission`, `auth.getState` → `permissions[]`
+- `AdminGuard` / admin UI use `admin:access`; Google admin APIs use `auth:provider:manage`
 
 **Usage Locations:**
 
-- `AdminGuard.tsx` - Frontend component for admin-only pages
-- `system/auth/google.ts` - System admin endpoints for OAuth configuration
-- `AuthState.ts` - Includes `accessLevel` and `isSystemAdmin` in auth state
+- `AdminGuard.tsx` - `admin:access` via `AuthState.permissions`
+- `system/auth/google.ts` - `requireAuthenticatedPermission(..., 'auth:provider:manage')`
+- `AuthState.ts` - `accessLevel` and `permissions`
 
 ### Limitations of Current System
 
@@ -155,7 +159,7 @@ Format: `{resource}.{action}`
    - `getUserPermissions(user)` - Get all user permissions
    - `getUserRoles(user)` - Get all user roles
 3. Create seed data mutation for default roles/permissions
-4. Maintain backward compatibility with `isSystemAdmin`
+4. Map legacy `accessLevel` to code-defined roles (foundation already does this)
 
 **Files to Create:**
 
@@ -206,23 +210,11 @@ Format: `{resource}.{action}`
 During migration, maintain both systems:
 
 ```typescript
-// Updated accessControl.ts
-export function isSystemAdmin(user: Doc<'users'>): boolean {
-  // Legacy check (for transition period)
-  if (user.accessLevel === 'system_admin') {
-    return true;
-  }
-  // New RBAC check
-  return hasRole(user, 'system_admin');
-}
+// application/auth/resolve.ts (foundation — in repo today)
+import { hasPermission } from '../application/auth';
 
-export function hasPermission(ctx: Context, user: Doc<'users'>, permission: string): boolean {
-  // System admins have all permissions
-  if (isSystemAdmin(user)) {
-    return true;
-  }
-  // Check permission via RBAC
-  return checkUserPermission(ctx, user._id, permission);
+export function hasPermission(user: Doc<'users'>, permission: Permission): boolean {
+  // Resolves roles from accessLevel (and later roleNames), then role grants
 }
 ```
 
