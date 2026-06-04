@@ -5,6 +5,10 @@ import type { NextConfig } from 'next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
+  experimental: {
+    // Disable persistent Turbopack disk cache in dev to avoid unbounded .next/cache growth
+    turbopackFileSystemCacheForDev: false,
+  },
   // Configure `pageExtensions` to include markdown and MDX files
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
   // Enable typed routes for compile-time type safety (moved from experimental in Next.js 16)
