@@ -21,15 +21,6 @@
     "e2e": "turbo run e2e",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "**/*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "**/*.{json,md,css,scss,yml,mdx}": [
-      "prettier --write"
-    ]
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
