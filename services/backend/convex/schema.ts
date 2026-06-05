@@ -253,4 +253,44 @@ export default defineSchema({
     expiresAt: v.number(), // When this connect request expires (15 minutes from creation)
     redirectUri: v.string(), // The OAuth redirect URI used for this connect request
   }),
+
+  /**
+   * LLM gateway configuration for admin-managed LLM infrastructure.
+   * Only one gateway should be marked isActive: true at a time (enforced in mutations).
+   */
+  llmGateways: defineTable({
+    kind: v.union(v.literal('vercel-ai-gateway')),
+    label: v.string(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }),
+
+  /**
+   * LLM provider configuration linked to an LLM gateway.
+   * Stores provider slug, label, and optional API key environment variable reference.
+   */
+  llmProviders: defineTable({
+    gatewayId: v.id('llmGateways'),
+    slug: v.string(),
+    label: v.string(),
+    apiKeyEnvVar: v.optional(v.string()),
+    isEnabled: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_gatewayId', ['gatewayId']),
+
+  /**
+   * LLM model configuration linked to an LLM provider.
+   * One model per provider may be marked isDefault: true.
+   */
+  llmModels: defineTable({
+    providerId: v.id('llmProviders'),
+    slug: v.string(),
+    label: v.string(),
+    isEnabled: v.boolean(),
+    isDefault: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_providerId', ['providerId']),
 });
