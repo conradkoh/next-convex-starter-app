@@ -5,6 +5,7 @@ export type { LLMGatewayPort } from './ports/llmGatewayPort';
 
 let cachedGateway: LLMGatewayPort | null = null;
 
+// fallow-ignore-next-line unused-export
 export function getLLMGateway(): LLMGatewayPort {
   if (!cachedGateway) {
     cachedGateway = new VercelAIGatewayAdapter();

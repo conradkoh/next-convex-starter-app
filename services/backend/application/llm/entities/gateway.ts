@@ -1,3 +1,4 @@
+// fallow-ignore-next-line unused-export
 export const LLM_GATEWAY_KINDS = ['vercel-ai-gateway'] as const;
 
 export type LLMGatewayKind = (typeof LLM_GATEWAY_KINDS)[number];
@@ -10,6 +11,7 @@ export interface LLMGateway {
   updatedAt: number;
 }
 
+// fallow-ignore-next-line unused-export
 export function makeLLMGateway(params: {
   kind: LLMGatewayKind;
   label: string;

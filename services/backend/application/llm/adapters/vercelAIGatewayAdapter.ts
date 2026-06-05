@@ -23,6 +23,7 @@ export class VercelAIGatewayAdapter implements LLMGatewayPort {
     this.apiKey = apiKey;
   }
 
+  // fallow-ignore-next-line unused-class-member
   async generateText(req: LLMGenerateTextRequest): Promise<LLMGenerateTextResult> {
     const provider = this.getProvider(req.providerSlug);
     const result = await generateText({
@@ -43,6 +44,7 @@ export class VercelAIGatewayAdapter implements LLMGatewayPort {
     };
   }
 
+  // fallow-ignore-next-line unused-class-member
   async listAvailableModels(): Promise<LLMGatewayModel[]> {
     const result = await aiGateway.getAvailableModels();
     return result.models.map((model) => {
@@ -58,6 +60,7 @@ export class VercelAIGatewayAdapter implements LLMGatewayPort {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   async *streamText(req: LLMGenerateTextRequest): AsyncIterable<LLMStreamTextChunk> {
     const provider = this.getProvider(req.providerSlug);
     const result = streamText({

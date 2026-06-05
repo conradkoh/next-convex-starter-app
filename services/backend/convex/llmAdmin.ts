@@ -23,11 +23,11 @@ import {
   toggleProviderEnabled,
   upsertProvider,
 } from '../application/llm/useCases/providerUseCases';
-import { isSystemAdmin } from '../modules/auth/accessControl';
+import { hasAccessLevel } from '../modules/auth/accessControl';
 import { getAuthUserOptional } from '../modules/auth/getAuthUser';
 
 function requireAdmin(user: Doc<'users'> | null): asserts user is Doc<'users'> {
-  if (!user || !isSystemAdmin(user)) {
+  if (!user || !hasAccessLevel(user, 'system_admin')) {
     throw new ConvexError({
       code: 'FORBIDDEN',
       message: 'Only system administrators can manage LLM configuration',
@@ -220,7 +220,7 @@ export const requireAdminAck = internalQuery({
         message: 'Session not found',
       });
     }
-    if (!isSystemAdmin(user)) {
+    if (!hasAccessLevel(user, 'system_admin')) {
       throw new ConvexError({
         code: 'FORBIDDEN',
         message: 'Only system administrators can manage LLM configuration',
