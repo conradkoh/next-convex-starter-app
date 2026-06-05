@@ -3,7 +3,7 @@
 import { CalendarIcon, MoreHorizontal, Plus } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export default function ShadcnModalTestPage() {
   const [date, setDate] = useState<Date>();
@@ -160,11 +161,9 @@ export default function ShadcnModalTestPage() {
 
           <div className="flex justify-center pt-4">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="h-4 w-4 mr-2" />
-                  Actions
-                </Button>
+              <DropdownMenuTrigger className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                <MoreHorizontal className="h-4 w-4 mr-2" />
+                Actions
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={handleAddAction}>
@@ -218,17 +217,17 @@ export default function ShadcnModalTestPage() {
                 <Label className="text-right">Date</Label>
                 <div className="col-span-3">
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? date.toDateString() : <span>Pick a date</span>}
-                      </Button>
+                    <PopoverTrigger
+                      className={cn(
+                        buttonVariants({ variant: 'outline' }),
+                        'w-full justify-start text-left font-normal'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? date.toDateString() : <span>Pick a date</span>}
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                      <Calendar mode="single" selected={date} onSelect={setDate} />
                     </PopoverContent>
                   </Popover>
                 </div>
