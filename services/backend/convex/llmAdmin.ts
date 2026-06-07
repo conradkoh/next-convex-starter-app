@@ -24,7 +24,7 @@ import {
   upsertProvider,
 } from '../application/llm/useCases/providerUseCases';
 import { hasAccessLevel } from '../modules/auth/accessControl';
-import { getAuthUserOptional } from '../modules/auth/getAuthUser';
+import { getAuthUser } from '../modules/auth/session';
 
 function requireAdmin(user: Doc<'users'> | null): asserts user is Doc<'users'> {
   if (!user || !hasAccessLevel(user, 'system_admin')) {
@@ -38,7 +38,7 @@ function requireAdmin(user: Doc<'users'> | null): asserts user is Doc<'users'> {
 export const getGateways = query({
   args: { ...SessionIdArg },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return listGateways(ctx.db);
   },
@@ -51,7 +51,7 @@ export const createOrUpdateGateway = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return upsertGateway(ctx.db, { kind: args.kind, label: args.label });
   },
@@ -63,7 +63,7 @@ export const activateGateway = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return setActiveGateway(ctx.db, args.gatewayId);
   },
@@ -75,7 +75,7 @@ export const getProviders = query({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return listProviders(ctx.db, args.gatewayId);
   },
@@ -91,7 +91,7 @@ export const createOrUpdateProvider = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return upsertProvider(ctx.db, {
       gatewayId: args.gatewayId,
@@ -110,7 +110,7 @@ export const enableProvider = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return toggleProviderEnabled(ctx.db, args.providerId, args.enabled);
   },
@@ -122,7 +122,7 @@ export const getModels = query({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return listModels(ctx.db, args.providerId);
   },
@@ -138,7 +138,7 @@ export const createOrUpdateModel = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return upsertModel(ctx.db, {
       providerId: args.providerId,
@@ -157,7 +157,7 @@ export const enableModel = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return toggleModelEnabled(ctx.db, args.modelId, args.enabled);
   },
@@ -170,7 +170,7 @@ export const makeDefaultModel = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return setDefaultModel(ctx.db, args.modelId, args.providerId);
   },
@@ -182,7 +182,7 @@ export const getCatalogQuery = query({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return getCatalog(ctx.db, args.gatewayId);
   },
@@ -198,7 +198,7 @@ export const setCatalogModelEnabled = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, args);
+    const user = await getAuthUser(ctx, args);
     requireAdmin(user);
     return enableCatalogModel(ctx.db, {
       gatewayId: args.gatewayId,
@@ -213,7 +213,7 @@ export const setCatalogModelEnabled = mutation({
 export const requireAdminAck = internalQuery({
   args: { sessionId: v.string() },
   handler: async (ctx, args) => {
-    const user = await getAuthUserOptional(ctx, { sessionId: args.sessionId } as never);
+    const user = await getAuthUser(ctx, { sessionId: args.sessionId } as never);
     if (!user) {
       throw new ConvexError({
         code: 'FORBIDDEN',
