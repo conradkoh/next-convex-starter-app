@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Brain, Loader2, Menu, Settings, Shield, ShieldX, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Menu, Settings, Shield, ShieldX, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -203,15 +203,6 @@ function _renderSidebarContent(closeSidebar: () => void) {
         >
           <Shield className="h-4 w-4" />
           <span>Google Auth Config</span>
-        </Link>
-
-        <Link
-          href="/app/admin/llm"
-          className="flex items-center space-x-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors"
-          onClick={closeSidebar}
-        >
-          <Brain className="h-4 w-4" />
-          <span>LLM Config</span>
         </Link>
       </nav>
 
