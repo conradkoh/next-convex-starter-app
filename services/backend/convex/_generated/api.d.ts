@@ -16,7 +16,6 @@ import type * as checklists from "../checklists.js";
 import type * as cleanupTasks from "../cleanupTasks.js";
 import type * as crypto from "../crypto.js";
 import type * as discussions from "../discussions.js";
-import type * as llmAdmin from "../llmAdmin.js";
 import type * as migrations from "../migrations.js";
 import type * as presentations from "../presentations.js";
 import type * as serviceDesk from "../serviceDesk.js";
@@ -38,7 +37,6 @@ declare const fullApi: ApiFromModules<{
   cleanupTasks: typeof cleanupTasks;
   crypto: typeof crypto;
   discussions: typeof discussions;
-  llmAdmin: typeof llmAdmin;
   migrations: typeof migrations;
   presentations: typeof presentations;
   serviceDesk: typeof serviceDesk;
@@ -75,5 +73,4 @@ export declare const internal: FilterApi<
 export declare const components: {
   aggregate: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"aggregate">;
   migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
-  persistentTextStreaming: import("@convex-dev/persistent-text-streaming/_generated/component.js").ComponentApi<"persistentTextStreaming">;
 };

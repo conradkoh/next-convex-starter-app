@@ -15,11 +15,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.65",
     "@convex-dev/aggregate": "^0.2.1",
     "@convex-dev/migrations": "^0.3.4",
-    "@convex-dev/persistent-text-streaming": "^0.3.2",
-    "ai": "^6.0.191",
     "convex": "^1.39.1",
     "convex-helpers": "^0.1.118",
     "zod": "^4.0.5"
