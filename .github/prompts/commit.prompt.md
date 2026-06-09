@@ -24,7 +24,7 @@ This document uses RFC 2119 terminology:
 
 **You MUST execute the cleanup process before proceeding with the commit.**
 
-1. You MUST follow all instructions specified in `.ai/commands/cleanup.md`
+1. You MUST follow all instructions specified in `.github/prompts/cleanup.prompt.md`
 2. You MUST complete all cleanup tasks before proceeding to Phase 2
 3. You MUST NOT skip any files identified during the cleanup process
 
@@ -304,7 +304,7 @@ EOF
 User: "Commit my changes"
 
 Assistant actions:
-1. Execute cleanup process from .ai/commands/cleanup.md
+1. Execute cleanup process from .github/prompts/cleanup.prompt.md
 2. Examine package.json to identify available validation scripts
 3. Run type checking (if TypeScript configured): npm run typecheck
 4. Run tests (if tests exist): npm test
@@ -320,7 +320,7 @@ Assistant actions:
 User: "Commit and push my changes"
 
 Assistant actions:
-1. Execute cleanup process from .ai/commands/cleanup.md
+1. Execute cleanup process from .github/prompts/cleanup.prompt.md
 2. Discover and run all available validation steps
 3. Stage and commit changes
 4. Push to remote: git push (or git push -u origin <branch> for new branches)
@@ -333,7 +333,7 @@ Assistant actions:
 User: "Commit and create a PR"
 
 Assistant actions:
-1. Execute cleanup process from .ai/commands/cleanup.md
+1. Execute cleanup process from .github/prompts/cleanup.prompt.md
 2. Discover and run all available validation steps
 3. Stage and commit changes
 4. Gather PR analysis data (git status, git log, git diff main...HEAD)
@@ -347,7 +347,7 @@ Assistant actions:
 
 A successful execution MUST meet all of the following criteria:
 
-- [ ] All cleanup tasks from `.ai/commands/cleanup.md` completed
+- [ ] All cleanup tasks from `.github/prompts/cleanup.prompt.md` completed
 - [ ] Type checking passes with zero errors
 - [ ] All tests pass
 - [ ] Linting passes with zero errors

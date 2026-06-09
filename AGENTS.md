@@ -1,11 +1,3 @@
----
-
-description: Development guide for the Next.js + Convex monorepo
-globs: "\*\*"
-alwaysApply: true
-
----
-
 # Development Guidelines
 
 A quick reference for working with the Next.js + Convex monorepo.
@@ -45,7 +37,7 @@ bg-red-50 dark:bg-red-950/20
 text-red-600 dark:text-red-400
 
 // Bad - single mode only
-bg-red-50  // white text on light red in dark mode
+bg-red-50  // no dark variant: stays light in dark mode -> poor contrast
 ```
 
 **Testing**: Verify components in light mode, dark mode, and system mode.
