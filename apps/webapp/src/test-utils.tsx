@@ -1,6 +1,7 @@
-import { type RenderOptions, render } from '@testing-library/react';
+import { type RenderOptions, render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
+import { expect } from 'vitest';
 
 /**
  * Custom render function that can be extended with providers, mocks, etc.
@@ -45,3 +46,12 @@ export function renderWithUser(ui: ReactElement, options?: Omit<RenderOptions, '
 // Re-export everything from React Testing Library
 export * from '@testing-library/react';
 export { userEvent };
+
+export async function waitForOpenContent(testIdOrSelector: string, isSelector = false) {
+  await waitFor(() => {
+    const el = isSelector
+      ? document.querySelector(testIdOrSelector)
+      : document.querySelector(`[data-slot="${testIdOrSelector}"]`);
+    expect(el).toBeInTheDocument();
+  });
+}
