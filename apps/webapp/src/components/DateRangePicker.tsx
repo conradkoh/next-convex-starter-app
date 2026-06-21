@@ -4,7 +4,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { DateTime } from 'luxon';
 import * as React from 'react';
 
-import { Button } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
@@ -145,18 +145,16 @@ export function DateRangePicker({
 
       <div className="flex-1">
         <Popover open={isOpen} onOpenChange={handleOpenChange}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                'w-full justify-start text-left font-normal',
-                !value.startDate && 'text-muted-foreground'
-              )}
-              disabled={disabled}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {formatDateRange()}
-            </Button>
+          <PopoverTrigger
+            className={cn(
+              buttonVariants({ variant: 'outline' }),
+              'w-full justify-start text-left font-normal',
+              !value.startDate && 'text-muted-foreground'
+            )}
+            disabled={disabled}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {formatDateRange()}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <div className="p-4 space-y-4">
@@ -172,7 +170,6 @@ export function DateRangePicker({
                       // Disable future dates
                       return date > new Date();
                     }}
-                    initialFocus
                   />
                 </div>
                 <div className="space-y-2">

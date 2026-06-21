@@ -8,7 +8,7 @@ import { ChecklistInlineInput } from './checklist-inline-input';
 import type { ChecklistItemWithOptimistic, ChecklistProps } from './types';
 import { useChecklistSync } from './use-checklist-sync';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -271,10 +271,8 @@ export function Checklist({ title, checklistKey, description, className }: Check
             {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+            <DropdownMenuTrigger className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+              <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>
             {dropdownMenuContent}
           </DropdownMenu>
