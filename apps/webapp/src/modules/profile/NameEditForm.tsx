@@ -546,20 +546,15 @@ function _renderThirdPartyAccounts(
             <div className="flex items-center gap-3">
               {googleProvider.isConnected ? (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span>
-                        Connected
-                        {googleProvider.connectedEmail && (
-                          <span className="ml-1">({googleProvider.connectedEmail})</span>
-                        )}
-                      </span>
-                      <ChevronDownIcon className="h-3 w-3" />
-                    </button>
+                  <DropdownMenuTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <span>
+                      Connected
+                      {googleProvider.connectedEmail && (
+                        <span className="ml-1">({googleProvider.connectedEmail})</span>
+                      )}
+                    </span>
+                    <ChevronDownIcon className="h-3 w-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
