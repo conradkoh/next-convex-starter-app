@@ -9,6 +9,7 @@
     "test:watch": "turbo run test:watch",
     "dev": "turbo run dev",
     "setup": "node scripts/setup.js",
+    "check:upstream-modifications": "node scripts/check-upstream-modifications.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",

@@ -5,6 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
 
+const { TEMPLATE_REPO_URL, parseGitHubOwnerRepo } = require('./template-repo');
+
 const backendEnvPath = path.join(__dirname, '..', 'services', 'backend', '.env.local');
 const webappEnvPath = path.join(__dirname, '..', 'apps', 'webapp', '.env.local');
 
@@ -223,29 +225,13 @@ function addUpstreamRemote() {
       return;
     }
 
-    execSync('git remote add upstream https://github.com/conradkoh/next-convex-starter-app', {
+    execSync(`git remote add upstream ${TEMPLATE_REPO_URL}`, {
       stdio: 'inherit',
     });
     console.log('✅ Upstream remote added successfully.');
   } catch (error) {
     console.error('❌ Error adding upstream remote:', error.message);
   }
-}
-
-/**
- * Parse owner/repo from a GitHub URL
- * Supports formats:
- *   https://github.com/owner/repo
- *   https://github.com/owner/repo.git
- *   git@github.com:owner/repo.git
- */
-function parseGitHubOwnerRepo(repoUrl) {
-  // HTTPS format: https://github.com/owner/repo or https://github.com/owner/repo.git
-  const httpsMatch = repoUrl.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/);
-  if (httpsMatch) {
-    return { owner: httpsMatch[1], repo: httpsMatch[2] };
-  }
-  return null;
 }
 
 /**
