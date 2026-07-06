@@ -7,7 +7,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "out/**"],
       "cache": true
     },
     "typecheck": {
@@ -52,6 +52,17 @@
       "dependsOn": ["^typecheck", "typecheck"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"],
+      "cache": true
+    },
+    "@workspace/mobile#build": {
+      "dependsOn": ["typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["out/**"],
+      "cache": true
+    },
+    "@workspace/mobile#typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "cache": true
     }
   }
