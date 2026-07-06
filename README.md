@@ -33,7 +33,7 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
    **Non-Interactive Mode**: For CI/CD or automated setups:
 
    ```bash
-   node scripts/setup.js --non-interactive \
+   bun scripts/setup.ts --non-interactive \
      --app-name "My App" \
      --app-short-name "MyApp" \
      --app-description "Description" \
@@ -41,10 +41,10 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
      --package-name "my-app"
 
    # Or skip branding entirely
-   node scripts/setup.js --skip-branding
+   bun scripts/setup.ts --skip-branding
 
    # Show all options
-   node scripts/setup.js --help
+   bun scripts/setup.ts --help
    ```
 
 3. Run `pnpm dev` in the root directory to start the NextJS application and Convex backend
