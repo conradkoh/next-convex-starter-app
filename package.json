@@ -8,7 +8,7 @@
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "dev": "turbo run dev",
-    "setup": "bun scripts/setup.js",
+    "setup": "bun scripts/setup.ts",
     "check:upstream-modifications": "bun scripts/check-upstream-modifications.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
