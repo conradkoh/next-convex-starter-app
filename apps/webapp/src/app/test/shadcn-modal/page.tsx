@@ -116,23 +116,13 @@ export default function ShadcnModalTestPage() {
 
             <div>
               <h3 className="font-medium text-green-800 dark:text-green-200 mb-2">
-                2. Version Alignment via PNPM Overrides
+                2. Base UI migration
               </h3>
               <p className="text-green-700 dark:text-green-300 mb-2">
-                Added version override in root <code>package.json</code> to ensure all components
-                use the same dismissable layer version:
+                Modal primitives now use <code>@base-ui/react</code> instead of Radix UI. The
+                previous <code>@radix-ui/react-dismissable-layer</code> pnpm override is no longer
+                required.
               </p>
-              <div className="bg-green-100 dark:bg-green-900 p-3 rounded font-mono text-xs">
-                <pre>
-                  {`{
-  "pnpm": {
-    "overrides": {
-      "@radix-ui/react-dismissable-layer": "1.1.10"
-    }
-  }
-}`}
-                </pre>
-              </div>
             </div>
 
             <div>
@@ -142,8 +132,7 @@ export default function ShadcnModalTestPage() {
               <ul className="list-disc list-inside ml-4 space-y-1 text-green-700 dark:text-green-300">
                 <li>Proper modal behavior ensures correct focus and dismissal management</li>
                 <li>
-                  Version alignment of dismissable layers allows correct state tracking across react
-                  contexts with different package versions
+                  Base UI uses Floating UI for positioning and consistent dismissable-layer behavior
                 </li>
                 <li>iOS calendar issues are resolved through proper modal portal management</li>
               </ul>

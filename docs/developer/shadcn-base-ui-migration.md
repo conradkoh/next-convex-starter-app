@@ -18,13 +18,16 @@ The migration is **opt-in**: your existing Radix-based components continue to wo
 
 ---
 
-## Current State
+## Current State (post-migration)
 
 | Item           | Value                                             |
 | -------------- | ------------------------------------------------- |
-| Style          | `new-york` (Radix UI backend)                     |
+| Style          | `base-vega` (Base UI backend)                     |
 | Components     | 26 components in `apps/webapp/src/components/ui/` |
-| Radix packages | 16 `@radix-ui/react-*` packages                   |
+| Base UI        | `@base-ui/react`                                  |
+| Radix retained | `@radix-ui/react-icons` only (icon package)       |
+
+> **Pre-migration** this project used `new-york` style with 16 `@radix-ui/react-*` primitive packages.
 
 ---
 
