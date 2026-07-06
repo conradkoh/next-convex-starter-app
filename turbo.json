@@ -54,13 +54,13 @@
       "outputs": [".next/**", "!.next/cache/**"],
       "cache": true
     },
-    "@workspace/mobile#build": {
+    "@workspace/desktop#build": {
       "dependsOn": ["typecheck"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["out/**"],
       "cache": true
     },
-    "@workspace/mobile#typecheck": {
+    "@workspace/desktop#typecheck": {
       "dependsOn": ["^typecheck"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "cache": true

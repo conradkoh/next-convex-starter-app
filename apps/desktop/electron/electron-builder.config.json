@@ -1,6 +1,6 @@
 {
-  "appId": "com.workspace.mobile",
-  "productName": "Mobile",
+  "appId": "com.workspace.desktop",
+  "productName": "Desktop",
   "directories": {
     "buildResources": "resources"
   },

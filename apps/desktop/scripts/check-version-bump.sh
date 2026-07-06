@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Detect whether apps/mobile/package.json version changed on the current commit.
+# Detect whether apps/desktop/package.json version changed on the current commit.
 # Writes GitHub Actions outputs: changed (true|false), version (<semver>).
 set -euo pipefail
 
-PACKAGE_JSON="apps/mobile/package.json"
+PACKAGE_JSON="apps/desktop/package.json"
 OUTPUT="${GITHUB_OUTPUT:-}"
 
 if [ -z "$OUTPUT" ]; then
@@ -14,7 +14,7 @@ fi
 if [ ! -f "$PACKAGE_JSON" ]; then
   echo "changed=false" >>"$OUTPUT"
   echo "version=" >>"$OUTPUT"
-  echo "Mobile package not found; skipping release."
+  echo "Desktop package not found; skipping release."
   exit 0
 fi
 
@@ -27,10 +27,10 @@ fi
 
 if [ "$CURRENT" != "$PREVIOUS" ]; then
   echo "changed=true" >>"$OUTPUT"
-  echo "Mobile version changed: ${PREVIOUS:-<none>} -> ${CURRENT}"
+  echo "Desktop version changed: ${PREVIOUS:-<none>} -> ${CURRENT}"
 else
   echo "changed=false" >>"$OUTPUT"
-  echo "Mobile version unchanged at ${CURRENT}"
+  echo "Desktop version unchanged at ${CURRENT}"
 fi
 
 echo "version=${CURRENT}" >>"$OUTPUT"

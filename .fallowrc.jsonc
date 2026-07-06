@@ -26,7 +26,7 @@
     "react-icons",
     "bun",
     "@radix-ui/react-tooltip",
-    "@capacitor/ios"
+    "@capacitor-community/electron"
   ],
   "ignoreUnresolvedImports": [
     "**/convex/_generated/**",
@@ -52,7 +52,7 @@
     "**/next.config.{ts,js,mjs}",
     "**/playwright.config.{ts,js}",
     "**/eslint.config.{ts,js,mjs}",
-    "**/apps/mobile/electron/**"
+    "**/apps/desktop/electron/**"
   ],
   "ignoreExports": [
     { "file": "**/components/ui/**", "exports": ["*"] }

@@ -1,21 +1,16 @@
 {
-  "name": "@workspace/mobile",
+  "name": "@workspace/desktop",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "cap:sync": "next build && cap sync",
-    "cap:sync:ios": "next build && cap sync ios",
-    "cap:sync:electron": "next build && cap sync @capacitor-community/electron",
-    "build:macos": "pnpm cap:sync:electron && cd electron && npm run electron:make -- --mac",
-    "cap:open:ios": "cap open ios",
-    "cap:open:android": "cap open android"
+    "cap:sync": "next build && cap sync @capacitor-community/electron",
+    "build:macos": "pnpm cap:sync && cd electron && npm run electron:make -- --mac"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.2",
-    "@capacitor/ios": "^7.6.7",
     "next": "16.2.3",
     "react": "19.2.3",
     "react-dom": "19.2.3"

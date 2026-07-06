@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Mobile App',
-  description: 'Capacitor shell for the Next.js static export',
+  title: 'Desktop App',
+  description: 'Native macOS desktop shell for the Next.js static export',
 };
 
 export default function RootLayout({

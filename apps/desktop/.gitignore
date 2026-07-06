@@ -5,10 +5,6 @@
 /.next/
 /out/
 
-# capacitor native projects (ios generated in CI; android added locally)
-/ios/
-/android/
-
 # electron build artifacts (source in electron/ is committed)
 /electron/app/
 /electron/build/
