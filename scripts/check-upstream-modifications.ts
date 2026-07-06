@@ -1,26 +1,23 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
-const { execSync } = require('node:child_process');
+import { execSync } from 'node:child_process';
 
-const { isTemplateRemote, TEMPLATE_OWNER_REPO } = require('./template-repo');
+import { isTemplateRemote, TEMPLATE_OWNER_REPO } from './template-repo';
 
 const ACK_ENV_VAR = 'UPSTREAM_MODIFY_ACKNOWLEDGED';
 const ACK_GIT_CONFIG = 'template.allowUpstreamModifications';
 const ACK_CLI_FLAG = '--allow-upstream-modifications';
 
-/**
- * @param {string} command
- * @returns {string}
- */
-function runGit(command) {
+type StagedChange = {
+  status: string;
+  paths: string[];
+};
+
+function runGit(command: string): string {
   return execSync(`git ${command}`, { encoding: 'utf8' }).trim();
 }
 
-/**
- * @param {string} command
- * @returns {string | null}
- */
-function tryGit(command) {
+function tryGit(command: string): string | null {
   try {
     return runGit(command);
   } catch {
@@ -28,10 +25,7 @@ function tryGit(command) {
   }
 }
 
-/**
- * @returns {boolean}
- */
-function hasAcknowledgement() {
+function hasAcknowledgement(): boolean {
   if (process.argv.includes(ACK_CLI_FLAG)) {
     return true;
   }
@@ -43,17 +37,11 @@ function hasAcknowledgement() {
   return tryGit(`config --get ${ACK_GIT_CONFIG}`) === 'true';
 }
 
-/**
- * @returns {string | null}
- */
-function getRemoteUrl(remoteName) {
+function getRemoteUrl(remoteName: string): string | null {
   return tryGit(`remote get-url ${remoteName}`);
 }
 
-/**
- * @returns {boolean}
- */
-function isDerivedFromTemplate() {
+function isDerivedFromTemplate(): boolean {
   const originUrl = getRemoteUrl('origin');
   const upstreamUrl = getRemoteUrl('upstream');
 
@@ -65,10 +53,7 @@ function isDerivedFromTemplate() {
   return !isTemplateRemote(originUrl);
 }
 
-/**
- * @returns {string | null}
- */
-function resolveUpstreamRef() {
+function resolveUpstreamRef(): string | null {
   const candidates = ['upstream/master', 'upstream/main', 'upstream/HEAD'];
   const found = candidates.find((candidate) => tryGit(`rev-parse --verify ${candidate}`));
   if (found) {
@@ -84,22 +69,15 @@ function resolveUpstreamRef() {
   return tryGit(`rev-parse --verify ${remoteRef}`) ? remoteRef : null;
 }
 
-/**
- * @param {string} upstreamRef
- * @param {string} filePath
- * @returns {boolean}
- */
-function fileExistsInUpstream(upstreamRef, filePath) {
+function fileExistsInUpstream(upstreamRef: string, filePath: string): boolean {
   return tryGit(`cat-file -e ${upstreamRef}:${filePath}`) !== null;
 }
 
-/**
- * @param {string[]} parts
- * @param {number} index
- * @param {string} status
- * @returns {{ change: { status: string, paths: string[] }, nextIndex: number }}
- */
-function parseStagedChange(parts, index, status) {
+function parseStagedChange(
+  parts: string[],
+  index: number,
+  status: string
+): { change: StagedChange; nextIndex: number } {
   if (status === 'R' || status === 'C') {
     return {
       change: { status, paths: [parts[index], parts[index + 1]] },
@@ -113,18 +91,14 @@ function parseStagedChange(parts, index, status) {
   };
 }
 
-/**
- * @returns {Array<{ status: string, paths: string[] }>}
- */
-function getStagedFileChanges() {
+function getStagedFileChanges(): StagedChange[] {
   const output = tryGit('diff --cached --name-status -z --diff-filter=ACDMRT');
   if (!output) {
     return [];
   }
 
   const parts = output.split('\0').filter(Boolean);
-  /** @type {Array<{ status: string, paths: string[] }>} */
-  const changes = [];
+  const changes: StagedChange[] = [];
 
   for (let index = 0; index < parts.length; ) {
     const status = parts[index][0];
@@ -136,12 +110,10 @@ function getStagedFileChanges() {
   return changes;
 }
 
-/**
- * @param {Array<{ status: string, paths: string[] }>} stagedChanges
- * @param {string} upstreamRef
- * @returns {string[]}
- */
-function collectUpstreamModifiedFiles(stagedChanges, upstreamRef) {
+function collectUpstreamModifiedFiles(
+  stagedChanges: StagedChange[],
+  upstreamRef: string
+): string[] {
   return [
     ...new Set(
       stagedChanges.flatMap(({ status, paths }) => {
@@ -155,17 +127,13 @@ function collectUpstreamModifiedFiles(stagedChanges, upstreamRef) {
   ];
 }
 
-function warnMissingUpstreamRef() {
+function warnMissingUpstreamRef(): void {
   console.warn(
     '⚠️  Skipping upstream file check: could not resolve an upstream branch ref (try `git fetch upstream`).'
   );
 }
 
-/**
- * @param {string} upstreamRef
- * @param {string[]} upstreamFiles
- */
-function printBlockedMessage(upstreamRef, upstreamFiles) {
+function printBlockedMessage(upstreamRef: string, upstreamFiles: string[]): void {
   console.error('\n❌ Pre-commit blocked: staged changes modify files from the template upstream.');
   console.error(`   Template: ${TEMPLATE_OWNER_REPO}`);
   console.error(`   Upstream ref: ${upstreamRef}`);
@@ -180,22 +148,16 @@ function printBlockedMessage(upstreamRef, upstreamFiles) {
   console.error('   explicit acknowledgement using one of:');
   console.error(`     ${ACK_ENV_VAR}=1 git commit ...`);
   console.error(`     git -c ${ACK_GIT_CONFIG}=true commit ...`);
-  console.error(`     node scripts/check-upstream-modifications.js ${ACK_CLI_FLAG}`);
+  console.error(`     bun scripts/check-upstream-modifications.ts ${ACK_CLI_FLAG}`);
   console.error('\n   Passing this flag confirms you understand upstream is the right place for');
   console.error('   general template changes, and your local edits are fork-specific.\n');
 }
 
-/**
- * @returns {boolean}
- */
-function shouldSkipCheck() {
+function shouldSkipCheck(): boolean {
   return hasAcknowledgement() || !isDerivedFromTemplate();
 }
 
-/**
- * @returns {{ upstreamRef: string, upstreamFiles: string[] } | null}
- */
-function getBlockedUpstreamFiles() {
+function getBlockedUpstreamFiles(): { upstreamRef: string; upstreamFiles: string[] } | null {
   const upstreamRef = resolveUpstreamRef();
   if (!upstreamRef) {
     warnMissingUpstreamRef();
@@ -210,7 +172,7 @@ function getBlockedUpstreamFiles() {
   return { upstreamRef, upstreamFiles };
 }
 
-function main() {
+function main(): void {
   if (shouldSkipCheck()) {
     return;
   }

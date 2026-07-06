@@ -40,7 +40,7 @@ function getArgValue(args, flag) {
  */
 function showHelp() {
   console.log(`
-Usage: node scripts/setup.js [OPTIONS]
+Usage: bun scripts/setup.js [OPTIONS]
 
 Setup script for Next Convex Starter App. Initializes Convex backend and
 configures application branding.
@@ -60,13 +60,13 @@ OPTIONS:
 
 EXAMPLES:
   # Interactive mode (default)
-  node scripts/setup.js
+  bun scripts/setup.js
   
   # Skip branding setup
-  node scripts/setup.js --skip-branding
+  bun scripts/setup.js --skip-branding
   
   # Non-interactive mode with branding
-  node scripts/setup.js --non-interactive \\
+  bun scripts/setup.js --non-interactive \\
     --app-name "My Awesome App" \\
     --app-short-name "MyApp" \\
     --app-description "My app description" \\
@@ -74,7 +74,7 @@ EXAMPLES:
     --package-name "my-awesome-app"
   
   # Non-interactive mode, skip branding if already configured
-  node scripts/setup.js -y
+  bun scripts/setup.js -y
 
 NOTES:
   - The script is idempotent and safe to run multiple times

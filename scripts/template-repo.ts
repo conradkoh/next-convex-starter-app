@@ -1,8 +1,13 @@
 /**
  * Canonical template repository identity for fork/upstream checks.
  */
-const TEMPLATE_REPO_URL = 'https://github.com/conradkoh/next-convex-starter-app';
-const TEMPLATE_OWNER_REPO = 'conradkoh/next-convex-starter-app';
+export const TEMPLATE_REPO_URL = 'https://github.com/conradkoh/next-convex-starter-app';
+export const TEMPLATE_OWNER_REPO = 'conradkoh/next-convex-starter-app';
+
+export type GitHubOwnerRepo = {
+  owner: string;
+  repo: string;
+};
 
 /**
  * Parse owner/repo from a GitHub URL.
@@ -10,11 +15,8 @@ const TEMPLATE_OWNER_REPO = 'conradkoh/next-convex-starter-app';
  *   https://github.com/owner/repo
  *   https://github.com/owner/repo.git
  *   git@github.com:owner/repo.git
- *
- * @param {string} repoUrl
- * @returns {{ owner: string, repo: string } | null}
  */
-function parseGitHubOwnerRepo(repoUrl) {
+export function parseGitHubOwnerRepo(repoUrl: string): GitHubOwnerRepo | null {
   const httpsMatch = repoUrl.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/);
   if (httpsMatch) {
     return { owner: httpsMatch[1], repo: httpsMatch[2] };
@@ -22,11 +24,7 @@ function parseGitHubOwnerRepo(repoUrl) {
   return null;
 }
 
-/**
- * @param {string | null | undefined} remoteUrl
- * @returns {string | null} Normalized "owner/repo" or null
- */
-function normalizeOwnerRepo(remoteUrl) {
+function normalizeOwnerRepo(remoteUrl: string | null | undefined): string | null {
   if (!remoteUrl) {
     return null;
   }
@@ -39,17 +37,6 @@ function normalizeOwnerRepo(remoteUrl) {
   return `${parsed.owner}/${parsed.repo}`;
 }
 
-/**
- * @param {string | null | undefined} remoteUrl
- * @returns {boolean}
- */
-function isTemplateRemote(remoteUrl) {
+export function isTemplateRemote(remoteUrl: string | null | undefined): boolean {
   return normalizeOwnerRepo(remoteUrl) === TEMPLATE_OWNER_REPO;
 }
-
-module.exports = {
-  TEMPLATE_REPO_URL,
-  TEMPLATE_OWNER_REPO,
-  parseGitHubOwnerRepo,
-  isTemplateRemote,
-};
