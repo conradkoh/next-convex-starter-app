@@ -5,9 +5,14 @@
 /.next/
 /out/
 
-# capacitor native projects (added via `cap add ios|android`)
+# capacitor native projects (ios generated in CI; android added locally)
 /ios/
 /android/
+
+# electron build artifacts (source in electron/ is committed)
+/electron/app/
+/electron/build/
+/electron/dist/
 
 # misc
 .DS_Store

@@ -25,7 +25,8 @@
     "remark-gfm",
     "react-icons",
     "bun",
-    "@radix-ui/react-tooltip"
+    "@radix-ui/react-tooltip",
+    "@capacitor/ios"
   ],
   "ignoreUnresolvedImports": [
     "**/convex/_generated/**",

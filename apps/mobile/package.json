@@ -7,16 +7,21 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "cap:sync": "next build && cap sync",
+    "cap:sync:ios": "next build && cap sync ios",
+    "cap:sync:electron": "next build && cap sync @capacitor-community/electron",
+    "build:macos": "pnpm cap:sync:electron && cd electron && npm run electron:make -- --mac",
     "cap:open:ios": "cap open ios",
     "cap:open:android": "cap open android"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.2",
+    "@capacitor/ios": "^7.6.7",
     "next": "16.2.3",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@capacitor-community/electron": "^5.0.1",
     "@capacitor/cli": "^7.4.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
