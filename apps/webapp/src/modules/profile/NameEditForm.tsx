@@ -1,11 +1,10 @@
 'use client';
 
-import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { api } from '@workspace/backend/convex/_generated/api';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -554,7 +553,7 @@ function _renderThirdPartyAccounts(
                         <span className="ml-1">({googleProvider.connectedEmail})</span>
                       )}
                     </span>
-                    <ChevronDownIcon className="h-3 w-3" />
+                    <ChevronDown className="h-3 w-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem

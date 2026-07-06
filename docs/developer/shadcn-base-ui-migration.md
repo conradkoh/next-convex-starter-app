@@ -25,7 +25,7 @@ The migration is **opt-in**: your existing Radix-based components continue to wo
 | Style          | `base-vega` (Base UI backend)                     |
 | Components     | 26 components in `apps/webapp/src/components/ui/` |
 | Base UI        | `@base-ui/react`                                  |
-| Radix retained | `@radix-ui/react-icons` only (icon package)       |
+| Radix retained | None — all icons use `lucide-react`               |
 
 > **Pre-migration** this project used `new-york` style with 16 `@radix-ui/react-*` primitive packages.
 
@@ -166,7 +166,7 @@ pnpm remove \
   @radix-ui/react-tooltip
 ```
 
-> Keep `@radix-ui/react-icons` — it is an icon package, not a primitive, and is still used throughout the project.
+> Keep icon imports on `lucide-react` (the project `iconLibrary` in `components.json`).
 
 ---
 
