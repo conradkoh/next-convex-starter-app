@@ -51,7 +51,8 @@
     "**/vitest.config.{ts,mts}",
     "**/next.config.{ts,js,mjs}",
     "**/playwright.config.{ts,js}",
-    "**/eslint.config.{ts,js,mjs}"
+    "**/eslint.config.{ts,js,mjs}",
+    "**/apps/mobile/electron/**"
   ],
   "ignoreExports": [
     { "file": "**/components/ui/**", "exports": ["*"] }
