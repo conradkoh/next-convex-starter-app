@@ -111,7 +111,31 @@ Valid transitions:
 
 **The bug**: Non-terminal states (`Requested`, `InProgress`) are never cleaned up. Only `Completed`, `Failed`, and `Canceled` entries get deleted by the retention cleanup logic. A crashed export leaves a permanent blocker.
 
+## Automated Fix (Recommended)
+
+Run the bundled Bun script to clear stale non-terminal exports:
+
+```bash
+pnpm fix:convex-stale-exports
+```
+
+Preview what would be deleted without making changes:
+
+```bash
+pnpm fix:convex-stale-exports -- --dry-run
+```
+
+Delete all export records (nuclear option):
+
+```bash
+pnpm fix:convex-stale-exports -- --all
+```
+
+The script uses Bun's built-in SQLite driver (`bun:sqlite`) and targets the default local database at `services/backend/.convex/local/default/convex_local_backend.sqlite3`. Use `--db-path` to override.
+
 ## How to Fix: Clear Stale Exports via SQLite
+
+If you prefer manual steps or the script is unavailable, use SQLite directly:
 
 ### Locate the database
 
