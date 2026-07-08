@@ -1,4 +1,10 @@
 #!/usr/bin/env bun
+/**
+ * Clear stale non-terminal export records from the Convex local backend SQLite DB.
+ *
+ * Background and maintenance instructions:
+ *   docs/developer/convex-local-backend-stale-export-fix.md
+ */
 
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -7,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { Database } from 'bun:sqlite';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
+const DOC_RELATIVE_PATH = 'docs/developer/convex-local-backend-stale-export-fix.md';
 const DEFAULT_DB_PATH = join(
   scriptDir,
   '..',
@@ -43,6 +50,9 @@ const BOOLEAN_FLAGS: Record<string, keyof Pick<CliArgs, 'help' | 'dryRun' | 'del
 
 function printHelp(): void {
   console.log(`Fix stale Convex local backend export records.
+
+Background and how to update this understanding:
+  ${DOC_RELATIVE_PATH}
 
 Usage:
   bun scripts/fix-convex-stale-exports.ts [options]

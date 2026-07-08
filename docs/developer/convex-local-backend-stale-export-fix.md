@@ -1,5 +1,7 @@
 # Convex Local Backend: Stale Export Fix
 
+> **Context as of 2026-07-08.** This document captures our understanding of the Convex local backend stale-export issue based on analysis of [`get-convex/convex-backend`](https://github.com/get-convex/convex-backend) at commit `3461a926`. When you revisit this guide later, treat the date as a freshness signal — upstream code and Convex versions may have changed. Use the [automated fix script](#automated-fix-recommended) for the operational fix, and see [Updating this guide](#updating-this-guide) for how to refresh our understanding.
+
 ## Problem
 
 When upgrading the local Convex backend (e.g. via `npx convex dev`), the upgrade process fails with:
@@ -113,6 +115,8 @@ Valid transitions:
 
 ## Automated Fix (Recommended)
 
+The fix is automated by [`scripts/fix-convex-stale-exports.ts`](../../scripts/fix-convex-stale-exports.ts) (run via `pnpm fix:convex-stale-exports`). The script's `--help` output also points back to this document for background context.
+
 Run the bundled Bun script to clear stale non-terminal exports:
 
 ```bash
@@ -194,3 +198,14 @@ for (const exp of existingExports) {
 ```
 
 This would require exposing a `list_exports` and `cancel_export` endpoint to the CLI.
+
+## Updating this guide
+
+When Convex or the local backend changes, refresh this document so future readers are not working from stale analysis:
+
+1. **Reproduce or confirm the issue** — capture the exact error message and Convex/backend versions in use.
+2. **Re-clone or update the upstream repo** — see [Repo Information](#repo-information) for the clone path and branch used during analysis.
+3. **Trace the code path** — follow the error from CLI → HTTP handler → application layer → `_exports` table (sections above show the last known trace).
+4. **Update the as-of date** at the top of this file to today's date.
+5. **Verify the automated fix still applies** — run `pnpm fix:convex-stale-exports -- --dry-run` against a local database with stuck exports, or inspect `_exports` manually per [How to Fix: Clear Stale Exports via SQLite](#how-to-fix-clear-stale-exports-via-sqlite).
+6. **Adjust the script if needed** — implementation lives in [`scripts/fix-convex-stale-exports.ts`](../../scripts/fix-convex-stale-exports.ts); keep its `--help` text in sync with any doc changes.
