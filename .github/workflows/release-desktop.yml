@@ -1,0 +1,92 @@
+name: Release Desktop (macOS)
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    name: Check desktop version bump
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.version.outputs.changed }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect version change
+        id: version
+        run: bash apps/desktop/scripts/check-version-bump.sh
+
+  build-macos:
+    name: Build macOS desktop app
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'true'
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web assets and sync Electron
+        working-directory: apps/desktop
+        run: |
+          pnpm build
+          pnpm exec cap sync @capacitor-community/electron
+          bash scripts/prepare-release-build.sh
+
+      - name: Build macOS DMG
+        working-directory: apps/desktop/electron
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm install
+          npm run electron:make -- --mac
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ needs.check-version.outputs.version }}
+          path: apps/desktop/electron/dist/*.dmg
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [check-version, build-macos]
+    if: needs.check-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-${{ needs.check-version.outputs.version }}
+          path: release/macos
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v${{ needs.check-version.outputs.version }}
+          name: Desktop v${{ needs.check-version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release/macos/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

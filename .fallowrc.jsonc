@@ -25,7 +25,8 @@
     "remark-gfm",
     "react-icons",
     "bun",
-    "@radix-ui/react-tooltip"
+    "@radix-ui/react-tooltip",
+    "@capacitor-community/electron"
   ],
   "ignoreUnresolvedImports": [
     "**/convex/_generated/**",
@@ -50,7 +51,8 @@
     "**/vitest.config.{ts,mts}",
     "**/next.config.{ts,js,mjs}",
     "**/playwright.config.{ts,js}",
-    "**/eslint.config.{ts,js,mjs}"
+    "**/eslint.config.{ts,js,mjs}",
+    "**/apps/desktop/electron/**"
   ],
   "ignoreExports": [
     { "file": "**/components/ui/**", "exports": ["*"] }
