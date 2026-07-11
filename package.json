@@ -49,9 +49,6 @@
     "turbo": "^2.9.15",
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "@radix-ui/react-tooltip": "^1.1.8"
-  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "bun",
@@ -59,9 +56,6 @@
       "sharp",
       "turbo",
       "unrs-resolver"
-    ],
-    "overrides": {
-      "@radix-ui/react-dismissable-layer": "1.1.10"
-    }
+    ]
   }
 }
