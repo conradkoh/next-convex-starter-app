@@ -25,22 +25,41 @@
     "remark-gfm",
     "react-icons",
     "bun",
-    "@radix-ui/react-tooltip"
+    "@radix-ui/react-alert-dialog",
+    "@radix-ui/react-checkbox",
+    "@radix-ui/react-collapsible",
+    "@radix-ui/react-dialog",
+    "@radix-ui/react-dropdown-menu",
+    "@radix-ui/react-label",
+    "@radix-ui/react-popover",
+    "@radix-ui/react-progress",
+    "@radix-ui/react-radio-group",
+    "@radix-ui/react-scroll-area",
+    "@radix-ui/react-select",
+    "@radix-ui/react-separator",
+    "@radix-ui/react-slot",
+    "@radix-ui/react-switch",
+    "@radix-ui/react-tabs",
+    "@radix-ui/react-tooltip",
+    "class-variance-authority",
+    "react-day-picker",
+    "vaul",
   ],
   "ignoreUnresolvedImports": [
     "**/convex/_generated/**",
     "../migration.js",
     "./dataModel.js",
-    "./_generated/dataModel.js"
+    "./_generated/dataModel.js",
   ],
   "ignoreExportsUsedInFile": {
     "interface": true,
-    "type": true
+    "type": true,
   },
   // Test files, generated code, and ShadCN export barrels (UI stays in import graph)
   "ignorePatterns": [
     "**/_generated/**",
     "**/convex/_generated/**",
+    "**/components/ui/**",
     "**/*.test.{ts,tsx}",
     "**/*.spec.{ts,tsx}",
     "**/__tests__/**",
@@ -50,11 +69,9 @@
     "**/vitest.config.{ts,mts}",
     "**/next.config.{ts,js,mjs}",
     "**/playwright.config.{ts,js}",
-    "**/eslint.config.{ts,js,mjs}"
+    "**/eslint.config.{ts,js,mjs}",
   ],
-  "ignoreExports": [
-    { "file": "**/components/ui/**", "exports": ["*"] }
-  ],
+  "ignoreExports": [{ "file": "**/components/ui/**", "exports": ["*"] }],
   "duplicates": {
     "ignore": [
       "**/_generated/**",
@@ -66,8 +83,8 @@
       "apps/webapp/src/application/auth/**",
       "services/backend/application/auth/permissions.ts",
       "services/backend/application/auth/roles.ts",
-      "services/backend/application/auth/resolve.ts"
-    ]
+      "services/backend/application/auth/resolve.ts",
+    ],
   },
   "health": {
     "ignore": [
@@ -75,10 +92,10 @@
       "**/components/ui/**",
       "**/*.test.{ts,tsx}",
       "**/*.spec.{ts,tsx}",
-      "**/tests/**"
-    ]
+      "**/tests/**",
+    ],
   },
   "audit": {
-    "gate": "new-only"
-  }
+    "gate": "new-only",
+  },
 }
