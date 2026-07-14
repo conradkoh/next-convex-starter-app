@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "CONVEX_NON_INTERACTIVE=true convex dev",
     "deploy": "convex deploy",
-    "migrate": "convex run migrations:runAll",
+    "migrate": "bun ../../scripts/migrate.ts",
     "typecheck": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest"
