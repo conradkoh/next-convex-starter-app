@@ -45,6 +45,10 @@ export default async function MyPage({ params }: { params: Promise<{ id: string 
 }
 ```
 
+### Reactive local state (Legend State)
+
+For **real-time local stores** and coordination that would otherwise use `useEffect` to sync Convex data into `useState`, use [Legend State signals](docs/developer/legend-state-signals.md) (`observable` / `computed` / `useObserve`) — keep Convex as server SSOT and `useEffect` for DOM/timers only.
+
 ### Authentication (Frontend)
 
 Use session-aware hooks from convex-helpers:
