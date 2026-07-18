@@ -1,6 +1,9 @@
+import { featureFlags } from '@workspace/backend/config/featureFlags';
 import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
+  const startUrl = featureFlags.disableLogin ? '/' : '/app';
+
   return {
     name: 'Next Convex App',
     short_name: 'Next Convex',
@@ -62,7 +65,7 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: 'maskable',
       },
     ],
-    start_url: '.',
+    start_url: startUrl,
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: '#ffffff',
