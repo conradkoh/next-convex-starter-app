@@ -2,6 +2,7 @@ import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache/provider';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
+import { Suspense } from 'react';
 
 import './globals.css';
 import { ConvexClientProvider } from '@/app/ConvexClientProvider';
@@ -9,6 +10,7 @@ import { Navigation } from '@/components/Navigation';
 import { Toaster } from '@/components/ui/sonner';
 import { AppInfoProvider } from '@/modules/app/AppInfoProvider';
 import { AuthProvider } from '@/modules/auth/AuthProvider';
+import { PwaManifestUpdater } from '@/modules/pwa/PwaManifestUpdater';
 import { ThemeProvider, themeScript } from '@/modules/theme/ThemeProvider';
 
 const geistSans = Geist({
@@ -67,6 +69,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Suspense fallback={null}>
+          <PwaManifestUpdater />
+        </Suspense>
         <ConvexClientProvider>
           <ConvexQueryCacheProvider>
             <AppInfoProvider>
