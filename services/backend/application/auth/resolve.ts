@@ -15,23 +15,20 @@ function filterKnownRoles(names: readonly string[]): AppRole[] {
 
 export type UserForPermissions = Pick<Doc<'users'>, 'accessLevel' | 'roleNames'>;
 
-function rolesFromAccessLevel(accessLevel: UserForPermissions['accessLevel']): AppRole[] {
-  if (accessLevel === 'system_admin') {
-    return ['system_admin'];
-  }
-  return ['user'];
-}
-
 /**
  * Resolves application roles for a user.
- * Phase 1b: reads `roleNames` when present; falls back to legacy `accessLevel`.
+ * System admins are always resolved from `accessLevel` (no migration required).
+ * Other users: `roleNames` when present, otherwise default to `user`.
  */
 export function getRolesForUser(user: UserForPermissions): AppRole[] {
+  if (user.accessLevel === 'system_admin') {
+    return ['system_admin'];
+  }
   const fromRoleNames = user.roleNames ? filterKnownRoles(user.roleNames) : [];
   if (fromRoleNames.length > 0) {
     return fromRoleNames;
   }
-  return rolesFromAccessLevel(user.accessLevel);
+  return ['user'];
 }
 
 /**

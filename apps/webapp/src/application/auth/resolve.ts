@@ -14,13 +14,6 @@ function filterKnownRoles(names: readonly string[]): AppRole[] {
   return names.filter((name): name is AppRole => knownRoles.has(name as AppRole));
 }
 
-function rolesFromAccessLevel(accessLevel?: 'user' | 'system_admin'): AppRole[] {
-  if (accessLevel === 'system_admin') {
-    return ['system_admin'];
-  }
-  return ['user'];
-}
-
 /** Minimal user shape for permission resolution (matches backend UserForPermissions). */
 export type UserForPermissions = {
   accessLevel?: 'user' | 'system_admin';
@@ -28,11 +21,14 @@ export type UserForPermissions = {
 };
 
 export function getRolesForUser(user: UserForPermissions): AppRole[] {
+  if (user.accessLevel === 'system_admin') {
+    return ['system_admin'];
+  }
   const fromRoleNames = user.roleNames ? filterKnownRoles(user.roleNames) : [];
   if (fromRoleNames.length > 0) {
     return fromRoleNames;
   }
-  return rolesFromAccessLevel(user.accessLevel);
+  return ['user'];
 }
 
 export function unionPermissionsForRoles(roles: readonly AppRole[]): Set<RolePermissionGrant> {

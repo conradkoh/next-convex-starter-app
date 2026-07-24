@@ -223,22 +223,23 @@ permissions: ['users:*', 'attendance:read'] as const satisfies readonly RolePerm
 
 ### 2. Assign roles to users
 
-**Phase 1b (current):** `roleNames` on `users` is the primary assignment field. Set an array of role strings matching keys in `roleDefinitions`:
+**Phase 1b (current):** `roleNames` on `users` is the primary assignment field for non-admin users. Set an array of role strings matching keys in `roleDefinitions`:
 
 | `roleNames` value     | Resolved roles                |
 | --------------------- | ----------------------------- |
 | `['user']`            | Standard signed-in user       |
 | `['user', 'manager']` | User with manager permissions |
-| `['system_admin']`    | Platform system administrator |
 
-**Legacy fallback:** when `roleNames` is absent or empty (or contains only unknown strings), `getRolesForUser` falls back to `accessLevel`:
+**System administrators:** `accessLevel: 'system_admin'` always resolves to `['system_admin']` — no `roleNames` migration required. This takes priority over any `roleNames` value on the document.
 
-| `accessLevel`           | Resolved roles     |
-| ----------------------- | ------------------ |
-| `undefined` or `'user'` | `['user']`         |
-| `'system_admin'`        | `['system_admin']` |
+**Legacy fallback (non-admin users):** when `roleNames` is absent, empty, or contains only unknown strings, `getRolesForUser` defaults to `['user']`:
 
-Run `npx convex run migrations:run '{fn: "migrations:backfillUserRoleNames"}'` to backfill `roleNames` from existing `accessLevel` values.
+| `accessLevel`           | Resolved roles                                         |
+| ----------------------- | ------------------------------------------------------ |
+| `undefined` or `'user'` | `['user']`                                             |
+| `'system_admin'`        | `['system_admin']` (always, regardless of `roleNames`) |
+
+Run `npx convex run migrations:run '{fn: "migrations:backfillUserRoleNames"}'` to backfill `roleNames` for non-admin users (optional for system admins).
 
 Custom roles such as `manager` are defined in `roleDefinitions` and assignable via `roleNames`. There is no admin UI for role assignment yet — set `roleNames` directly on user documents or via a future mutation.
 

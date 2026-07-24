@@ -60,6 +60,13 @@ describe('getRolesForUser with roleNames', () => {
       'system_admin',
     ]);
   });
+
+  it('always grants system_admin when accessLevel is system_admin, regardless of roleNames', () => {
+    expect(getRolesForUser({ accessLevel: 'system_admin', roleNames: ['user'] })).toEqual([
+      'system_admin',
+    ]);
+    expect(getRolesForUser({ accessLevel: 'system_admin' })).toEqual(['system_admin']);
+  });
 });
 
 describe('hasPermission with roleNames', () => {
@@ -68,6 +75,14 @@ describe('hasPermission with roleNames', () => {
     expect(hasPermission(user, 'attendance:read')).toBe(true);
     expect(hasPermission(user, 'users:list')).toBe(true);
     expect(hasPermission(user, 'system_admin:access')).toBe(false);
+  });
+
+  it('grants system admin permissions without roleNames migration', () => {
+    const user = { accessLevel: 'system_admin' as const };
+    expect(hasPermission(user, 'system_admin:access')).toBe(true);
+    expect(
+      hasPermission({ accessLevel: 'system_admin', roleNames: ['user'] }, 'system_admin:access')
+    ).toBe(true);
   });
 });
 
