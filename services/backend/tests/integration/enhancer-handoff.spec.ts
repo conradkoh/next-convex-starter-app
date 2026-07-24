@@ -241,6 +241,10 @@ describe('web.enhancer.index enqueue / recordAttemptFailure / complete lifecycle
         maxAttempts: 3,
         createdAt: Date.now(),
         runningSince: Date.now(),
+        pendingHandoffArgs: {
+          senderRole: 'planner',
+          targetRole: 'builder',
+        },
       });
     });
 
