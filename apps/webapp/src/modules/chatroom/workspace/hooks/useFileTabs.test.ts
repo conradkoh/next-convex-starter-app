@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { EditorTab, RightPaneTab } from './useFileTabs';
-import { editorTabKey, useFileTabs } from './useFileTabs';
+import { computeEditorSplitDrop, editorTabKey, useFileTabs } from './useFileTabs';
 
 const CHATROOM_A = 'cr-a';
 const CHATROOM_B = 'cr-b';
@@ -522,5 +522,69 @@ describe('useFileTabs navigateActivePreview', () => {
     // Tabs unchanged, just re-activated
     expect(result.current.rightTabs).toHaveLength(2);
     expect(result.current.activeRightTabKey).toBe('b.md::preview');
+  });
+});
+
+describe('useFileTabs openRight', () => {
+  it('moves source file to primary and opens preview in secondary when previewing a secondary tab', () => {
+    const { result } = renderHook(() => useFileTabs({ chatroomId: CHATROOM_A }));
+
+    act(() => {
+      result.current.pinTab('docs/readme.md');
+      result.current.pinTab('src/other.ts');
+      result.current.handleEditorSplitDrop('src/other.ts', 'right');
+    });
+
+    act(() => {
+      result.current.openRight('src/other.ts', 'preview');
+    });
+
+    expect(
+      result.current.tabs.some((t) => t.kind === 'preview' && t.filePath === 'src/other.ts')
+    ).toBe(true);
+    expect(result.current.editorSplit?.secondaryTabKeys).toEqual(['src/other.ts::preview']);
+    expect(result.current.editorSplit?.activeSecondaryTabKey).toBe('src/other.ts::preview');
+    expect(result.current.activeTabKey).toBe('src/other.ts');
+  });
+
+  it('keeps other secondary tabs when previewing a primary tab', () => {
+    const { result } = renderHook(() => useFileTabs({ chatroomId: CHATROOM_A }));
+
+    act(() => {
+      result.current.pinTab('docs/readme.md');
+      result.current.pinTab('src/other.ts');
+      result.current.handleEditorSplitDrop('src/other.ts', 'right');
+    });
+
+    act(() => {
+      result.current.openRight('docs/readme.md', 'preview');
+    });
+
+    expect(result.current.editorSplit?.secondaryTabKeys).toEqual([
+      'src/other.ts',
+      'docs/readme.md::preview',
+    ]);
+    expect(result.current.editorSplit?.activeSecondaryTabKey).toBe('docs/readme.md::preview');
+    expect(result.current.activeTabKey).toBe('docs/readme.md');
+  });
+});
+
+describe('computeEditorSplitDrop', () => {
+  it('swaps panes when moving sole primary tab to secondary', () => {
+    const result = computeEditorSplitDrop({
+      tabKey: 'agentic-query:q1',
+      side: 'right',
+      activeTabKey: 'agentic-query:q1',
+      editorSplit: {
+        enabled: true,
+        secondaryTabKeys: ['src/file.ts'],
+        activeSecondaryTabKey: 'src/file.ts',
+      },
+      tabKeysInOrder: ['agentic-query:q1', 'src/file.ts'],
+    });
+
+    expect(result.nextActiveTabKey).toBe('src/file.ts');
+    expect(result.nextEditorSplit?.secondaryTabKeys).toEqual(['agentic-query:q1']);
+    expect(result.nextEditorSplit?.activeSecondaryTabKey).toBe('agentic-query:q1');
   });
 });
