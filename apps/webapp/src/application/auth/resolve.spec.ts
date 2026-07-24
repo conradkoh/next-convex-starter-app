@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { allPermissions, type Permission } from '../permissions';
+import { allPermissions, type Permission } from './permissions';
 import {
   getPermissionsForUser,
   getResolvedPermissionsForUser,
@@ -8,8 +8,8 @@ import {
   hasPermission,
   permissionGrantMatches,
   unionPermissionsForRoles,
-} from '../resolve';
-import { systemAdminPermissions } from '../roles';
+} from './resolve';
+import { systemAdminPermissions } from './roles';
 
 describe('permissionGrantMatches', () => {
   it('matches exact permissions', () => {

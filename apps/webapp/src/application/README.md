@@ -4,7 +4,7 @@ Application-specific (non-framework) frontend code.
 
 ## Auth (`application/auth/`)
 
-Mirrors backend `permissions.ts` and `roles.ts` (must stay in sync — `__tests__/rbac-registry-sync.spec.ts`).
+Mirrors backend `permissions.ts` and `roles.ts` (must stay in sync — `rbac-registry-sync.spec.ts`).
 
 | Export                               | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |

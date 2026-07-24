@@ -3,8 +3,8 @@ import { allPermissions as backendPermissions } from '@workspace/backend/applica
 import { roleDefinitions as backendRoles } from '@workspace/backend/application/auth/roles';
 import { describe, expect, it } from 'vitest';
 
-import { allPermissions as webappPermissions } from '../permissions';
-import { roleDefinitions as webappRoles } from '../roles';
+import { allPermissions as webappPermissions } from './permissions';
+import { roleDefinitions as webappRoles } from './roles';
 
 describe('RBAC registry sync (backend vs webapp)', () => {
   it('has matching permission keys', () => {

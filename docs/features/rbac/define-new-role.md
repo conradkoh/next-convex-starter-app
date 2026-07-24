@@ -2,6 +2,18 @@
 
 This guide explains how to define application permissions and roles, enforce them in Convex, and use them in the Next.js webapp. RBAC is **declarative and code-defined** in `application/auth/` — not stored in database tables in the current phase.
 
+## Reference implementation (Phase 1b)
+
+Forks and downstream repos adopting multi-role assignment should use [**PR #94 — feat(rbac): add users.roleNames for multi-role assignment (Phase 1b)**](https://github.com/conradkoh/next-convex-starter-app/pull/94) as the canonical change set. That PR introduces:
+
+- `roleNames` optional array on `users` (Convex schema)
+- `getRolesForUser` resolution: `accessLevel: 'system_admin'` first (no migration required for system admins), then `roleNames`, then default `['user']`
+- `manager` role in `roleDefinitions` (backend + webapp)
+- `backfillUserRoleNames` migration for non-admin users
+- Unit tests in `application/auth/resolve.spec.ts` and `rbac-registry-sync.spec.ts`
+
+Port that diff when bringing the same capability into another repo.
+
 ---
 
 ## Architecture
@@ -185,7 +197,7 @@ pnpm typecheck
 pnpm test
 ```
 
-Relevant tests: `application/auth/__tests__/resolve.spec.ts`, `rbac-registry-sync.spec.ts`.
+Relevant tests: `application/auth/resolve.spec.ts`, `rbac-registry-sync.spec.ts`.
 
 ---
 
@@ -267,7 +279,7 @@ flowchart LR
 - **`permissionGrantMatches`** — exact key, `*`, or `resource:*`.
 - **`getResolvedPermissionsForUser`** — filters the registry to concrete keys the user holds (used for `AuthState.permissions`).
 
-For logic details and edge cases, see `resolve.ts` and `__tests__/resolve.spec.ts`.
+For logic details and edge cases, see `resolve.ts` and `resolve.spec.ts`.
 
 ---
 
