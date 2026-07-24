@@ -22,7 +22,7 @@ Use `authState.permissions` (server-resolved). **Never** gate on `accessLevel` o
 
 ### Add a role
 
-Append to `roleDefinitions` in both packages. Custom roles are not assignable until Phase 1b (`users.roleNames`).
+Append to `roleDefinitions` in both packages. Custom roles are assignable via `users.roleNames` (Phase 1b).
 
 ### Reference
 

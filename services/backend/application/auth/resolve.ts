@@ -1,18 +1,37 @@
 import { allPermissions, type Permission } from './permissions';
-import { type AppRole, getPermissionsForRole, type RolePermissionGrant } from './roles';
+import {
+  type AppRole,
+  getPermissionsForRole,
+  roleDefinitions,
+  type RolePermissionGrant,
+} from './roles';
 import type { Doc } from '../../convex/_generated/dataModel';
 
-export type UserForPermissions = Pick<Doc<'users'>, 'accessLevel'>;
+const knownRoles = new Set<AppRole>(roleDefinitions.map((d) => d.role));
 
-/**
- * Resolves application roles for a user.
- * Phase 1: maps legacy `accessLevel` to built-in roles.
- */
-export function getRolesForUser(user: UserForPermissions): AppRole[] {
-  if (user.accessLevel === 'system_admin') {
+function filterKnownRoles(names: readonly string[]): AppRole[] {
+  return names.filter((name): name is AppRole => knownRoles.has(name as AppRole));
+}
+
+export type UserForPermissions = Pick<Doc<'users'>, 'accessLevel' | 'roleNames'>;
+
+function rolesFromAccessLevel(accessLevel: UserForPermissions['accessLevel']): AppRole[] {
+  if (accessLevel === 'system_admin') {
     return ['system_admin'];
   }
   return ['user'];
+}
+
+/**
+ * Resolves application roles for a user.
+ * Phase 1b: reads `roleNames` when present; falls back to legacy `accessLevel`.
+ */
+export function getRolesForUser(user: UserForPermissions): AppRole[] {
+  const fromRoleNames = user.roleNames ? filterKnownRoles(user.roleNames) : [];
+  if (fromRoleNames.length > 0) {
+    return fromRoleNames;
+  }
+  return rolesFromAccessLevel(user.accessLevel);
 }
 
 /**

@@ -36,6 +36,41 @@ describe('getRolesForUser', () => {
   });
 });
 
+describe('getRolesForUser with roleNames', () => {
+  it('reads roleNames when present', () => {
+    expect(getRolesForUser({ roleNames: ['user', 'manager'] })).toEqual(['user', 'manager']);
+  });
+
+  it('falls back to accessLevel when roleNames is empty', () => {
+    expect(getRolesForUser({ roleNames: [], accessLevel: 'system_admin' })).toEqual([
+      'system_admin',
+    ]);
+  });
+
+  it('falls back to accessLevel when roleNames is undefined', () => {
+    expect(getRolesForUser({ accessLevel: 'user' })).toEqual(['user']);
+  });
+
+  it('filters unknown role names', () => {
+    expect(getRolesForUser({ roleNames: ['user', 'nonexistent'] })).toEqual(['user']);
+  });
+
+  it('falls back to accessLevel when all roleNames are unknown', () => {
+    expect(getRolesForUser({ roleNames: ['bogus'], accessLevel: 'system_admin' })).toEqual([
+      'system_admin',
+    ]);
+  });
+});
+
+describe('hasPermission with roleNames', () => {
+  it('unions permissions across multiple roles', () => {
+    const user = { roleNames: ['user', 'manager'] };
+    expect(hasPermission(user, 'attendance:read')).toBe(true);
+    expect(hasPermission(user, 'users:list')).toBe(true);
+    expect(hasPermission(user, 'system_admin:access')).toBe(false);
+  });
+});
+
 describe('hasPermission', () => {
   it('grants default user permissions', () => {
     const user = { accessLevel: 'user' as const };

@@ -199,9 +199,7 @@ Append to `roleDefinitions`:
 export const roleDefinitions = [
   {
     role: 'user',
-    permissions: [
-      /* ... */
-    ] as const satisfies readonly Permission[],
+    permissions: [/* ... */] as const satisfies readonly Permission[],
   },
   {
     role: 'manager',
@@ -225,14 +223,24 @@ permissions: ['users:*', 'attendance:read'] as const satisfies readonly RolePerm
 
 ### 2. Assign roles to users
 
-**Today (Phase 1):** only `accessLevel` on `users` drives roles in `getRolesForUser`:
+**Phase 1b (current):** `roleNames` on `users` is the primary assignment field. Set an array of role strings matching keys in `roleDefinitions`:
+
+| `roleNames` value     | Resolved roles                |
+| --------------------- | ----------------------------- |
+| `['user']`            | Standard signed-in user       |
+| `['user', 'manager']` | User with manager permissions |
+| `['system_admin']`    | Platform system administrator |
+
+**Legacy fallback:** when `roleNames` is absent or empty (or contains only unknown strings), `getRolesForUser` falls back to `accessLevel`:
 
 | `accessLevel`           | Resolved roles     |
 | ----------------------- | ------------------ |
 | `undefined` or `'user'` | `['user']`         |
 | `'system_admin'`        | `['system_admin']` |
 
-Custom roles such as `manager` can be defined in `roleDefinitions` but are **not active** until users can be assigned multiple roles (planned Phase 1b: `users.roleNames`). Do not uncomment placeholder roles for production assignment until that field exists and `getRolesForUser` reads it.
+Run `npx convex run migrations:run '{fn: "migrations:backfillUserRoleNames"}'` to backfill `roleNames` from existing `accessLevel` values.
+
+Custom roles such as `manager` are defined in `roleDefinitions` and assignable via `roleNames`. There is no admin UI for role assignment yet — set `roleNames` directly on user documents or via a future mutation.
 
 ### 3. Use the same backend and frontend patterns
 
