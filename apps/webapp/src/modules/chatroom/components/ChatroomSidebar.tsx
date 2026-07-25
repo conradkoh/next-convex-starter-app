@@ -3,7 +3,16 @@
 import { api } from '@workspace/backend/convex/_generated/api';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
-import { Archive, ChevronDown, MessageSquare, Play, Square, Star } from 'lucide-react';
+import {
+  Archive,
+  ChevronDown,
+  Mail,
+  MailOpen,
+  MessageSquare,
+  Play,
+  Square,
+  Star,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -40,6 +49,8 @@ const ChatroomSidebarItem = memo(function ChatroomSidebarItem({
   const sendCommand = useSessionMutation(api.machines.sendCommand);
   const restartOfflineAgents = useSessionMutation(api.machines.restartOfflineAgentsFromConfig);
   const updateStatus = useSessionMutation(api.chatrooms.updateStatus);
+  const markAsRead = useSessionMutation(api.chatrooms.markAsRead);
+  const markAsUnread = useSessionMutation(api.chatrooms.markAsUnread);
 
   const handleStop = useCallback(
     async (e: React.MouseEvent) => {
@@ -87,20 +98,32 @@ const ChatroomSidebarItem = memo(function ChatroomSidebarItem({
     [chatroom._id, isStarting, restartOfflineAgents]
   );
 
-  const handleArchive = useCallback(
-    async (e: Event) => {
-      e.preventDefault();
-      try {
-        await updateStatus({
+  const handleArchive = useCallback(async () => {
+    try {
+      await updateStatus({
+        chatroomId: chatroom._id as Id<'chatroom_rooms'>,
+        status: 'completed',
+      });
+    } catch (error) {
+      console.error('Failed to archive chat:', error);
+    }
+  }, [updateStatus, chatroom._id]);
+
+  const handleToggleReadStatus = useCallback(async () => {
+    try {
+      if (chatroom.hasUnread) {
+        await markAsRead({
           chatroomId: chatroom._id as Id<'chatroom_rooms'>,
-          status: 'completed',
         });
-      } catch (error) {
-        console.error('Failed to archive chat:', error);
+      } else {
+        await markAsUnread({
+          chatroomId: chatroom._id as Id<'chatroom_rooms'>,
+        });
       }
-    },
-    [updateStatus, chatroom._id]
-  );
+    } catch (error) {
+      console.error('Failed to update read status:', error);
+    }
+  }, [chatroom.hasUnread, chatroom._id, markAsRead, markAsUnread]);
 
   const isCompleted = chatroom.chatStatus === 'completed' || chatroom.status === 'completed';
 
@@ -169,6 +192,19 @@ const ChatroomSidebarItem = memo(function ChatroomSidebarItem({
         </ContextMenuTrigger>
         {!isCompleted && (
           <ContextMenuContent className="min-w-[160px] rounded-none">
+            <ContextMenuItem onSelect={handleToggleReadStatus} className="rounded-none">
+              {chatroom.hasUnread ? (
+                <>
+                  <MailOpen size={14} />
+                  Mark as Read
+                </>
+              ) : (
+                <>
+                  <Mail size={14} />
+                  Mark as Unread
+                </>
+              )}
+            </ContextMenuItem>
             <ContextMenuItem onSelect={handleArchive} className="rounded-none">
               <Archive size={14} />
               Archive Chat

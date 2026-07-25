@@ -17,6 +17,11 @@ import type { AgentHarness } from '../../../types/machine';
 import { ENHANCER_TARGETS } from '../constants/enhancerTargets';
 import { isEnhancerConfigActive } from '../types/enhancer';
 import type { EnhancerConfig } from '../types/enhancer';
+import {
+  enhancerConfigEntriesEqual,
+  filterFavoritesForTarget,
+  isEnhancerConfigFavoriteForTarget,
+} from '../types/enhancerConfigEntry';
 import type { EnhancerConfigEntry } from '../types/enhancerConfigEntry';
 
 interface EnhancerConfigDialogProps {
@@ -43,7 +48,6 @@ export function EnhancerConfigDialog({
   onConfirm,
   onDisable,
   favorites,
-  isFavorite: checkFavorite,
   onAddFavorite,
   onRemoveFavorite,
   onMoveFavorite,
@@ -74,13 +78,35 @@ export function EnhancerConfigDialog({
     };
   }, [targetId, agentHarness, model]);
 
-  const currentIsFavorite = currentEntry != null && checkFavorite(currentEntry);
+  const targetFavorites = useMemo(
+    () => filterFavoritesForTarget(favorites, targetId as EnhancerConfigEntry['targetId']),
+    [favorites, targetId]
+  );
+
+  const currentIsFavorite =
+    currentEntry != null &&
+    isEnhancerConfigFavoriteForTarget(
+      favorites,
+      currentEntry,
+      targetId as EnhancerConfigEntry['targetId']
+    );
 
   const handleApplyFavorite = useCallback((entry: EnhancerConfigEntry) => {
-    setTargetId(entry.targetId);
     setAgentHarness(entry.agentHarness);
     setModel(entry.model);
   }, []);
+
+  const handleMoveFavorite = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      const fromEntry = targetFavorites[fromIndex];
+      const toEntry = targetFavorites[toIndex];
+      if (!fromEntry || !toEntry) return;
+      const globalFrom = favorites.findIndex((f) => enhancerConfigEntriesEqual(f, fromEntry));
+      const globalTo = favorites.findIndex((f) => enhancerConfigEntriesEqual(f, toEntry));
+      if (globalFrom >= 0 && globalTo >= 0) onMoveFavorite(globalFrom, globalTo);
+    },
+    [favorites, targetFavorites, onMoveFavorite]
+  );
 
   const handleConfirm = useCallback(() => {
     if (!canEnable || !machineId) return;
@@ -116,13 +142,6 @@ export function EnhancerConfigDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">
-          <EnhancerConfigFavoritesList
-            favorites={favorites}
-            onApply={handleApplyFavorite}
-            onRemoveFavorite={onRemoveFavorite}
-            onMoveFavorite={onMoveFavorite}
-          />
-
           <div>
             <label className="block text-xs font-medium text-chatroom-text-secondary mb-2">
               Target
@@ -183,6 +202,13 @@ export function EnhancerConfigDialog({
               Current config is favorited
             </div>
           )}
+
+          <EnhancerConfigFavoritesList
+            favorites={targetFavorites}
+            onApply={handleApplyFavorite}
+            onRemoveFavorite={onRemoveFavorite}
+            onMoveFavorite={handleMoveFavorite}
+          />
         </div>
 
         <DialogFooter>

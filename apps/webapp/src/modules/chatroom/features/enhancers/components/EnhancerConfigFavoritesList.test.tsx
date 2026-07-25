@@ -21,7 +21,7 @@ describe('EnhancerConfigFavoritesList', () => {
       />
     );
     expect(screen.getByTestId('enhancer-config-favorites-list')).toBeInTheDocument();
-    fireEvent.click(screen.getByText(/Handoff: Planner/));
+    fireEvent.click(screen.getByText(/CLAUDE OPUS 4/));
     expect(onApply).toHaveBeenCalledWith(favorite);
   });
 
@@ -35,6 +35,25 @@ describe('EnhancerConfigFavoritesList', () => {
       />
     );
     expect(container.innerHTML).toBe('');
+  });
+
+  it('renders model on primary line and harness as subtitle', () => {
+    const longLabelFav = {
+      targetId: 'handoff:planner-to-builder' as const,
+      agentHarness: 'opencode' as const,
+      model: 'minimax/MiniMax-M2.5-highspeed',
+    };
+    render(
+      <EnhancerConfigFavoritesList
+        favorites={[longLabelFav]}
+        onApply={vi.fn()}
+        onRemoveFavorite={vi.fn()}
+        onMoveFavorite={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/MINIMAX M2\.5 HIGHSPEED/)).toBeInTheDocument();
+    expect(screen.getByText(/OpenCode/)).toBeInTheDocument();
+    expect(screen.getByTitle(/OpenCode.*MINIMAX M2\.5 HIGHSPEED/)).toBeInTheDocument();
   });
 
   it('renders move up, move down, and remove buttons', () => {
