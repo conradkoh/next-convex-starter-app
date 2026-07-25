@@ -214,9 +214,9 @@ handoffCommandGroup
       process.exit(1);
     }
 
-    // Check if enhancer should intercept planner→builder handoffs
+    // Check if enhancer should queue async check-in for planner→enhancer handoffs
     const shouldEnhance =
-      options.role.toLowerCase() === 'planner' && options.nextRole.toLowerCase() === 'builder';
+      options.role.toLowerCase() === 'planner' && options.nextRole.toLowerCase() === 'enhancer';
     if (shouldEnhance) {
       const { api } = await import('./api.js');
       const { getConvexClient } = await import('./infrastructure/convex/client.js');
@@ -256,6 +256,7 @@ handoffCommandGroup
                 nextRole: options.nextRole,
                 chatroomId: options.chatroomId,
                 convexUrl,
+                enhancerCheckInQueued: true,
               })
             );
             return;
@@ -264,7 +265,7 @@ handoffCommandGroup
           const error = err as { data?: { code?: string; message?: string } };
           if (error?.data?.code !== 'ENHANCER_NOT_ENABLED') {
             // Ignore "not enabled" — fall through to normal handoff
-            console.error(`\n❌ ERROR: Enhancer interception failed`);
+            console.error(`\n❌ ERROR: Enhancer check-in failed`);
             console.error(`\n${error?.data?.message ?? (err as Error).message}`);
             process.exit(1);
           }

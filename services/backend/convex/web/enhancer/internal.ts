@@ -42,8 +42,30 @@ export function resolveHandoffTemplateSnapshot(
 ): string {
   const template = getHandoffTemplate({
     teamId: chatroom.teamId,
+    fromRole: 'enhancer',
+    toRole: 'planner',
+    nativeIntegration: false,
+    chatroomId,
+    role: 'enhancer',
+  });
+  if (!template) {
+    throw new ConvexError({
+      code: 'TEMPLATE_NOT_FOUND',
+      message: 'No handoff template for enhancer→planner',
+    });
+  }
+  return template;
+}
+
+/** Snapshot of the planner→enhancer draft template stored on the job at enqueue time. */
+export function resolveEnhancerInputTemplateSnapshot(
+  chatroom: Doc<'chatroom_rooms'>,
+  chatroomId: Id<'chatroom_rooms'>
+): string {
+  const template = getHandoffTemplate({
+    teamId: chatroom.teamId,
     fromRole: 'planner',
-    toRole: 'builder',
+    toRole: 'enhancer',
     nativeIntegration: false,
     chatroomId,
     role: 'planner',
@@ -51,7 +73,7 @@ export function resolveHandoffTemplateSnapshot(
   if (!template) {
     throw new ConvexError({
       code: 'TEMPLATE_NOT_FOUND',
-      message: 'No handoff template for planner→builder',
+      message: 'No handoff template for planner→enhancer',
     });
   }
   return template;

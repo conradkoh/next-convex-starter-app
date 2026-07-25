@@ -30,7 +30,7 @@ async function insertJob(
       userId,
       targetId: 'handoff:planner-to-builder',
       fromRole: 'planner',
-      toRole: 'builder',
+      toRole: 'enhancer',
       status: overrides.status ?? 'running',
       draftContent: 'Original draft',
       templateSnapshot: '# Template\n## Goal',
@@ -43,7 +43,7 @@ async function insertJob(
       createdAt: Date.now(),
       pendingHandoffArgs: {
         senderRole: 'planner',
-        targetRole: 'builder',
+        targetRole: 'planner',
       },
     });
   });
@@ -59,14 +59,14 @@ describe('web.enhancer.index.complete', () => {
       sessionId,
       chatroomId,
       jobId,
-      enhancedContent: '## Goal\nEnhanced brief content\n',
+      enhancedContent: '## Summary\nPlanning feedback content\n',
     });
 
     expect(result.success).toBe(true);
 
     const job = await t.run(async (ctx) => ctx.db.get(jobId));
     expect(job!.status).toBe('complete');
-    expect(job!.enhancedContent).toBe('## Goal\nEnhanced brief content');
+    expect(job!.enhancedContent).toBe('## Summary\nPlanning feedback content');
     expect(job!.completedAt).toBeDefined();
   });
 

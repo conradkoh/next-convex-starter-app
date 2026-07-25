@@ -28,7 +28,15 @@ import { restartOfflineAgentsOnUserMessage } from '../src/domain/usecase/agent/r
 import { getTeamRolesFromChatroom } from '../src/domain/usecase/chatroom/get-team-roles';
 import { markChatroomUnread } from '../src/domain/usecase/chatroom/unread-status';
 import { loadCurrentContext } from '../src/domain/usecase/context/load-current-context';
+import {
+  hasActivePlannerEnhancerJob,
+  transitionPlannerFromEnhancingToWaiting,
+} from '../src/domain/usecase/enhancer/planner-enhancing-status';
 import { getChatroomQueueState } from '../src/domain/usecase/task/chatroom-queue-state';
+import {
+  collectActiveTasks,
+  completeTasks,
+} from '../src/domain/usecase/task/complete-active-tasks';
 import {
   createTask as createTaskUsecase,
   shouldEnqueueMessage,
@@ -37,7 +45,7 @@ import { deleteUserMessageOrTask as deleteUserMessageOrTaskUsecase } from '../sr
 import { maybePromoteNextQueuedTask } from '../src/domain/usecase/task/maybe-promote-next-queued-task';
 import { resolveUserMessageRef } from '../src/domain/usecase/task/resolve-user-message-task-link';
 import { adjustTaskCount } from '../src/domain/usecase/task/task-counts';
-import { transitionTask, type TaskStatus } from '../src/domain/usecase/task/transition-task';
+import { type TaskStatus } from '../src/domain/usecase/task/transition-task';
 import { updateUserMessageOrTask as updateUserMessageOrTaskUsecase } from '../src/domain/usecase/task/update-user-message-or-task';
 
 const config = getConfig();
@@ -91,7 +99,8 @@ async function enrichMessageAttachments(
 
   // Resolve attached messages
   let attachedMessages:
-    { _id: string; content: string; senderRole: string; _creationTime: number }[] | undefined;
+    | { _id: string; content: string; senderRole: string; _creationTime: number }[]
+    | undefined;
   if (msg.attachedMessageIds && msg.attachedMessageIds.length > 0) {
     const msgs = await Promise.all(
       msg.attachedMessageIds.map((msgId) => ctx.db.get('chatroom_messages', msgId))
@@ -108,7 +117,8 @@ async function enrichMessageAttachments(
 
   // Resolve attached artifacts
   let attachedArtifacts:
-    { _id: string; filename: string; description?: string; mimeType?: string }[] | undefined;
+    | { _id: string; filename: string; description?: string; mimeType?: string }[]
+    | undefined;
   if (msg.attachedArtifactIds && msg.attachedArtifactIds.length > 0) {
     const artifacts = await Promise.all(
       msg.attachedArtifactIds.map((artifactId) => ctx.db.get('chatroom_artifacts', artifactId))
@@ -204,7 +214,6 @@ export async function enrichMessages(ctx: QueryCtx, messages: Doc<'chatroom_mess
         ? progressByTaskId.get(message.taskId.toString())
         : undefined;
 
-      // Resolve enhancer original content (draft from enhancer job)
       const enhancerOriginalContent =
         message.enhancerJobId != null
           ? jobDraftMap.get(message.enhancerJobId.toString())
@@ -525,6 +534,7 @@ async function _handoffHandler(
     targetRole: string;
     attachedArtifactIds?: Id<'chatroom_artifacts'>[];
     enhancerJobId?: Id<'chatroom_enhancerJobs'>;
+    visibleInAllTabOnly?: boolean;
   }
 ) {
   // Validate session and check chatroom access (returns chatroom, throws ConvexError on auth failure)
@@ -550,7 +560,8 @@ async function _handoffHandler(
   // Validate senderRole
   const normalizedSenderRole = args.senderRole.toLowerCase();
   const { teamRoles, normalizedTeamRoles } = getTeamRolesFromChatroom(chatroom);
-  if (!normalizedTeamRoles.includes(normalizedSenderRole)) {
+  const isEnhancerDelivery = normalizedSenderRole === 'enhancer';
+  if (!isEnhancerDelivery && !normalizedTeamRoles.includes(normalizedSenderRole)) {
     return {
       success: false,
       error: {
@@ -566,6 +577,27 @@ async function _handoffHandler(
 
   const normalizedTargetRole = args.targetRole.toLowerCase();
   const isHandoffToUser = normalizedTargetRole === 'user';
+
+  if (
+    normalizedSenderRole === 'planner' &&
+    (normalizedTargetRole === 'builder' || isHandoffToUser)
+  ) {
+    const enhancerReviewInProgress = await hasActivePlannerEnhancerJob(ctx, args.chatroomId);
+    if (enhancerReviewInProgress) {
+      return {
+        success: false,
+        error: {
+          code: 'ENHANCER_REVIEW_IN_PROGRESS',
+          message:
+            'Cannot hand off to builder or user while enhancer review is in progress. Run get-next-task and wait for planning feedback, then incorporate it before proceeding.',
+        },
+        messageId: null,
+        completedTaskIds: [],
+        newTaskId: null,
+        promotedTaskId: null,
+      };
+    }
+  }
 
   // Validate targetRole is a known team member (or user)
   if (!isHandoffToUser) {
@@ -588,21 +620,7 @@ async function _handoffHandler(
   const now = Date.now();
 
   // Step 1: Complete ALL in_progress and acknowledged tasks
-  const [inProgressTasks, acknowledgedTasks] = await Promise.all([
-    ctx.db
-      .query('chatroom_tasks')
-      .withIndex('by_chatroom_status', (q) =>
-        q.eq('chatroomId', args.chatroomId).eq('status', 'in_progress')
-      )
-      .collect(),
-    ctx.db
-      .query('chatroom_tasks')
-      .withIndex('by_chatroom_status', (q) =>
-        q.eq('chatroomId', args.chatroomId).eq('status', 'acknowledged')
-      )
-      .collect(),
-  ]);
-  const tasksToComplete = [...inProgressTasks, ...acknowledgedTasks];
+  let tasksToComplete = await collectActiveTasks(ctx, args.chatroomId);
 
   if (isHandoffToUser) {
     const pendingForSender = await ctx.db
@@ -631,27 +649,7 @@ async function _handoffHandler(
     }
   }
 
-  const completedTaskIds: Id<'chatroom_tasks'>[] = [];
-
-  for (const task of tasksToComplete) {
-    // All tasks complete to 'completed' status
-    const newStatus = 'completed' as const;
-    const completionTrigger = task.status === 'pending' ? 'completeTaskById' : 'completeTask';
-
-    // Use FSM for transition — skip auto-promotion because the handoff handler
-    // manages promotion explicitly (Step 6 for handoff-to-user).
-    await transitionTask(ctx, task._id, newStatus, completionTrigger, undefined, {
-      skipAutoPromotion: true,
-    });
-    completedTaskIds.push(task._id);
-
-    // Set completedAt on the source message (lifecycle tracking)
-    if (task.sourceMessageId) {
-      await ctx.db.patch('chatroom_messages', task.sourceMessageId, {
-        completedAt: now,
-      });
-    }
-  }
+  const completedTaskIds = await completeTasks(ctx, tasksToComplete, { skipAutoPromotion: true });
 
   if (tasksToComplete.length > 1) {
     console.warn(
@@ -669,6 +667,7 @@ async function _handoffHandler(
     ...(args.attachedArtifactIds &&
       args.attachedArtifactIds.length > 0 && { attachedArtifactIds: args.attachedArtifactIds }),
     ...(args.enhancerJobId && { enhancerJobId: args.enhancerJobId }),
+    ...(args.visibleInAllTabOnly && { visibleInAllTabOnly: true }),
   });
 
   // Update chatroom's lastActivityAt for sorting by recent activity
@@ -706,11 +705,15 @@ async function _handoffHandler(
     )
     .unique();
 
-  if (participant) {
+  if (participant && !isEnhancerDelivery) {
     await ctx.db.patch('chatroom_participants', participant._id, {
       lastSeenAt: Date.now(),
       ...(isHandoffToUser ? { lastInFlightTaskId: undefined } : {}),
     });
+  }
+
+  if (args.enhancerJobId) {
+    await transitionPlannerFromEnhancingToWaiting(ctx, args.chatroomId);
   }
 
   // Step 5: Attached backlog items remain in their current status on handoff.
@@ -800,7 +803,16 @@ export async function performHandoffFromEnhancer(
     jobId: Id<'chatroom_enhancerJobs'>;
   }
 ) {
-  return _handoffHandler(ctx, { ...args, enhancerJobId: args.jobId });
+  return _handoffHandler(ctx, {
+    sessionId: args.sessionId,
+    chatroomId: args.chatroomId,
+    senderRole: 'enhancer',
+    targetRole: args.targetRole,
+    content: args.content,
+    attachedArtifactIds: args.attachedArtifactIds,
+    enhancerJobId: args.jobId,
+    visibleInAllTabOnly: true,
+  });
 }
 
 /** Returns the allowed handoff roles for a given role based on the current message classification. */
@@ -1591,7 +1603,7 @@ export const getTaskDeliveryPrompt = query({
   },
   handler: async (ctx, args): Promise<TaskDeliveryPromptResponse> => {
     // Validate session and check chatroom access
-    const { chatroom } = await requireChatroomAccess(ctx, args.sessionId, args.chatroomId);
+    const { chatroom, session } = await requireChatroomAccess(ctx, args.sessionId, args.chatroomId);
 
     // Fetch current context (time-based staleness only — no message reads).
     const currentContext = await loadCurrentContext(ctx, args.chatroomId);
@@ -1638,7 +1650,24 @@ export const getTaskDeliveryPrompt = query({
 
     const availableRoles = waitingParticipants.map((p) => p.role);
     const currentClassification = await getLatestUserMessageClassification(ctx, args.chatroomId);
-    const availableHandoffRoles = buildAvailableHandoffRoles(availableRoles);
+
+    const enhancerConfig = await ctx.db
+      .query('chatroom_enhancerConfigs')
+      .withIndex('by_chatroom_user', (q) =>
+        q.eq('chatroomId', args.chatroomId).eq('userId', session.userId)
+      )
+      .unique();
+    const deliveryMessageSenderRole =
+      message && 'senderRole' in message ? message.senderRole.toLowerCase() : undefined;
+
+    const plannerEnhancerEnabled =
+      args.role.toLowerCase() === 'planner' &&
+      enhancerConfig?.enabled === true &&
+      enhancerConfig.targetId === 'handoff:planner-to-builder';
+
+    const availableHandoffRoles = buildAvailableHandoffRoles(availableRoles, {
+      includeEnhancer: plannerEnhancerEnabled && deliveryMessageSenderRole === 'user',
+    });
 
     // Get context window (reuse getContextWindow logic)
     // Fetch recent messages for context
@@ -1970,6 +1999,7 @@ export const getTaskDeliveryPrompt = query({
       nativeIntegration,
       sourceAttachments,
       standingInstructions,
+      plannerEnhancerEnabled,
     });
 
     return {
@@ -2128,9 +2158,12 @@ export const listMessagesBySenderRolePaginated = query({
           .query('chatroom_messages')
           .withIndex('by_chatroom', (q) => q.eq('chatroomId', args.chatroomId))
           .filter((q) =>
-            q.or(
-              q.and(q.eq(q.field('senderRole'), 'user'), q.eq(q.field('type'), 'message')),
-              q.and(q.eq(q.field('type'), 'handoff'), q.eq(q.field('targetRole'), 'user'))
+            q.and(
+              q.or(
+                q.and(q.eq(q.field('senderRole'), 'user'), q.eq(q.field('type'), 'message')),
+                q.and(q.eq(q.field('type'), 'handoff'), q.eq(q.field('targetRole'), 'user'))
+              ),
+              q.neq(q.field('visibleInAllTabOnly'), true)
             )
           )
           .order('desc')
@@ -2140,7 +2173,12 @@ export const listMessagesBySenderRolePaginated = query({
           .withIndex('by_chatroom_senderRole_createdAt', (q) =>
             q.eq('chatroomId', args.chatroomId).eq('senderRole', args.senderRole)
           )
-          .filter((q) => q.or(q.eq(q.field('type'), 'message'), q.eq(q.field('type'), 'handoff')))
+          .filter((q) =>
+            q.and(
+              q.or(q.eq(q.field('type'), 'message'), q.eq(q.field('type'), 'handoff')),
+              q.neq(q.field('visibleInAllTabOnly'), true)
+            )
+          )
           .order('desc')
           .paginate(args.paginationOpts);
 
