@@ -439,6 +439,9 @@ export default defineSchema({
     // Link to the enhancer job that produced this message (for enhanced handoffs)
     enhancerJobId: v.optional(v.id('chatroom_enhancerJobs')),
 
+    // When true, message appears only in the ALL timeline tab (not role-filtered views)
+    visibleInAllTabOnly: v.optional(v.boolean()),
+
     // Attached backlog tasks for context
     // User can attach multiple backlog tasks to a message for agent context
     // Attached tasks remain in 'backlog' status until agent hands off to user,
@@ -1673,6 +1676,12 @@ export default defineSchema({
       // Agent's native harness turn ended with in_progress work — awaiting handoff
       v.object({
         type: v.literal('agent.awaitingHandoff'),
+        chatroomId: v.id('chatroom_rooms'),
+        role: v.string(),
+        timestamp: v.number(),
+      }),
+      v.object({
+        type: v.literal('agent.enhancing'),
         chatroomId: v.id('chatroom_rooms'),
         role: v.string(),
         timestamp: v.number(),
@@ -3017,7 +3026,7 @@ export default defineSchema({
 
   /**
    * Per-user-per-chatroom enhancer configuration.
-   * Synced from webapp; read by handoff CLI at interception time.
+   * Synced from webapp; read by handoff CLI when planner queues an enhancer check-in.
    */
   chatroom_enhancerConfigs: defineTable({
     chatroomId: v.id('chatroom_rooms'),
@@ -3033,7 +3042,7 @@ export default defineSchema({
     .index('by_chatroom', ['chatroomId']),
 
   /**
-   * One-shot enhancer job per intercepted handoff.
+   * One-shot enhancer job per planner→enhancer check-in.
    * Populated in slice 2.3; schema now so migrations are stable.
    */
   chatroom_enhancerJobs: defineTable({
@@ -3052,6 +3061,7 @@ export default defineSchema({
     draftContent: v.string(),
     enhancedContent: v.optional(v.string()),
     templateSnapshot: v.string(),
+    inputTemplateSnapshot: v.optional(v.string()),
     agentHarness: agentHarnessValidator,
     model: v.string(),
     machineId: v.string(),
@@ -3063,6 +3073,7 @@ export default defineSchema({
     lastError: v.optional(v.string()),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
+    originUserMessageId: v.optional(v.id('chatroom_messages')),
     pendingHandoffArgs: v.optional(
       v.object({
         senderRole: v.string(),
@@ -3073,7 +3084,8 @@ export default defineSchema({
   })
     .index('by_chatroom_status', ['chatroomId', 'status'])
     .index('by_machine_status', ['machineId', 'status'])
-    .index('by_status_nextRetryAt', ['status', 'nextRetryAt']),
+    .index('by_status_nextRetryAt', ['status', 'nextRetryAt'])
+    .index('by_chatroom_originUserMessageId', ['chatroomId', 'originUserMessageId']),
 
   /**
    * Messages produced by a harness session (both user prompts and assistant

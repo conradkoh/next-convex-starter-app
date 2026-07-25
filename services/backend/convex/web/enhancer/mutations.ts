@@ -6,11 +6,20 @@ import { deliverPendingHandoffFromJob } from './delivery';
 import {
   resolveWorkspaceForEnhancer,
   resolveHandoffTemplateSnapshot,
+  resolveEnhancerInputTemplateSnapshot,
   computeEnhancerBackoffMs,
   emitEnhancerEvent,
 } from './internal';
 import { findActiveEnhancerJob, assertEnhancerJobOwner } from './jobHelpers';
+import { insertPlannerToEnhancerDraftMessage } from './timelineMessages';
 import { ENHANCER_MAX_ATTEMPTS } from '../../../config/reliability';
+import { buildPlanningReviewOutcomeContent } from '../../../src/domain/usecase/enhancer/build-planning-review-outcome';
+import { completePlannerTasksOnEnhancerCheckIn } from '../../../src/domain/usecase/enhancer/complete-planner-tasks-on-check-in';
+import { resolveOriginUserMessageIdForPlannerCheckIn } from '../../../src/domain/usecase/enhancer/resolve-origin-user-message-id';
+import {
+  transitionPlannerFromEnhancingToWaiting,
+  transitionPlannerToEnhancing,
+} from '../../../src/domain/usecase/enhancer/planner-enhancing-status';
 import { mutation } from '../../_generated/server';
 import { requireChatroomAccess } from '../../auth/chatroomAccess';
 import { agentHarnessValidator } from '../../schema';
@@ -99,7 +108,7 @@ export const enqueueHandoff = mutation({
 
     if (
       args.senderRole.toLowerCase() !== 'planner' ||
-      args.targetRole.toLowerCase() !== 'builder'
+      args.targetRole.toLowerCase() !== 'enhancer'
     ) {
       throw new ConvexError({
         code: 'NOT_APPLICABLE',
@@ -117,7 +126,33 @@ export const enqueueHandoff = mutation({
       throw new ConvexError({ code: 'ENHANCER_NOT_ENABLED', message: 'Enhancer not enabled' });
     }
 
-    const existingActive = await findActiveEnhancerJob(ctx, args.chatroomId, 'planner', 'builder');
+    const originUserMessageId = await resolveOriginUserMessageIdForPlannerCheckIn(
+      ctx,
+      args.chatroomId
+    );
+    if (!originUserMessageId) {
+      throw new ConvexError({
+        code: 'NO_PLANNER_USER_TASK',
+        message:
+          'Cannot queue enhancer check-in without an active planner task from a user instruction',
+      });
+    }
+
+    const priorJob = await ctx.db
+      .query('chatroom_enhancerJobs')
+      .withIndex('by_chatroom_originUserMessageId', (q) =>
+        q.eq('chatroomId', args.chatroomId).eq('originUserMessageId', originUserMessageId)
+      )
+      .first();
+    if (priorJob) {
+      throw new ConvexError({
+        code: 'ENHANCER_ALREADY_CHECKED_IN',
+        message:
+          'Enhancer check-in already used for this user instruction. Proceed to builder or user — workflow is linear.',
+      });
+    }
+
+    const existingActive = await findActiveEnhancerJob(ctx, args.chatroomId, 'planner', 'enhancer');
     if (existingActive) {
       throw new ConvexError({
         code: 'ACTIVE_JOB_EXISTS',
@@ -127,6 +162,7 @@ export const enqueueHandoff = mutation({
 
     const workspace = await resolveWorkspaceForEnhancer(ctx, args.chatroomId, config.machineId);
     const templateSnapshot = resolveHandoffTemplateSnapshot(chatroom, args.chatroomId);
+    const inputTemplateSnapshot = resolveEnhancerInputTemplateSnapshot(chatroom, args.chatroomId);
     const now = Date.now();
 
     const jobId = await ctx.db.insert('chatroom_enhancerJobs', {
@@ -134,10 +170,11 @@ export const enqueueHandoff = mutation({
       userId: session.userId,
       targetId: 'handoff:planner-to-builder',
       fromRole: 'planner',
-      toRole: 'builder',
+      toRole: 'enhancer',
       status: 'pending',
       draftContent: args.content,
       templateSnapshot,
+      inputTemplateSnapshot,
       agentHarness: config.agentHarness,
       model: config.model,
       machineId: config.machineId,
@@ -145,9 +182,10 @@ export const enqueueHandoff = mutation({
       attemptCount: 1,
       maxAttempts: ENHANCER_MAX_ATTEMPTS,
       createdAt: now,
+      originUserMessageId,
       pendingHandoffArgs: {
-        senderRole: args.senderRole,
-        targetRole: args.targetRole,
+        senderRole: 'planner',
+        targetRole: 'planner',
         attachedArtifactIds: args.attachedArtifactIds,
       },
     });
@@ -164,6 +202,17 @@ export const enqueueHandoff = mutation({
       },
       now
     );
+
+    await insertPlannerToEnhancerDraftMessage(ctx, {
+      chatroomId: args.chatroomId,
+      content: args.content,
+      jobId,
+      attachedArtifactIds: args.attachedArtifactIds,
+    });
+
+    await completePlannerTasksOnEnhancerCheckIn(ctx, args.chatroomId);
+
+    await transitionPlannerToEnhancing(ctx, args.chatroomId);
 
     return { jobId };
   },
@@ -190,12 +239,12 @@ export const recordAttemptFailure = mutation({
     const now = Date.now();
     const attemptCount = job.attemptCount;
     if (attemptCount >= job.maxAttempts) {
-      // Terminal failure: deliver draft content via handoff before marking failed
+      // Terminal failure: deliver planning-review-outcome envelope before marking failed
       let error = args.error;
       const handoffResult = await deliverPendingHandoffFromJob(ctx, {
         sessionId: args.sessionId,
         job,
-        content: job.draftContent,
+        content: buildPlanningReviewOutcomeContent('failed', error),
       });
       if (!handoffResult.success) {
         error = `${error}; draft handoff delivery failed: ${handoffResult.error?.message}`;
@@ -218,6 +267,7 @@ export const recordAttemptFailure = mutation({
         },
         now
       );
+      await transitionPlannerFromEnhancingToWaiting(ctx, args.chatroomId);
       return { terminal: true, status: 'failed' as const };
     }
 
@@ -302,12 +352,12 @@ export const cancelActiveJob = mutation({
     const handoffResult = await deliverPendingHandoffFromJob(ctx, {
       sessionId: args.sessionId,
       job,
-      content: job.draftContent,
+      content: buildPlanningReviewOutcomeContent('cancelled', 'cancelled_by_user'),
     });
     if (!handoffResult.success) {
       throw new ConvexError({
         code: 'HANDOFF_FAILED',
-        message: handoffResult.error?.message ?? 'Failed to deliver original handoff',
+        message: handoffResult.error?.message ?? 'Failed to deliver planning review outcome',
       });
     }
 

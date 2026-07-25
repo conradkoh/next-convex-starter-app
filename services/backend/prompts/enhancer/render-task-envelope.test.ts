@@ -7,8 +7,16 @@ describe('renderEnhancerTaskEnvelope', () => {
     jobId: 'job-123',
     chatroomId: 'room-abc',
     targetId: 'handoff:planner-to-builder' as const,
-    handoffTemplate: '# Planner → Builder\n\n## Goal\nDo the thing\n',
-    draftHandoff: '# Draft\n\nDo this work\n',
+    referenceHandoffTemplatesContent: [
+      'Use these structures for this review.',
+      '### Handoff to `planner` (your output)',
+      '# Enhancer → Planner',
+      '### Handoff to `builder` (planner reference)',
+      '# Planner → Builder',
+      '### Handoff to `user` (planner reference)',
+      '# Planner → User',
+    ].join('\n'),
+    plannerCheckIn: '# Draft\n\nDo this work\n',
     cliCompleteCommand:
       "chatroom enhancer complete --chatroom-id=room-abc --job-id=job-123 << 'CHATROOM_ENHANCER_END'",
   };
@@ -18,22 +26,25 @@ describe('renderEnhancerTaskEnvelope', () => {
     expect(result).toContain('job-id="job-123"');
   });
 
-  it('contains <handoff-template> section', () => {
+  it('contains handoff-templates disclosure', () => {
     const result = renderEnhancerTaskEnvelope(params);
-    expect(result).toContain('<handoff-template>');
-    expect(result).toContain('</handoff-template>');
+    expect(result).toContain('<handoff-templates>');
+    expect(result).toContain('</handoff-templates>');
+    expect(result).toContain('### Handoff to `planner` (your output)');
+    expect(result).toContain('### Handoff to `builder` (planner reference)');
+    expect(result).toContain('### Handoff to `user` (planner reference)');
   });
 
-  it('contains <draft-handoff> section', () => {
+  it('contains <planner-check-in> section', () => {
     const result = renderEnhancerTaskEnvelope(params);
-    expect(result).toContain('<draft-handoff>');
-    expect(result).toContain('</draft-handoff>');
+    expect(result).toContain('<planner-check-in>');
+    expect(result).toContain('</planner-check-in>');
   });
 
   it('contains escaped template content', () => {
     const result = renderEnhancerTaskEnvelope(params);
     expect(result).toContain('Planner → Builder');
-    expect(result).toContain('## Goal');
+    expect(result).toContain('Planner → User');
   });
 
   it('forbids codebase exploration in requirements', () => {
@@ -42,9 +53,11 @@ describe('renderEnhancerTaskEnvelope', () => {
     expect(result).toContain('do not investigate the repository');
   });
 
-  it('focuses on immediate handoff improvements', () => {
+  it('references handoff-templates for output and planner alignment', () => {
     const result = renderEnhancerTaskEnvelope(params);
-    expect(result).toContain('immediate improvements to the handoff');
+    expect(result).toContain('Handoff to `planner`');
+    expect(result).toContain('Handoff to `builder`');
+    expect(result).toContain('Handoff to `user`');
   });
 
   it('contains requirements list', () => {

@@ -65,6 +65,94 @@ describe('Duo Team > Planner > Get Next Task', () => {
     expect(output).toContain('```mermaid');
   });
 
+  test('includes enhancer guidance when plannerEnhancerEnabled', () => {
+    const output = generateFullCliOutput({
+      ...BASE_PARAMS,
+      plannerEnhancerEnabled: true,
+      availableHandoffTargets: ['enhancer', 'builder', 'user'],
+      message: {
+        _id: 'test-message-id',
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+      },
+      originMessage: {
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+        classification: null,
+      },
+    });
+
+    expect(output).toContain('<handoff-enhancer>');
+    expect(output).toContain('enhancement enabled for this user instruction');
+    expect(output).toContain('user → planner → enhancer → planner → builder → user');
+    expect(output).toContain('You MUST check in with the enhancer');
+    expect(output).toContain('--next-role="enhancer"');
+    expect(output).toContain('Run get-next-task immediately');
+  });
+
+  test('omits enhancer guidance when plannerEnhancerEnabled is false', () => {
+    const output = generateFullCliOutput({
+      ...BASE_PARAMS,
+      plannerEnhancerEnabled: false,
+      message: {
+        _id: 'test-message-id',
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+      },
+      originMessage: {
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+        classification: null,
+      },
+    });
+
+    expect(output).not.toContain('<handoff-enhancer>');
+  });
+
+  test('enhancer disabled user task targets user and omits enhancer template', () => {
+    const output = generateFullCliOutput({
+      ...BASE_PARAMS,
+      plannerEnhancerEnabled: false,
+      message: {
+        _id: 'test-message-id',
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+      },
+      originMessage: {
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+        classification: null,
+      },
+    });
+
+    expect(output).not.toContain('Handoff to `enhancer`');
+    expect(output).toContain('--next-role="user"');
+    expect(output).toContain('Handoff to `builder`');
+  });
+
+  test('enhancer feedback task includes review guidance and targets builder', () => {
+    const output = generateFullCliOutput({
+      ...BASE_PARAMS,
+      plannerEnhancerEnabled: true,
+      availableHandoffTargets: ['enhancer', 'builder', 'user'],
+      message: {
+        _id: 'enhancer-message-id',
+        senderRole: 'enhancer',
+        content: '## Summary\nPlanning feedback',
+      },
+      originMessage: {
+        senderRole: 'user',
+        content: 'Please implement dark mode for the settings page',
+        classification: null,
+      },
+    });
+
+    expect(output).toContain('<enhancer-review>');
+    expect(output).not.toContain('<handoff-enhancer>');
+    expect(output).not.toContain('Handoff to `enhancer`');
+    expect(output).toContain('--next-role="builder"');
+  });
+
   test('task from team member', () => {
     const output = generateFullCliOutput({
       ...BASE_PARAMS,
