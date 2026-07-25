@@ -27,6 +27,25 @@ vi.mock('./TimelineMarkdownBody', () => ({
 
 vi.mock('diff', () => ({ diffLines: () => [] }));
 
+vi.mock('../../features/enhancers/components/EnhancerDiffPanel', () => ({
+  EnhancerDiffPanel: ({
+    open,
+    onOpenChange,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div role="dialog">
+        <span>Enhancement diff</span>
+        <button type="button" onClick={() => onOpenChange(false)}>
+          Close
+        </button>
+        <div data-testid="enhancer-unified-diff-view" />
+      </div>
+    ) : null,
+}));
+
 vi.mock('../../attachments', async (importOriginal) => {
   const actual = (await importOriginal()) as typeof AttachmentsModule;
   return {
@@ -37,14 +56,6 @@ vi.mock('../../attachments', async (importOriginal) => {
     }),
   };
 });
-
-vi.mock('../../features/enhancers/components/EnhancerContentToggle', () => ({
-  EnhancerContentToggle: () => null,
-}));
-
-vi.mock('../../features/enhancers/components/EnhancerMessageDiffSection', () => ({
-  EnhancerMessageDiffSection: () => null,
-}));
 
 vi.mock('./HandoffEnvelopeView', () => ({
   HandoffEnvelopeView: ({ content, variant }: { content: string; variant: string }) => (
