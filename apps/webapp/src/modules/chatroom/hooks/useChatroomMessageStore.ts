@@ -30,6 +30,7 @@ import {
   VISIBLE_UPDATE_WINDOW,
   type ChatroomMessageStoreAction,
   type ChatroomMessageStoreState,
+  type VisibleUpdate,
 } from './chatroomMessageStore';
 import { logLoadOlder } from '../components/timeline/timelineLoadOlderDebug';
 import type { Message } from '../types/message';
@@ -69,22 +70,25 @@ function useTimelineDeltaSubscriptions(
     dispatch({ type: 'MERGE_TAIL', messages: newMessagesData.map(toMessage) });
   }, [newMessagesData, dispatch]);
 
-  // Visible-message updates (lightweight status/progress delta). The id list is keyed by
-  // a stable join so it only changes identity when the visible ID set changes.
-  const recentVisibleIdsKey = state.messages
+  // Visible-message updates (lightweight status/progress delta). Only task-linked message
+  // IDs are subscribed — non-task messages never receive post-creation status/progress changes.
+  const recentTaskLinkedIdsKey = state.messages
     .slice(-VISIBLE_UPDATE_WINDOW)
+    .filter((m) => m.taskId)
     .map((m) => m._id)
     .join(',');
-  const recentVisibleIds = useMemo(
+  const recentTaskLinkedIds = useMemo(
     () =>
-      recentVisibleIdsKey ? (recentVisibleIdsKey.split(',') as Id<'chatroom_messages'>[]) : [],
-    [recentVisibleIdsKey]
+      recentTaskLinkedIdsKey
+        ? (recentTaskLinkedIdsKey.split(',') as Id<'chatroom_messages'>[])
+        : [],
+    [recentTaskLinkedIdsKey]
   );
 
   const visibleUpdatesData = useSessionQuery(
     api.messageList.subscribeVisibleMessageUpdates,
-    enabled && state.isInitialized && recentVisibleIds.length > 0
-      ? { chatroomId: typedChatroomId, messageIds: recentVisibleIds }
+    enabled && state.isInitialized && recentTaskLinkedIds.length > 0
+      ? { chatroomId: typedChatroomId, messageIds: recentTaskLinkedIds }
       : 'skip'
   );
 
@@ -92,11 +96,12 @@ function useTimelineDeltaSubscriptions(
     if (!visibleUpdatesData) return;
     dispatch({
       type: 'APPLY_VISIBLE_UPDATES',
-      updates: visibleUpdatesData.map((u) => ({
-        _id: u._id,
-        taskStatus: u.taskStatus as Message['taskStatus'],
-        latestProgress: u.latestProgress,
-      })),
+      updates: visibleUpdatesData.map((u) => {
+        const update: VisibleUpdate = { _id: u._id };
+        if ('taskStatus' in u) update.taskStatus = u.taskStatus as Message['taskStatus'];
+        if ('latestProgress' in u) update.latestProgress = u.latestProgress;
+        return update;
+      }),
     });
   }, [visibleUpdatesData, dispatch]);
 }
