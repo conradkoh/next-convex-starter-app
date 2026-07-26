@@ -19,12 +19,12 @@ import { formatTimestamp } from './utils.js';
 import { api } from '../../../api.js';
 import { getErrorMessage } from '../../../utils/convex-error.js';
 
-type RecentlyObservedWorkspaces = FunctionReturnType<
-  typeof api.workspaces.listRecentlyObservedWorkspacesForMachine
+type RecentlyObservedWorkspaces = NonNullable<
+  FunctionReturnType<typeof api.workspaces.listRecentlyObservedWorkspacesForMachine>
 >;
 
-function toSyncWorkspaces(workspaces: RecentlyObservedWorkspaces): WorkspaceForSync[] {
-  return workspaces.map((ws) => ({ workingDir: ws.workingDir }));
+function toSyncWorkspaces(workingDirs: RecentlyObservedWorkspaces): WorkspaceForSync[] {
+  return workingDirs.map((workingDir) => ({ workingDir }));
 }
 
 export const startWorkspaceListSubscriptionEffect = (
@@ -44,9 +44,9 @@ export const startWorkspaceListSubscriptionEffect = (
     let stopped = false;
     let reconcileInFlight = false;
 
-    const applyList = (workspaces: RecentlyObservedWorkspaces): void => {
+    const applyList = (workingDirs: RecentlyObservedWorkspaces): void => {
       if (!session.workspaceListStore) return;
-      session.workspaceListStore.workspaces = toSyncWorkspaces(workspaces);
+      session.workspaceListStore.workspaces = toSyncWorkspaces(workingDirs);
       session.workspaceListStore.updatedAt = Date.now();
     };
 
@@ -54,8 +54,8 @@ export const startWorkspaceListSubscriptionEffect = (
       api.workspaces.listRecentlyObservedWorkspacesForMachine,
       queryArgs,
       (workspaces) => {
-        if (stopped) return;
-        applyList(workspaces ?? []);
+        if (stopped || workspaces == null) return;
+        applyList(workspaces);
       },
       (err: unknown) => {
         console.warn(
@@ -70,7 +70,7 @@ export const startWorkspaceListSubscriptionEffect = (
       session.backend
         .query(api.workspaces.listRecentlyObservedWorkspacesForMachine, queryArgs)
         .then((workspaces) => {
-          if (!stopped) applyList(workspaces ?? []);
+          if (!stopped && workspaces != null) applyList(workspaces);
         })
         .catch((err: unknown) => {
           console.warn(
