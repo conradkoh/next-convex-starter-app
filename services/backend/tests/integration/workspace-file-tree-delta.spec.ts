@@ -17,6 +17,14 @@ async function setup(sessionKey: string, machineId: string) {
 }
 
 const ADD_OPERATION = {
+  o: 'a' as const,
+  p: 'src/index.ts',
+  e: 'f' as const,
+  s: 42,
+  m: 1_700_000_000_000,
+};
+
+const EXPECTED_ADD_OPERATION = {
   operation: 'add' as const,
   path: 'src/index.ts',
   entryType: 'file' as const,
@@ -74,10 +82,9 @@ describe('incremental workspace file tree', () => {
       hasMore: false,
       deltas: [
         {
-          operationId: 'watch-batch-1',
           baseRevision: 0,
           revision: 1,
-          operations: [ADD_OPERATION],
+          operations: [EXPECTED_ADD_OPERATION],
         },
       ],
     });
@@ -114,7 +121,7 @@ describe('incremental workspace file tree', () => {
       workingDir: WORKING_DIR,
       operationId: 'watch-batch-stale',
       baseRevision: 0,
-      operations: [{ operation: 'remove', path: 'src/index.ts' }],
+      operations: [{ o: 'r' as const, p: 'src/index.ts' }],
     });
 
     expect(stale).toEqual({ status: 'resync-required', expectedRevision: 1 });
@@ -313,7 +320,7 @@ describe('incremental workspace file tree', () => {
         workingDir: WORKING_DIR,
         operationId: 'unauthorized-batch',
         baseRevision: 1,
-        operations: [{ operation: 'remove', path: 'src/index.ts' }],
+        operations: [{ o: 'r' as const, p: 'src/index.ts' }],
       })
     ).rejects.toThrow();
     await expect(
