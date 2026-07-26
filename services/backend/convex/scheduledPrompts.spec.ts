@@ -36,7 +36,7 @@ describe('scheduled prompts', () => {
         chatroomId,
         prompt: 'daily standup',
         scheduleKind: 'interval',
-        intervalMinutes: 1,
+        intervalMinutes: 0,
       })
     ).rejects.toThrow();
   });
@@ -143,6 +143,204 @@ describe('scheduled prompts', () => {
     expect(row).toBeDefined();
     expect(row!.lastRunAt).toBeGreaterThanOrEqual(now);
     expect(row!.nextRunAt).toBeGreaterThan(now);
+  });
+
+  test('fireOne creates message with scheduledPromptId and sourcePlatform', async () => {
+    const { sessionId, userId } = await createTestSession('sp-fire-one-link');
+    const chatroomId = await createChatroom(sessionId);
+
+    const now = Date.now();
+    const id = await t.run(async (ctx) => {
+      return await ctx.db.insert('chatroom_scheduledPrompts', {
+        chatroomId,
+        prompt: 'linked scheduled message',
+        scheduleKind: 'interval',
+        intervalMinutes: 30,
+        disabledReason: undefined,
+        isRunnable: true,
+        nextRunAt: now - 1000,
+        createdBy: userId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+
+    await t.mutation(api.scheduledPrompts.fireOne as any, {
+      scheduledPromptId: id,
+    });
+
+    const messages = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('chatroom_messages')
+        .withIndex('by_chatroom', (q) => q.eq('chatroomId', chatroomId))
+        .collect();
+    });
+    expect(messages.length).toBeGreaterThanOrEqual(1);
+    const msg = messages.find((m) => m.sourcePlatform === 'scheduled');
+    expect(msg).toBeDefined();
+    expect(msg!.content).toBe('linked scheduled message');
+    expect(msg!.sourcePlatform).toBe('scheduled');
+    expect(msg!.scheduledPromptId).toBe(id);
+  });
+
+  test('listTriggeredMessages returns messages linked to prompt, ordered desc', async () => {
+    const { sessionId, userId } = await createTestSession('sp-list-triggered');
+    const chatroomId = await createChatroom(sessionId);
+
+    const now = Date.now();
+    const id = await t.run(async (ctx) => {
+      return await ctx.db.insert('chatroom_scheduledPrompts', {
+        chatroomId,
+        prompt: 'list test prompt',
+        scheduleKind: 'interval',
+        intervalMinutes: 30,
+        disabledReason: undefined,
+        isRunnable: true,
+        nextRunAt: now + 60000,
+        createdBy: userId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+
+    // Insert two messages linked to the prompt (no createdAt — uses _creationTime)
+    await Promise.all([
+      t.run(async (ctx) => {
+        await ctx.db.insert('chatroom_messages', {
+          chatroomId,
+          senderRole: 'user',
+          content: 'first',
+          type: 'message',
+          scheduledPromptId: id,
+        });
+      }),
+      // Small delay so _creationTime order differs
+      new Promise((r) => setTimeout(r, 5)),
+    ]);
+    await t.run(async (ctx) => {
+      await ctx.db.insert('chatroom_messages', {
+        chatroomId,
+        senderRole: 'user',
+        content: 'second',
+        type: 'message',
+        scheduledPromptId: id,
+      });
+    });
+
+    const result = await t.query(api.scheduledPrompts.listTriggeredMessages, {
+      sessionId,
+      scheduledPromptId: id,
+      limit: 10,
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].content).toBe('second');
+    expect(result[1].content).toBe('first');
+  });
+
+  test('listTriggeredMessages access denied for wrong session', async () => {
+    const { sessionId, userId } = await createTestSession('sp-list-denied');
+    const { sessionId: otherSession } = await createTestSession('sp-list-denied-other');
+    const chatroomId = await createChatroom(sessionId);
+
+    const now = Date.now();
+    const id = await t.run(async (ctx) => {
+      return await ctx.db.insert('chatroom_scheduledPrompts', {
+        chatroomId,
+        prompt: 'denied prompt',
+        scheduleKind: 'interval',
+        intervalMinutes: 30,
+        disabledReason: undefined,
+        isRunnable: true,
+        nextRunAt: now + 60000,
+        createdBy: userId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+
+    await expect(
+      t.query(api.scheduledPrompts.listTriggeredMessages, {
+        sessionId: otherSession,
+        scheduledPromptId: id,
+      })
+    ).rejects.toThrow();
+  });
+
+  test('fireOne sets nextRunAt from scheduled anchor not execution time', async () => {
+    const { sessionId, userId } = await createTestSession('sp-anchor');
+    const chatroomId = await createChatroom(sessionId);
+
+    const scheduledAt = Date.now() - 5000;
+    const intervalMs = 60_000;
+    const id = await t.run(async (ctx) => {
+      return await ctx.db.insert('chatroom_scheduledPrompts', {
+        chatroomId,
+        prompt: 'anchor test',
+        scheduleKind: 'interval',
+        intervalMinutes: 1,
+        isRunnable: true,
+        nextRunAt: scheduledAt,
+        createdBy: userId,
+        createdAt: scheduledAt,
+        updatedAt: scheduledAt,
+      });
+    });
+
+    await t.mutation(api.scheduledPrompts.fireOne as any, { scheduledPromptId: id });
+
+    const row = await t.run(async (ctx) =>
+      ctx.db.get('chatroom_scheduledPrompts', id as Id<'chatroom_scheduledPrompts'>)
+    );
+    expect(row!.nextRunAt).toBe(scheduledAt + intervalMs);
+    expect(row!.nextRunAt).toBeLessThan(Date.now() + intervalMs - 4000);
+  });
+
+  test('setEnabled(true) preserves interval cadence from lastRunAt', async () => {
+    const { sessionId } = await createTestSession('sp-reenable');
+    const chatroomId = await createChatroom(sessionId);
+
+    const intervalMs = 60_000;
+    // Use a minute-aligned timestamp so ceiled now matches exactly
+    const now = Math.ceil(Date.now() / 60_000) * 60_000;
+    const lastRunAt = now - intervalMs + 50_000; // cadence slot is now + 50_000 (after ceiled now)
+
+    const id = await t.mutation(api.scheduledPrompts.create, {
+      sessionId,
+      chatroomId,
+      prompt: 'reenable test',
+      scheduleKind: 'interval',
+      intervalMinutes: 1,
+    });
+
+    // Seed lastRunAt with a cadence-aligned nextRunAt that hasn't fired yet
+    await t.run(async (ctx) => {
+      await ctx.db.patch('chatroom_scheduledPrompts', id as Id<'chatroom_scheduledPrompts'>, {
+        lastRunAt,
+        nextRunAt: lastRunAt + intervalMs,
+      });
+    });
+
+    // Disable then re-enable (simulates user toggling off/on before next slot)
+    await t.mutation(api.scheduledPrompts.setEnabled, {
+      sessionId,
+      scheduledPromptId: id as Id<'chatroom_scheduledPrompts'>,
+      enabled: false,
+    });
+
+    await t.mutation(api.scheduledPrompts.setEnabled, {
+      sessionId,
+      scheduledPromptId: id as Id<'chatroom_scheduledPrompts'>,
+      enabled: true,
+    });
+
+    const row = await t.run(async (ctx) =>
+      ctx.db.get('chatroom_scheduledPrompts', id as Id<'chatroom_scheduledPrompts'>)
+    );
+    expect(row!.isRunnable).toBe(true);
+    expect(row!.disabledReason).toBeUndefined();
+    // Must preserve cadence: next slot is lastRunAt + interval (which is after ceiled now)
+    expect(row!.nextRunAt).toBe(lastRunAt + intervalMs);
   });
 
   test('runDue does not pick up isRunnable: false rows', async () => {

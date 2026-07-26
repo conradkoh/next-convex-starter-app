@@ -4,22 +4,23 @@ import { SessionIdArg } from 'convex-helpers/server/sessions';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { internalMutation, mutation, query } from './_generated/server';
-import type { MutationCtx } from './_generated/server';
+import type { MutationCtx, QueryCtx } from './_generated/server';
 import { requireChatroomAccess } from './auth/chatroomAccess';
 import {
   computeNextRunAt,
+  computeNextRunAtForEnable,
   type ScheduledPromptSchedule,
 } from '../src/domain/usecase/chatroom/compute-next-run-at';
 import { sendAutomatedUserMessage } from '../src/domain/usecase/chatroom/send-automated-user-message';
 
 const MAX_PROMPT_LENGTH = 10_000;
-const MIN_INTERVAL_MINUTES = 5;
+const MIN_INTERVAL_MINUTES = 1;
 const SCAN_BATCH_SIZE = 10;
 
 // ─── Access helper ───
 
 async function requireScheduledPromptAccess(
-  ctx: MutationCtx,
+  ctx: QueryCtx | MutationCtx,
   sessionId: string,
   scheduledPromptId: Id<'chatroom_scheduledPrompts'>
 ) {
@@ -93,6 +94,30 @@ export const list = query({
   },
 });
 
+export const get = query({
+  args: { ...SessionIdArg, scheduledPromptId: v.id('chatroom_scheduledPrompts') },
+  handler: async (ctx, args) => {
+    return await requireScheduledPromptAccess(ctx, args.sessionId, args.scheduledPromptId);
+  },
+});
+
+export const listTriggeredMessages = query({
+  args: {
+    ...SessionIdArg,
+    scheduledPromptId: v.id('chatroom_scheduledPrompts'),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const row = await requireScheduledPromptAccess(ctx, args.sessionId, args.scheduledPromptId);
+    const limit = Math.min(args.limit ?? 20, 50);
+    return await ctx.db
+      .query('chatroom_messages')
+      .withIndex('by_scheduledPromptId', (q) => q.eq('scheduledPromptId', row._id))
+      .order('desc')
+      .take(limit);
+  },
+});
+
 // ─── Mutations ───
 
 export const create = mutation({
@@ -119,7 +144,7 @@ export const create = mutation({
     validateSchedule(args);
     const now = Date.now();
     const schedule = toScheduleRow(args);
-    const nextRunAt = computeNextRunAt(schedule, now);
+    const nextRunAt = computeNextRunAtForEnable(schedule, now);
     return await ctx.db.insert('chatroom_scheduledPrompts', {
       chatroomId: args.chatroomId,
       name: args.name?.trim() || undefined,
@@ -200,7 +225,7 @@ export const update = mutation({
         validateSchedule(fullSchedule);
         Object.assign(patch, fullSchedule);
         if (row.isRunnable) {
-          patch.nextRunAt = computeNextRunAt(fullSchedule, now);
+          patch.nextRunAt = computeNextRunAtForEnable(fullSchedule, now);
         }
       } else {
         const fullSchedule = {
@@ -211,7 +236,7 @@ export const update = mutation({
         validateSchedule(fullSchedule);
         Object.assign(patch, fullSchedule);
         if (row.isRunnable) {
-          patch.nextRunAt = computeNextRunAt(fullSchedule, now);
+          patch.nextRunAt = computeNextRunAtForEnable(fullSchedule, now);
         }
       }
     }
@@ -244,10 +269,11 @@ export const setEnabled = mutation({
       return;
     }
     const schedule = toScheduleRow(row);
+    const anchor = schedule.scheduleKind === 'interval' ? row.lastRunAt : undefined;
     await ctx.db.patch('chatroom_scheduledPrompts', row._id, {
       disabledReason: undefined,
       isRunnable: true,
-      nextRunAt: computeNextRunAt(schedule, now),
+      nextRunAt: computeNextRunAtForEnable(schedule, now, anchor),
       updatedAt: now,
     });
   },
@@ -312,6 +338,7 @@ export const fireOne = internalMutation({
       chatroomId: row.chatroomId,
       content: row.prompt,
       sourcePlatform: 'scheduled',
+      scheduledPromptId: row._id,
     });
     if (!result.ok) return;
 
@@ -319,7 +346,7 @@ export const fireOne = internalMutation({
     const schedule = toScheduleRow(row);
     await ctx.db.patch('chatroom_scheduledPrompts', row._id, {
       lastRunAt: now,
-      nextRunAt: computeNextRunAt(schedule, now),
+      nextRunAt: computeNextRunAt(schedule, now, row.nextRunAt),
       updatedAt: now,
     });
   },

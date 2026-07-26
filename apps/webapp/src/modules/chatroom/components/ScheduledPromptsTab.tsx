@@ -6,31 +6,22 @@ import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessio
 import { Clock, Loader2, Plus, Power, PowerOff, Trash2 } from 'lucide-react';
 import React, { useState, useCallback, memo } from 'react';
 
+import {
+  formatTimezoneLabel,
+  localDailyTimeToUtc,
+  utcDailyTimeToLocal,
+} from '../features/scheduled-prompts/utils/scheduledPromptTimezone';
+import {
+  formatSchedule,
+  formatTime,
+} from '../features/scheduled-prompts/utils/scheduledPromptFormat';
+import { ScheduledPromptDetailDialog } from '../features/scheduled-prompts/components/ScheduledPromptDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 
 interface ScheduledPromptsTabProps {
   chatroomId: string;
-}
-
-function formatSchedule(prompt: {
-  scheduleKind: 'interval' | 'daily';
-  intervalMinutes?: number;
-  hourUTC?: number;
-  minuteUTC?: number;
-}): string {
-  if (prompt.scheduleKind === 'interval') return `Every ${prompt.intervalMinutes} minutes`;
-  const h = String(prompt.hourUTC ?? 0).padStart(2, '0');
-  const m = String(prompt.minuteUTC ?? 0).padStart(2, '0');
-  return `Daily at ${h}:${m} UTC`;
-}
-
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  const h = String(d.getUTCHours()).padStart(2, '0');
-  const m = String(d.getUTCMinutes()).padStart(2, '0');
-  return `${h}:${m} UTC`;
 }
 
 export const ScheduledPromptsTab = memo(function ScheduledPromptsTab({
@@ -85,13 +76,8 @@ export const ScheduledPromptsTab = memo(function ScheduledPromptsTab({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-chatroom-text-muted">
-            Automatically send messages on a schedule.
-          </p>
-        </div>
         {hasPrompts && !showForm && (
           <Button variant="outline" size="sm" onClick={handleAdd} className="text-xs gap-1.5">
             <Plus size={14} />
@@ -165,6 +151,7 @@ const ScheduledPromptCard = memo(function ScheduledPromptCard({
   const [isToggling, setIsToggling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const isArchiveDisabled = prompt.disabledReason === 'archive';
   const isActive = prompt.disabledReason === undefined;
@@ -192,15 +179,15 @@ const ScheduledPromptCard = memo(function ScheduledPromptCard({
     prompt.name || prompt.prompt.slice(0, 60) + (prompt.prompt.length > 60 ? '...' : '');
 
   return (
-    <div className="border border-chatroom-border rounded-none p-4 bg-chatroom-bg-secondary">
-      <div className="flex items-center justify-between">
+    <div className="border border-chatroom-border rounded-none p-4 bg-chatroom-bg-secondary overflow-hidden min-w-0">
+      <div className="flex items-start justify-between gap-3 min-w-0">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-bold text-chatroom-text-primary truncate">
+          <div className="flex items-center gap-2 mb-1 min-w-0">
+            <span className="text-sm font-bold text-chatroom-text-primary truncate min-w-0">
               {displayName}
             </span>
             <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider ${
+              className={`inline-flex shrink-0 items-center gap-1 px-1.5 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider ${
                 isActive
                   ? 'bg-green-500/10 text-green-500 dark:bg-green-500/20 dark:text-green-400'
                   : isArchiveDisabled
@@ -224,22 +211,32 @@ const ScheduledPromptCard = memo(function ScheduledPromptCard({
             </span>
           </div>
           <p className="text-xs text-chatroom-text-primary truncate">{prompt.prompt}</p>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-[11px] text-chatroom-text-muted">{formatSchedule(prompt)}</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 min-w-0">
+            <span className="text-[11px] text-chatroom-text-muted break-words">
+              {formatSchedule(prompt)}
+            </span>
             {prompt.lastRunAt && (
-              <span className="text-[11px] text-chatroom-text-muted">
+              <span className="text-[11px] text-chatroom-text-muted break-words">
                 Last run: {formatTime(prompt.lastRunAt)}
               </span>
             )}
             {prompt.nextRunAt && isActive && (
-              <span className="text-[11px] text-chatroom-text-muted">
+              <span className="text-[11px] text-chatroom-text-muted break-words">
                 Next run: {formatTime(prompt.nextRunAt)}
               </span>
             )}
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDetailOpen(true)}
+            className="text-[10px] h-6 px-2 mt-2 text-chatroom-text-muted hover:text-chatroom-accent"
+          >
+            View trigger history
+          </Button>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 ml-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <Switch
             checked={isActive}
             onCheckedChange={handleToggle}
@@ -291,6 +288,13 @@ const ScheduledPromptCard = memo(function ScheduledPromptCard({
           )}
         </div>
       </div>
+      {detailOpen && (
+        <ScheduledPromptDetailDialog
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          scheduledPromptId={prompt._id}
+        />
+      )}
     </div>
   );
 });
@@ -317,8 +321,9 @@ const ScheduledPromptForm = memo(function ScheduledPromptForm({
     initial?.scheduleKind ?? 'interval'
   );
   const [intervalMinutes, setIntervalMinutes] = useState(initial?.intervalMinutes ?? 30);
-  const [hourUTC, setHourUTC] = useState(initial?.hourUTC ?? 9);
-  const [minuteUTC, setMinuteUTC] = useState(initial?.minuteUTC ?? 0);
+  const localInit = utcDailyTimeToLocal(initial?.hourUTC ?? 9, initial?.minuteUTC ?? 0);
+  const [hourLocal, setHourLocal] = useState(localInit.hour);
+  const [minuteLocal, setMinuteLocal] = useState(localInit.minute);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -331,18 +336,18 @@ const ScheduledPromptForm = memo(function ScheduledPromptForm({
       setError('Prompt must be 10000 characters or less');
       return;
     }
-    if (scheduleKind === 'interval' && (!intervalMinutes || intervalMinutes < 5)) {
-      setError('Interval must be at least 5 minutes');
+    if (scheduleKind === 'interval' && (!intervalMinutes || intervalMinutes < 1)) {
+      setError('Interval must be at least 1 minute');
       return;
     }
     if (
       scheduleKind === 'daily' &&
-      (hourUTC === undefined ||
-        minuteUTC === undefined ||
-        hourUTC < 0 ||
-        hourUTC > 23 ||
-        minuteUTC < 0 ||
-        minuteUTC > 59)
+      (hourLocal === undefined ||
+        minuteLocal === undefined ||
+        hourLocal < 0 ||
+        hourLocal > 23 ||
+        minuteLocal < 0 ||
+        minuteLocal > 59)
     ) {
       setError('Daily schedule requires valid hour (0-23) and minute (0-59)');
       return;
@@ -358,6 +363,7 @@ const ScheduledPromptForm = memo(function ScheduledPromptForm({
       if (scheduleKind === 'interval') {
         data.intervalMinutes = intervalMinutes;
       } else {
+        const { hourUTC, minuteUTC } = localDailyTimeToUtc(hourLocal, minuteLocal);
         data.hourUTC = hourUTC;
         data.minuteUTC = minuteUTC;
       }
@@ -367,7 +373,7 @@ const ScheduledPromptForm = memo(function ScheduledPromptForm({
     } finally {
       setSaving(false);
     }
-  }, [name, prompt, scheduleKind, intervalMinutes, hourUTC, minuteUTC, onSave]);
+  }, [name, prompt, scheduleKind, intervalMinutes, hourLocal, minuteLocal, onSave]);
 
   return (
     <div className="border border-chatroom-border rounded-none bg-chatroom-bg-secondary overflow-hidden">
@@ -437,40 +443,45 @@ const ScheduledPromptForm = memo(function ScheduledPromptForm({
             </label>
             <Input
               type="number"
-              min={5}
+              min={1}
               value={intervalMinutes}
               onChange={(e) => setIntervalMinutes(Number(e.target.value))}
               className="text-xs bg-chatroom-bg-primary border-chatroom-border w-24"
             />
           </div>
         ) : (
-          <div className="flex gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-chatroom-text-primary uppercase tracking-wider">
-                Hour UTC
-              </label>
-              <Input
-                type="number"
-                min={0}
-                max={23}
-                value={hourUTC}
-                onChange={(e) => setHourUTC(Number(e.target.value))}
-                className="text-xs bg-chatroom-bg-primary border-chatroom-border w-20"
-              />
+          <div className="space-y-2">
+            <div className="flex gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-chatroom-text-primary uppercase tracking-wider">
+                  Hour
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={hourLocal}
+                  onChange={(e) => setHourLocal(Number(e.target.value))}
+                  className="text-xs bg-chatroom-bg-primary border-chatroom-border w-20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-chatroom-text-primary uppercase tracking-wider">
+                  Minute
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={minuteLocal}
+                  onChange={(e) => setMinuteLocal(Number(e.target.value))}
+                  className="text-xs bg-chatroom-bg-primary border-chatroom-border w-20"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-chatroom-text-primary uppercase tracking-wider">
-                Minute UTC
-              </label>
-              <Input
-                type="number"
-                min={0}
-                max={59}
-                value={minuteUTC}
-                onChange={(e) => setMinuteUTC(Number(e.target.value))}
-                className="text-xs bg-chatroom-bg-primary border-chatroom-border w-20"
-              />
-            </div>
+            <p className="text-[10px] text-chatroom-text-muted">
+              Your timezone: {formatTimezoneLabel()}
+            </p>
           </div>
         )}
 
