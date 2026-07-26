@@ -83,7 +83,7 @@ describe('native task-started content', () => {
     expect(output).toContain('Handoff to `builder`');
   });
 
-  test('enhancer enabled user task includes linear workflow guidance', () => {
+  test('enhancer enabled user task includes delegation-loop workflow guidance', () => {
     const output = generateNativeTaskDeliveryOutput({
       chatroomId: 'room-id',
       role: 'planner',
@@ -97,12 +97,15 @@ describe('native task-started content', () => {
     });
 
     expect(output).toContain('<handoff-enhancer>');
-    expect(output).toContain('enhancement enabled for this user instruction');
-    expect(output).toContain('user → planner → enhancer → planner → builder → user');
+    expect(output).toContain('One check-in per builder delegation');
+    expect(output).toContain('planner → enhancer → planner → builder');
     expect(output).toContain('--next-role="enhancer"');
     expect(output).toContain('Handoff to `enhancer`');
     expect(output).toContain('--trigger-message-id="user-msg-id"');
     expect(output).not.toContain('<enhancer-review>');
+    expect(output).toContain(
+      'user → [loop planner → enhancer → planner → builder → planner] → user'
+    );
   });
 
   test('enhancer disabled user task omits enhancer sections', () => {

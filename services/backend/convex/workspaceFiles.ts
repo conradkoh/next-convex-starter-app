@@ -1101,19 +1101,20 @@ export const getFileTreeDeltas = query({
       )
       .take(MAX_FILE_TREE_DELTAS_PER_QUERY + 1);
     const hasMore = rows.length > MAX_FILE_TREE_DELTAS_PER_QUERY;
-    const deltas = rows.slice(0, MAX_FILE_TREE_DELTAS_PER_QUERY).map((row) => ({
-      operationId: row.operationId,
+    const deltaRows = rows.slice(0, MAX_FILE_TREE_DELTAS_PER_QUERY);
+    // Return null when caught up to suppress idle subscription bandwidth
+    if (deltaRows.length === 0) {
+      return null;
+    }
+    const deltas = deltaRows.map((row) => ({
       baseRevision: row.baseRevision,
       revision: row.revision,
       operations: expandFileTreeDeltaOperations(row.operations),
-      createdAt: row.createdAt,
     }));
     return {
       status: 'ok' as const,
-      checkpointRevision,
-      currentRevision,
       deltas,
-      hasMore,
+      ...(hasMore ? { hasMore: true as const } : {}),
     };
   },
 });

@@ -816,4 +816,57 @@ describe('web.enhancer.index enqueue / recordAttemptFailure / complete lifecycle
       })
     ).rejects.toThrow(/NO_PLANNER_USER_TASK/i);
   });
+
+  test('handoff message has taskOriginMessageId pointing to user message', async () => {
+    const { sessionId, chatroomId } = await setupWorkspaceForSession('ho-origin-msg');
+
+    // Join planner as a participant so collectActiveTasks can find the task
+    const { joinParticipant } = await import('../helpers/integration');
+    await joinParticipant(sessionId, chatroomId, 'planner');
+
+    // Create a user message and in_progress task
+    const userMsgId = await t.run(async (ctx) => {
+      const msgId = await ctx.db.insert('chatroom_messages', {
+        chatroomId,
+        senderRole: 'user',
+        content: 'Build feature X',
+        targetRole: 'planner',
+        type: 'message',
+      });
+      await ctx.db.insert('chatroom_tasks', {
+        chatroomId,
+        createdBy: 'user',
+        content: 'Build feature X',
+        status: 'in_progress',
+        assignedTo: 'planner',
+        sourceMessageId: msgId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        queuePosition: 1,
+      });
+      return msgId;
+    });
+
+    // Handoff to builder — should set taskOriginMessageId from completed task
+    const handoffResult = await t.mutation(api.messages.handoff, {
+      sessionId,
+      chatroomId,
+      senderRole: 'planner',
+      targetRole: 'builder',
+      content: 'Slice complete',
+    });
+    expect(handoffResult).toHaveProperty('messageId');
+
+    const handoffMsg = await t.run(async (ctx) => {
+      const msgs = await ctx.db
+        .query('chatroom_messages')
+        .withIndex('by_chatroom', (q) => q.eq('chatroomId', chatroomId))
+        .order('desc')
+        .take(5);
+      return msgs.find((m) => m.type === 'handoff' && m.senderRole === 'planner');
+    });
+
+    expect(handoffMsg).toBeDefined();
+    expect(handoffMsg!.taskOriginMessageId).toBe(userMsgId);
+  });
 });

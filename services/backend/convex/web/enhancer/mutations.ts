@@ -15,11 +15,11 @@ import { insertPlannerToEnhancerDraftMessage } from './timelineMessages';
 import { ENHANCER_MAX_ATTEMPTS } from '../../../config/reliability';
 import { buildPlanningReviewOutcomeContent } from '../../../src/domain/usecase/enhancer/build-planning-review-outcome';
 import { completePlannerTasksOnEnhancerCheckIn } from '../../../src/domain/usecase/enhancer/complete-planner-tasks-on-check-in';
-import { resolveOriginUserMessageIdForPlannerCheckIn } from '../../../src/domain/usecase/enhancer/resolve-origin-user-message-id';
 import {
   transitionPlannerFromEnhancingToWaiting,
   transitionPlannerToEnhancing,
 } from '../../../src/domain/usecase/enhancer/planner-enhancing-status';
+import { resolveOriginUserMessageIdForPlannerCheckIn } from '../../../src/domain/usecase/enhancer/resolve-origin-user-message-id';
 import { mutation } from '../../_generated/server';
 import { requireChatroomAccess } from '../../auth/chatroomAccess';
 import { agentHarnessValidator } from '../../schema';
@@ -138,20 +138,6 @@ export const enqueueHandoff = mutation({
       });
     }
 
-    const priorJob = await ctx.db
-      .query('chatroom_enhancerJobs')
-      .withIndex('by_chatroom_originUserMessageId', (q) =>
-        q.eq('chatroomId', args.chatroomId).eq('originUserMessageId', originUserMessageId)
-      )
-      .first();
-    if (priorJob) {
-      throw new ConvexError({
-        code: 'ENHANCER_ALREADY_CHECKED_IN',
-        message:
-          'Enhancer check-in already used for this user instruction. Proceed to builder or user — workflow is linear.',
-      });
-    }
-
     const existingActive = await findActiveEnhancerJob(ctx, args.chatroomId, 'planner', 'enhancer');
     if (existingActive) {
       throw new ConvexError({
@@ -224,6 +210,7 @@ export const recordAttemptFailure = mutation({
     chatroomId: v.id('chatroom_rooms'),
     jobId: v.id('chatroom_enhancerJobs'),
     error: v.string(),
+    forceTerminal: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { session } = await requireChatroomAccess(ctx, args.sessionId, args.chatroomId);
@@ -238,7 +225,7 @@ export const recordAttemptFailure = mutation({
 
     const now = Date.now();
     const attemptCount = job.attemptCount;
-    if (attemptCount >= job.maxAttempts) {
+    if (args.forceTerminal || attemptCount >= job.maxAttempts) {
       // Terminal failure: deliver planning-review-outcome envelope before marking failed
       let error = args.error;
       const handoffResult = await deliverPendingHandoffFromJob(ctx, {

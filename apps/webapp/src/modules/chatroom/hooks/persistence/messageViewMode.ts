@@ -1,8 +1,21 @@
 export type MessageViewMode = 'all' | 'user-only' | `role:${string}`;
 
-/** Roles shown as filter tabs: user first, then team roles (deduped). */
+export const ENHANCER_FILTER_ROLE = 'enhancer';
+
+function rolesInclude(teamRoles: readonly string[], role: string): boolean {
+  const needle = role.toLowerCase();
+  return teamRoles.some((r) => r.toLowerCase() === needle);
+}
+
+/** Roles shown as filter tabs: user first, then team roles (deduped), then enhancer when planner team. */
 export function getMessageFilterRoles(teamRoles: string[]): string[] {
-  return [...new Set(['user', ...teamRoles.filter((role) => role.toLowerCase() !== 'user')])];
+  const roles = [
+    ...new Set(['user', ...teamRoles.filter((role) => role.toLowerCase() !== 'user')]),
+  ];
+  if (teamSupportsEnhancer(teamRoles) && !rolesInclude(roles, ENHANCER_FILTER_ROLE)) {
+    roles.push(ENHANCER_FILTER_ROLE);
+  }
+  return roles;
 }
 
 export function roleToMessageViewMode(role: string): MessageViewMode {
@@ -22,6 +35,10 @@ export function isFilteredMessageViewMode(
   return mode !== 'all';
 }
 
+export function teamSupportsEnhancer(teamRoles: readonly string[]): boolean {
+  return rolesInclude(teamRoles, 'planner');
+}
+
 function isRoleMessageViewMode(value: string): boolean {
   return value.startsWith('role:') && value.length > 5;
 }
@@ -31,7 +48,12 @@ export function isValidMessageViewMode(v: unknown): v is MessageViewMode {
   return typeof v === 'string' && isRoleMessageViewMode(v);
 }
 
-/** Whether a timeline message belongs in a role-filtered view (matches listMessagesBySenderRolePaginated semantics). */
+/**
+ * Whether a timeline message belongs in a role-filtered view.
+ * Sender-role filters include visibleInAllTabOnly messages from that sender
+ * (e.g. outbound enhancer check-in handoffs from planner).
+ * Must match listMessagesBySenderRolePaginated handler in messages.ts.
+ */
 // fallow-ignore-next-line complexity
 export function messageMatchesSenderRoleFilter(
   message: { senderRole: string; type: string; targetRole?: string },
@@ -40,6 +62,16 @@ export function messageMatchesSenderRoleFilter(
   if (senderRole.toLowerCase() === 'user') {
     if (message.senderRole.toLowerCase() === 'user' && message.type === 'message') return true;
     if (message.type === 'handoff' && message.targetRole?.toLowerCase() === 'user') return true;
+    return false;
+  }
+  // Must match listMessagesBySenderRolePaginated enhancer branch in messages.ts
+  if (senderRole.toLowerCase() === ENHANCER_FILTER_ROLE) {
+    if (message.senderRole.toLowerCase() === ENHANCER_FILTER_ROLE) {
+      return message.type === 'message' || message.type === 'handoff';
+    }
+    if (message.type === 'handoff' && message.targetRole?.toLowerCase() === ENHANCER_FILTER_ROLE) {
+      return true;
+    }
     return false;
   }
   if (message.senderRole.toLowerCase() !== senderRole.toLowerCase()) return false;
