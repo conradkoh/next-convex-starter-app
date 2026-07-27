@@ -119,10 +119,6 @@ async function maybeStartPendingTaskFromTokenActivity(
     return;
   }
 
-  if (await maybeStartEnhancerDaemonPendingTask(ctx, args, participant, topPending)) {
-    return;
-  }
-
   const agentConfig = await getAgentConfig(ctx, {
     chatroomId: args.chatroomId,
     role: args.role,
@@ -144,11 +140,6 @@ async function maybeStartPendingTaskFromTokenActivity(
     return;
   }
 
-  // Enhancer daemon tasks started via agent.waiting require a linked running enhancer job
-  if (args.role === 'enhancer') {
-    return;
-  }
-
   if (participant.lastStatus !== 'agent.waiting') {
     return;
   }
@@ -159,44 +150,6 @@ async function maybeStartPendingTaskFromTokenActivity(
     pendingTask: topPending,
   });
   await readTask(ctx, { chatroomId: args.chatroomId, role: args.role, taskId: topPending._id });
-}
-
-async function findRunningEnhancerJobForTask(
-  ctx: MutationCtx,
-  chatroomId: Id<'chatroom_rooms'>,
-  taskId: Id<'chatroom_tasks'>
-): Promise<Doc<'chatroom_enhancerJobs'> | null> {
-  const running = await ctx.db
-    .query('chatroom_enhancerJobs')
-    .withIndex('by_chatroom_status', (q) => q.eq('chatroomId', chatroomId).eq('status', 'running'))
-    .collect();
-  return running.find((j) => j.taskId === taskId) ?? null;
-}
-
-async function maybeStartEnhancerDaemonPendingTask(
-  ctx: MutationCtx,
-  args: { chatroomId: Id<'chatroom_rooms'>; role: string },
-  participant: ParticipantSnapshot,
-  pendingTask: Doc<'chatroom_tasks'>
-): Promise<boolean> {
-  if (args.role !== 'enhancer') return false;
-  if (participant.lastStatus !== 'agent.waiting' && participant.lastStatus !== 'agent.started') {
-    return false;
-  }
-  const job = await findRunningEnhancerJobForTask(ctx, args.chatroomId, pendingTask._id);
-  if (!job) return false;
-
-  await acknowledgePendingTask(ctx, {
-    chatroomId: args.chatroomId,
-    role: args.role,
-    pendingTask,
-  });
-  await readTask(ctx, {
-    chatroomId: args.chatroomId,
-    role: args.role,
-    taskId: pendingTask._id,
-  });
-  return true;
 }
 
 /** Starts acknowledged or pending work when harness token activity resumes after agent.waiting. */
