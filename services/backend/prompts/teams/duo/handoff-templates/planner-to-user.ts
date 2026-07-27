@@ -8,31 +8,20 @@
  * prompts/cli/get-next-task/fullOutput.ts and native task delivery) rather
  * than baked into the static init/system prompt.
  *
- * Sections that do not apply may be omitted — the report captures not just
+ * Every section is required — do not omit sections. The report captures not just
  * what changed but the reasoning behind it:
- *  1. Template disclosure confirmation — planner attests they saw this template
- *     at task start before planning or delegating (soft verification for debugging).
- *  2. What changed — high-level view since the user's message, with proof of
- *     principle and proof of completion as sub-sections.
- *  3. Backlog tasks implemented — backlog items addressed by this work.
- *  4. Backlog pending user review confirmation — attestation that implemented
- *     backlog items were moved to pending_user_review after verified end-to-end and a PR was raised.
- *  5. Key technical decisions, tradeoffs, tech debt, and system design.
- *  6. Unresolved decisions — open questions carried forward until the user resolves them.
+ *  1. Overview (expanded by default) — Summary + What changed
+ *  2. Proofs (collapsed) — Template disclosure, Proof of Planning, Proof of Principles (##),
+ *     Proof of Completion (##), Backlog attestations, Code Change Verification
+ *  3. Direction (collapsed) — What exists today, Key Technical Decisions, Tradeoffs, System Design
+ *  4. Notes (collapsed)
+ *  5. Action required (expanded by default) — Tech Debt, Unresolved Decisions, Manual steps
  */
 
 import type { RoleGuidanceCommandParams } from '../../../cli/role-guidance/command';
 import { getHandoffRecipientVisibilityCallout } from '../../../native/handoff-visibility';
-import { CODE_CHANGE_VERIFICATION_CONFIRMATION } from '../../../utils/code-change-verification';
-import { getContextReadDisclosureBlock } from '../../../utils/context-disclosure';
-import { getFileReferenceProofOfCompletionExample } from '../../../utils/file-reference-guidance';
-import {
-  getHandoffQualityPrinciplesCommentBlock,
-  PROOF_OF_PRINCIPLES_HEADING_H3,
-} from '../../../utils/handoff-quality-principles';
+import { getHandoffReportTemplateBody } from '../../../utils/handoff-report-template-body';
 import { getHandoffReportTemplateIntro } from '../../../utils/handoff-section-guidance';
-import { getRoleGuidanceDisclosureBlock } from '../../../utils/role-guidance-disclosure';
-import { getUnresolvedDecisionsSectionBlock } from '../../../utils/unresolved-decisions';
 
 /**
  * Returns the markdown report template the planner uses when delivering the
@@ -46,63 +35,6 @@ export function getPlannerToUserReportTemplate(
 ${getHandoffReportTemplateIntro('Report Template (Planner → User)')}
 
 \`\`\`markdown
-## Summary
-<what was accomplished, in plain terms — no references to prior messages>
-
-## Template Disclosure Confirmation
-- [ ] I confirm that I have seen this template at the start of any planning, before working on or delegating any task to the team
-${getRoleGuidanceDisclosureBlock(roleGuidanceContext)}
-
-## Proof of Planning
-<!-- Demonstrate the goal was decomposed into actionable steps with clear outcomes before implementation. -->
-- <step 1: concrete artifact or outcome>
-- <step 2: concrete artifact or outcome>
-<Omit for trivial single-step tasks.>
-
-## What changed
-<high-level view of what changed since the user's message before the detailed proofs below>
-
-${PROOF_OF_PRINCIPLES_HEADING_H3}
-${getHandoffQualityPrinciplesCommentBlock()}
-<how this work follows the principles above — localized changes, readable structure, correctness provable from source then tests>
-
-### Proof of Completion
-${getContextReadDisclosureBlock(roleGuidanceContext)}
-${getFileReferenceProofOfCompletionExample()}
-<evidence the goal was met — list every file you (or the builder) modified>
-
-## Backlog Tasks Implemented
-- \`backlog-item-id\` — <backlog item title/summary and how this work addresses it>
-<Omit if no backlog items were in scope.>
-
-## Backlog Pending User Review Confirmation
-- [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` after the feature was verified end-to-end and a PR was raised for user review
-- PR URL(s): <link to PR(s)>
-<Omit this section if no backlog items apply.>
-
-## Key Technical Decisions
-- <schema design, modules, interfaces, domain entities — what you chose and why>
-
-## Key Tradeoffs
-- <what was weighed against what, and why you chose this path>
-
-## Tech Debt Observed
-- <issues noticed but intentionally left out of scope of this change>
-
-## System Design
-<include a mermaid diagram when the change has non-trivial structure; omit for trivial changes>
-
-\`\`\`mermaid
-flowchart TD
-    A[Component] --> B[Component]
-\`\`\`
-
-## Code Change Verification
-${CODE_CHANGE_VERIFICATION_CONFIRMATION}
-
-${getUnresolvedDecisionsSectionBlock()}
-
-## Notes
-<anything the user should know — context, caveats, or observations not covered above. Omit if none.>
+${getHandoffReportTemplateBody(roleGuidanceContext)}
 \`\`\``;
 }
