@@ -17,6 +17,8 @@ vi.mock('../../../../api.js', () => {
   setPath(api, ['web', 'enhancer', 'index', 'complete'], 'complete');
   setPath(api, ['web', 'enhancer', 'index', 'getJob'], 'getJob');
   setPath(api, ['daemon', 'enhancer', 'index', 'pendingForMachine'], 'pendingForMachine');
+  setPath(api, ['participants', 'join'], 'participantsJoin');
+  setPath(api, ['participants', 'updateTokenActivity'], 'updateTokenActivity');
   return { api };
 });
 
@@ -258,6 +260,85 @@ describe('startEnhancerJobSubscriber', () => {
     const callArgs = completeFn.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.enhancedContent).toBe('## Summary\nPlanning feedback');
     expect(recordFailure).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it('calls updateTokenActivity when native harness spawn fires onOutput', async () => {
+    vi.useFakeTimers();
+
+    let outputCallback: (() => void) | undefined;
+    const updateTokenActivity = vi.fn().mockResolvedValue(undefined);
+    const participantsJoin = vi.fn().mockResolvedValue(undefined);
+    const mutationFn = vi.fn().mockImplementation((endpoint: string, args: unknown) => {
+      if (endpoint === 'claimForSpawn') return { claimed: true };
+      if (endpoint === 'participantsJoin') return participantsJoin(args);
+      if (endpoint === 'updateTokenActivity') return updateTokenActivity(args);
+      return undefined;
+    });
+    const queryFn = vi.fn().mockImplementation((endpoint: string) => {
+      if (endpoint === 'getSpawnPayload') {
+        return {
+          chatroomId: 'room1',
+          jobId: 'job1',
+          agentHarness: 'opencode-sdk',
+          model: 'm',
+          workingDir: '/tmp',
+          systemPrompt: 'sys',
+          taskEnvelope: 'task',
+        };
+      }
+      return Promise.resolve({ status: 'running' });
+    });
+
+    const backend = { mutation: mutationFn, query: queryFn };
+
+    let onUpdateCb: (jobs: unknown[]) => void = () => {};
+    const wsClient = {
+      onUpdate: vi.fn((_api: unknown, _args: unknown, cb: (jobs: unknown[]) => void) => {
+        onUpdateCb = cb;
+        return vi.fn();
+      }),
+    };
+
+    const spawn = vi.fn().mockReturnValue({
+      onExit: vi.fn(),
+      onOutput: (fn: () => void) => {
+        outputCallback = fn;
+      },
+      onLogLine: vi.fn(),
+      onAssistantText: vi.fn(),
+      pid: 123,
+    });
+    const agentServices = new Map([['opencode-sdk', { spawn, stop: vi.fn() }]]);
+
+    startEnhancerJobSubscriber(
+      'session',
+      'machine',
+      'http://localhost',
+      backend as any,
+      wsClient as any,
+      agentServices as any
+    );
+
+    onUpdateCb([{ jobId: 'job1', chatroomId: 'room1' }]);
+    await vi.advanceTimersByTimeAsync(10);
+
+    // Native waiting emitted for opencode-sdk
+    expect(participantsJoin).toHaveBeenCalled();
+    const joinArgs = participantsJoin.mock.calls[0][0] as Record<string, unknown>;
+    expect(joinArgs.action).toBe('native:waiting');
+    expect(joinArgs.role).toBe('enhancer');
+
+    // Fire harness output
+    outputCallback!();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(updateTokenActivity).toHaveBeenCalledTimes(1);
+    const tokenArgs = updateTokenActivity.mock.calls[0][0] as Record<string, unknown>;
+    expect(tokenArgs.sessionId).toBe('session');
+    expect(tokenArgs.chatroomId).toBe('room1');
+    expect(tokenArgs.role).toBe('enhancer');
 
     vi.useRealTimers();
   });
