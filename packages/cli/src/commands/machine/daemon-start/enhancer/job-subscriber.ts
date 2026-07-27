@@ -7,10 +7,6 @@ import { api, type Id } from '../../../../api.js';
 import type { BackendOps } from '../../../../infrastructure/deps/index.js';
 import type { RemoteAgentService } from '../../../../infrastructure/services/remote-agents/remote-agent-service.js';
 import { createSpawnPrompt } from '../../../../infrastructure/services/remote-agents/spawn-prompt.js';
-import {
-  emitNativeWaitingAfterSpawn,
-  wireThrottledTokenActivityOnOutput,
-} from '../../../../infrastructure/services/remote-agents/native-spawn-presence.js';
 
 export interface EnhancerJobSubscriberHandles {
   stop: () => void;
@@ -96,33 +92,16 @@ export function startEnhancerJobSubscriber(
               writeEnhancerLog(line);
             });
 
-            await emitNativeWaitingAfterSpawn(
-              {
-                backend,
-                sessionId,
-                chatroomId: payload.chatroomId,
-                role: ENHANCER_AGENT_ROLE,
-              },
-              payload.agentHarness
-            );
-
-            wireThrottledTokenActivityOnOutput({
-              backend,
-              sessionId,
-              chatroomId: payload.chatroomId,
-              role: ENHANCER_AGENT_ROLE,
-              spawnResult,
-            });
-
-            const sr = spawnResult!;
-            const outcome = await waitForEnhancerJobResolution({
+            await waitForEnhancerJobResolution({
               sessionId,
               chatroomId: payload.chatroomId,
               jobId: payload.jobId,
               backend,
-              onAssistantText: sr.onAssistantText ? (cb) => sr.onAssistantText!(cb) : undefined,
-              onAgentEnd: sr.onAgentEnd ? (cb) => sr.onAgentEnd!(cb) : undefined,
-              onExit: (cb) => sr.onExit(() => cb()),
+              onAssistantText: spawnResult.onAssistantText
+                ? (cb) => spawnResult.onAssistantText?.(cb)
+                : undefined,
+              onAgentEnd: spawnResult.onAgentEnd ? (cb) => spawnResult.onAgentEnd?.(cb) : undefined,
+              onExit: (cb) => spawnResult.onExit(() => cb()),
               onSalvageComplete: async (content) => {
                 await backend.mutation(api.web.enhancer.index.complete, {
                   sessionId,

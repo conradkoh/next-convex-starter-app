@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { startEnhancerJobSubscriber } from './job-subscriber.js';
+
 vi.mock('../../../../api.js', () => {
   const api: Record<string, unknown> = {};
   // Build a nested object structure mimicking Convex API paths
@@ -22,13 +24,10 @@ vi.mock('../../../../api.js', () => {
   return { api };
 });
 
-import { startEnhancerJobSubscriber } from './job-subscriber.js';
-
 describe('startEnhancerJobSubscriber', () => {
   it('records attempt failure when harness exits without completing job', async () => {
     vi.useFakeTimers();
 
-    let getJobCalls = 0;
     const recordFailure = vi.fn().mockResolvedValue(undefined);
     const mutationFn = vi.fn().mockImplementation((endpoint: string, args: unknown) => {
       if (endpoint === 'claimForSpawn') return { claimed: true };
@@ -47,7 +46,6 @@ describe('startEnhancerJobSubscriber', () => {
           taskEnvelope: 'task',
         };
       }
-      getJobCalls++;
       return Promise.resolve({ status: 'running' });
     });
 
@@ -264,16 +262,16 @@ describe('startEnhancerJobSubscriber', () => {
     vi.useRealTimers();
   });
 
-  it('calls updateTokenActivity when native harness spawn fires onOutput', async () => {
+  it('does not call participants.join or updateTokenActivity (enhancer is a worker, not a team agent)', async () => {
     vi.useFakeTimers();
 
     let outputCallback: (() => void) | undefined;
     const updateTokenActivity = vi.fn().mockResolvedValue(undefined);
     const participantsJoin = vi.fn().mockResolvedValue(undefined);
-    const mutationFn = vi.fn().mockImplementation((endpoint: string, args: unknown) => {
+    const mutationFn = vi.fn().mockImplementation((endpoint: string) => {
       if (endpoint === 'claimForSpawn') return { claimed: true };
-      if (endpoint === 'participantsJoin') return participantsJoin(args);
-      if (endpoint === 'updateTokenActivity') return updateTokenActivity(args);
+      if (endpoint === 'participantsJoin') return participantsJoin();
+      if (endpoint === 'updateTokenActivity') return updateTokenActivity();
       return undefined;
     });
     const queryFn = vi.fn().mockImplementation((endpoint: string) => {
@@ -324,21 +322,14 @@ describe('startEnhancerJobSubscriber', () => {
     onUpdateCb([{ jobId: 'job1', chatroomId: 'room1' }]);
     await vi.advanceTimersByTimeAsync(10);
 
-    // Native waiting emitted for opencode-sdk
-    expect(participantsJoin).toHaveBeenCalled();
-    const joinArgs = participantsJoin.mock.calls[0][0] as Record<string, unknown>;
-    expect(joinArgs.action).toBe('native:waiting');
-    expect(joinArgs.role).toBe('enhancer');
+    expect(participantsJoin).not.toHaveBeenCalled();
+    expect(updateTokenActivity).not.toHaveBeenCalled();
 
-    // Fire harness output
-    outputCallback!();
+    outputCallback?.();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(updateTokenActivity).toHaveBeenCalledTimes(1);
-    const tokenArgs = updateTokenActivity.mock.calls[0][0] as Record<string, unknown>;
-    expect(tokenArgs.sessionId).toBe('session');
-    expect(tokenArgs.chatroomId).toBe('room1');
-    expect(tokenArgs.role).toBe('enhancer');
+    expect(participantsJoin).not.toHaveBeenCalled();
+    expect(updateTokenActivity).not.toHaveBeenCalled();
 
     vi.useRealTimers();
   });
