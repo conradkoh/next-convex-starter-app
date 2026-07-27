@@ -24,6 +24,7 @@ import {
   GitBranch,
   GitPullRequest as GitPullRequestIcon,
   PanelBottomOpen,
+  Terminal,
 } from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
 import { memo, useState, useCallback, useMemo, useEffect } from 'react';
@@ -598,7 +599,7 @@ const MobileWorkspaceModal = memo(function MobileWorkspaceModal({
   isLocal: boolean;
   sendAction: (
     machineId: string,
-    action: 'open-vscode' | 'open-finder' | 'open-github-desktop',
+    action: 'open-vscode' | 'open-finder' | 'open-github-desktop' | 'open-cursor',
     workingDir: string
   ) => void;
 }) {
@@ -735,6 +736,17 @@ const MobileWorkspaceModal = memo(function MobileWorkspaceModal({
                       >
                         <Code2 size={12} className="shrink-0" />
                         Open in VS Code
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void sendAction(workspace.machineId, 'open-cursor', workspace.workingDir);
+                          onClose();
+                        }}
+                        className="flex items-center gap-2 px-2 py-1.5 text-[12px] text-chatroom-text-secondary hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover/50 rounded-none transition-colors w-full text-left"
+                      >
+                        <Terminal size={12} className="shrink-0" />
+                        Open in Cursor
                       </button>
                     </>
                   )}
@@ -1170,6 +1182,14 @@ export const WorkspaceBottomBar = memo(function WorkspaceBottomBar({
                             >
                               <Code2 size={13} className="mr-2" />
                               Open in VS Code
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                void sendAction(ws.machineId, 'open-cursor', ws.workingDir)
+                              }
+                            >
+                              <Terminal size={13} className="mr-2" />
+                              Open in Cursor
                             </DropdownMenuItem>
                           </>
                         )}
