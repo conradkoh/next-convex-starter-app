@@ -9,6 +9,7 @@ import { readTask } from '../task/read-task';
  * Enhancer is an ephemeral daemon worker — not a chatroom team participant — so this
  * must not go through participants.join / updateTokenActivity.
  */
+// fallow-ignore-next-line complexity
 export async function startEnhancerJobWork(
   ctx: MutationCtx,
   job: Doc<'chatroom_enhancerJobs'>
