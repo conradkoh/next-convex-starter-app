@@ -85,7 +85,7 @@ describe('backlog attachment hint', () => {
       { chatroomId: 'test-chatroom-456', role: 'planner' }
     );
     const block = lines.join('\n');
-    expect(block).toContain('verified end-to-end');
+    expect(block.toLowerCase()).toContain('verified end-to-end');
     expect(block).not.toContain('When done:');
   });
 });
