@@ -34,7 +34,8 @@ describe('workspace file content requests', () => {
   });
 
   test('requestFileContent returns cached when v2 cache is fresh', async () => {
-    const { sessionId, machineId } = await createTestSession('test-wfc-v2-cached');
+    const { sessionId } = await createTestSession('test-wfc-v2-cached');
+    const machineId = 'machine-wfc-v2-cached';
     await registerMachineWithDaemon(sessionId, machineId);
 
     const filePath = 'hello.md';
