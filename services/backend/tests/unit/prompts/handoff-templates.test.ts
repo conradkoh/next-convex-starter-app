@@ -152,7 +152,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <Omit if no backlog items were in scope.>
 
       ## Backlog Pending User Review Confirmation
-      - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` because a PR has been raised for user review
+      - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` after the feature was verified end-to-end and a PR was raised for user review
       - PR URL(s): <link to PR(s)>
       <Omit this section if no backlog items apply.>
 
@@ -233,7 +233,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <how this work follows the principles above — localized changes, readable structure, correctness provable from source then tests>
 
       ## Proof of Completion
-      - [ ] I confirm that the goal and acceptance criteria from the planner’s delegation brief have been met
+      - [ ] I confirm the delegation brief is fully met: all (Required) files done, verified end-to-end, acceptance criteria pass
       <!-- Reference the ## Goal and ## Requirements (acceptance criteria) sections from the planner handoff you received. State the delegation goal and confirm it was achieved. -->
       <!-- File references (clickable in workspace UI): use repo-relative paths with a file extension — e.g. \`apps/webapp/src/modules/chatroom/foo.ts\` or [apps/webapp/src/foo.ts](apps/webapp/src/foo.ts). Avoid absolute paths, file:// prefixes, and paths without / or extension. -->
       - \`apps/webapp/src/path/to/file.ts\` — <what changed and why>
@@ -295,7 +295,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <choices that greatly simplify the solution while preserving long-term maintainability — reuse existing abstractions, avoid unnecessary layers, leverage platform conventions>
 
       ## Files to implement (exhaustive, file-level)
-      List **every** file in this slice. For each file, state the exact change and paste the code the builder should match (no guessing).
+      List **every** file in this slice. Mark each file **(Required)** or **(Optional)** — all Required files must land before PR. For each file, state the exact change and paste the code the builder should match (no guessing).
       <!-- File references (clickable in workspace UI): use repo-relative paths with a file extension — e.g. \`apps/webapp/src/modules/chatroom/foo.ts\` or [apps/webapp/src/foo.ts](apps/webapp/src/foo.ts). Avoid absolute paths, file:// prefixes, and paths without / or extension. -->
 
       ### \`apps/webapp/src/path/to/file.ts\`
@@ -330,6 +330,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
 
       ## Requirements (acceptance criteria)
       - <verifiable outcome the builder can self-check>
+      - Include at least one check that the feature is **verified end-to-end**. Unit tests alone are insufficient for new features.
 
       ## What to avoid
       - <anti-patterns, recurring mistakes, or scope creep for this slice — be explicit>
@@ -398,7 +399,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <choices that greatly simplify the solution while preserving long-term maintainability — reuse existing abstractions, avoid unnecessary layers, leverage platform conventions>
 
       ## Files to implement (exhaustive, file-level)
-      List **every** file in this slice. For each file, state the exact change and paste the code the builder should match (no guessing).
+      List **every** file in this slice. Mark each file **(Required)** or **(Optional)** — all Required files must land before PR. For each file, state the exact change and paste the code the builder should match (no guessing).
       <!-- File references (clickable in workspace UI): use repo-relative paths with a file extension — e.g. \`apps/webapp/src/modules/chatroom/foo.ts\` or [apps/webapp/src/foo.ts](apps/webapp/src/foo.ts). Avoid absolute paths, file:// prefixes, and paths without / or extension. -->
 
       ### \`apps/webapp/src/path/to/file.ts\`
@@ -433,6 +434,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
 
       ## Requirements (acceptance criteria)
       - <verifiable outcome the builder can self-check>
+      - Include at least one check that the feature is **verified end-to-end**. Unit tests alone are insufficient for new features.
 
       ## What to avoid
       - <anti-patterns, recurring mistakes, or scope creep for this slice — be explicit>
@@ -523,7 +525,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <Omit if no backlog items were in scope.>
 
       ## Backlog Pending User Review Confirmation
-      - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` because a PR has been raised for user review
+      - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` after the feature was verified end-to-end and a PR was raised for user review
       - PR URL(s): <link to PR(s)>
       <Omit this section if no backlog items apply.>
 
@@ -623,8 +625,19 @@ describe('handoff-templates > invariants', () => {
       '<!-- Reference the ## Goal and ## Requirements (acceptance criteria) sections from the planner handoff you received. State the delegation goal and confirm it was achieved. -->'
     );
     expect(template).toContain(
-      'I confirm that the goal and acceptance criteria from the planner\u2019s delegation brief have been met'
+      'all (Required) files done, verified end-to-end, acceptance criteria pass'
     );
+  });
+
+  test('builder → planner includes verified end-to-end completion checkboxes', () => {
+    const template = resolveDeliveredHandoffTemplate({
+      teamId: 'duo',
+      fromRole: 'builder',
+      toRole: 'planner',
+      role: 'builder',
+    });
+    expect(template).toContain('verified end-to-end');
+    expect(template).toContain('(Required) files done');
   });
 
   test('planner → user includes context-read HTML comment with resolved command', () => {
@@ -674,5 +687,39 @@ describe('handoff-templates > invariants', () => {
       expect(template).toContain('## Unresolved Decisions');
       expect(template).toContain('Carry forward decisions still open from earlier handoffs');
     }
+  });
+
+  test('builder → planner includes verified end-to-end completion checkboxes', () => {
+    const template = resolveDeliveredHandoffTemplate({
+      teamId: 'duo',
+      fromRole: 'builder',
+      toRole: 'planner',
+      role: 'builder',
+    });
+    expect(template).toContain('verified end-to-end');
+    expect(template).toContain('(Required) files done');
+  });
+
+  test('planner → user backlog attestation requires verified end-to-end', () => {
+    const template = resolveDeliveredHandoffTemplate({
+      teamId: 'duo',
+      fromRole: 'planner',
+      toRole: 'user',
+      role: 'planner',
+    });
+    expect(template).toContain('verified end-to-end and a PR was raised for user review');
+    expect(template).not.toContain('because a PR has been raised for user review');
+  });
+
+  test('planner → builder requires verified end-to-end acceptance criteria', () => {
+    const template = resolveDeliveredHandoffTemplate({
+      teamId: 'duo',
+      fromRole: 'planner',
+      toRole: 'builder',
+      role: 'planner',
+      nativeIntegration: false,
+    });
+    expect(template).toContain('Unit tests alone are insufficient for new features');
+    expect(template).toContain('(Required)');
   });
 });
