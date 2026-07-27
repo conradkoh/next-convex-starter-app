@@ -129,12 +129,12 @@ import type * as web_directHarness_sessions from "../web/directHarness/sessions.
 import type * as web_directHarness_turns from "../web/directHarness/turns.js";
 import type * as web_enhancer_completeLogic from "../web/enhancer/completeLogic.js";
 import type * as web_enhancer_delivery from "../web/enhancer/delivery.js";
+import type * as web_enhancer_enqueueHandoff from "../web/enhancer/enqueueHandoff.js";
 import type * as web_enhancer_index from "../web/enhancer/index.js";
 import type * as web_enhancer_internal from "../web/enhancer/internal.js";
 import type * as web_enhancer_jobHelpers from "../web/enhancer/jobHelpers.js";
 import type * as web_enhancer_mutations from "../web/enhancer/mutations.js";
 import type * as web_enhancer_queries from "../web/enhancer/queries.js";
-import type * as web_enhancer_timelineMessages from "../web/enhancer/timelineMessages.js";
 import type * as workspaceFiles from "../workspaceFiles.js";
 import type * as workspacePathSecurity from "../workspacePathSecurity.js";
 import type * as workspaces from "../workspaces.js";
@@ -267,12 +267,12 @@ declare const fullApi: ApiFromModules<{
   "web/directHarness/turns": typeof web_directHarness_turns;
   "web/enhancer/completeLogic": typeof web_enhancer_completeLogic;
   "web/enhancer/delivery": typeof web_enhancer_delivery;
+  "web/enhancer/enqueueHandoff": typeof web_enhancer_enqueueHandoff;
   "web/enhancer/index": typeof web_enhancer_index;
   "web/enhancer/internal": typeof web_enhancer_internal;
   "web/enhancer/jobHelpers": typeof web_enhancer_jobHelpers;
   "web/enhancer/mutations": typeof web_enhancer_mutations;
   "web/enhancer/queries": typeof web_enhancer_queries;
-  "web/enhancer/timelineMessages": typeof web_enhancer_timelineMessages;
   workspaceFiles: typeof workspaceFiles;
   workspacePathSecurity: typeof workspacePathSecurity;
   workspaces: typeof workspaces;
