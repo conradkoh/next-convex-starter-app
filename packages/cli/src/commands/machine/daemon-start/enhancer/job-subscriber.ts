@@ -1,3 +1,5 @@
+import { NATIVE_WAITING_ACTION } from '@workspace/backend/src/domain/entities/participant.js';
+import { getHarnessCapabilities } from '@workspace/backend/src/domain/entities/harness/types.js';
 import type { ConvexClient } from 'convex/browser';
 
 import { ENHANCER_AGENT_ROLE } from './constants.js';
@@ -91,6 +93,32 @@ export function startEnhancerJobSubscriber(
             spawnResult.onLogLine?.((line) => {
               writeEnhancerLog(line);
             });
+
+            if (getHarnessCapabilities(payload.agentHarness as any).supportsNativeIntegration) {
+              await backend.mutation(api.participants.join, {
+                sessionId,
+                chatroomId: payload.chatroomId,
+                role: ENHANCER_AGENT_ROLE,
+                action: NATIVE_WAITING_ACTION,
+              });
+            }
+
+            {
+              let lastReportedTokenAt = 0;
+              spawnResult.onOutput?.(() => {
+                const now = Date.now();
+                if (lastReportedTokenAt === 0 || now - lastReportedTokenAt >= 30_000) {
+                  lastReportedTokenAt = now;
+                  void backend
+                    .mutation(api.participants.updateTokenActivity, {
+                      sessionId,
+                      chatroomId: payload.chatroomId,
+                      role: ENHANCER_AGENT_ROLE,
+                    })
+                    .catch(() => {});
+                }
+              });
+            }
 
             const sr = spawnResult!;
             const outcome = await waitForEnhancerJobResolution({
