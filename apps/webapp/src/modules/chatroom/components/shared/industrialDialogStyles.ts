@@ -3,6 +3,8 @@
  * See docs/application/design/theme.md — sharp corners, 2px borders, chatroom palette.
  */
 
+import { Z_CONFIRMATION, Z_FLOATING } from './overlayLayers';
+
 const chatroomIndustrialBorderClassName = 'border-2 border-chatroom-border-strong';
 
 export const chatroomIndustrialPanelBorderClassName = 'border-2 border-chatroom-border';
@@ -24,6 +26,18 @@ export const chatroomIndustrialOverlayClassName = `${chatroomIndustrialOverlayAn
 export const chatroomIndustrialModalContentClassName = [
   ...chatroomIndustrialModalContentAnimationClassName,
   'z-50',
+  'rounded-none',
+  chatroomIndustrialBorderClassName,
+  chatroomIndustrialSurfaceClassName,
+] as const;
+
+/** Floating overlay for nested dialogs opened above an existing modal. */
+export const chatroomIndustrialFloatingOverlayClassName = `${chatroomIndustrialOverlayAnimationClassName} ${Z_FLOATING} bg-black/60`;
+
+/** Floating content for nested dialogs — z-[100] above base modal z-50. */
+export const chatroomIndustrialFloatingModalContentClassName = [
+  ...chatroomIndustrialModalContentAnimationClassName,
+  Z_FLOATING,
   'rounded-none',
   chatroomIndustrialBorderClassName,
   chatroomIndustrialSurfaceClassName,
@@ -56,7 +70,18 @@ export const chatroomPortaledMenuSurfaceClassName =
   'bg-chatroom-bg-primary text-chatroom-text-primary border border-chatroom-border rounded-none shadow-md';
 
 /**
- * Base classes for portaled menu panels — z-50 band (stacking via portal DOM order).
+ * Base classes for portaled menu panels — z-50 (elevate via portal host z-[60] inside modals).
  */
 // fallow-ignore-next-line unused-export
 export const chatroomPortaledMenuFloatingClassName = `z-50 pointer-events-auto outline-none ${chatroomPortaledMenuSurfaceClassName}`;
+
+/** Confirmation overlay — above floating menus and nested modals. */
+export const chatroomIndustrialConfirmationOverlayClassName = `${chatroomIndustrialOverlayAnimationClassName} ${Z_CONFIRMATION} bg-black/60`;
+
+export const chatroomIndustrialConfirmationModalContentClassName = [
+  ...chatroomIndustrialModalContentAnimationClassName,
+  Z_CONFIRMATION,
+  'rounded-none',
+  chatroomIndustrialBorderClassName,
+  chatroomIndustrialSurfaceClassName,
+] as const;

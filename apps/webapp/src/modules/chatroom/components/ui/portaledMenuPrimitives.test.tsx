@@ -13,7 +13,6 @@ import {
   chatroomPortaledMenuFloatingClassName,
   chatroomPortaledMenuSurfaceClassName,
 } from '../shared/industrialDialogStyles';
-import { Z_MODAL } from '../shared/overlayLayers';
 
 import { FixedModal } from '@/components/ui/fixed-modal';
 
@@ -108,8 +107,8 @@ describe('PopoverContent', () => {
     );
 
     const popoverContent = screen.getByTestId('popover-content');
-    expect(popoverContent.className).toContain(Z_MODAL);
     expect(popoverContent.className).toContain('z-50');
+    expect(popoverContent.className).not.toContain('z-[100]');
 
     const modalContent = document.body.querySelector<HTMLElement>('.chatroom-root');
     expect(modalContent).not.toBeNull();

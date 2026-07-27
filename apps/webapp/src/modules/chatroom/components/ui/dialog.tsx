@@ -16,10 +16,15 @@ import {
   chatroomIndustrialDialogDescriptionClassName,
   chatroomIndustrialDialogFooterClassName,
   chatroomIndustrialDialogTitleClassName,
+  chatroomIndustrialFloatingModalContentClassName,
+  chatroomIndustrialFloatingOverlayClassName,
   chatroomIndustrialModalContentClassName,
   chatroomIndustrialOverlayClassName,
 } from '../shared/industrialDialogStyles';
-import { OverlayPortalContainerProvider } from '../shared/overlayPortalContainer';
+import {
+  OverlayPortalContainerProvider,
+  useOverlayPortalContainer,
+} from '../shared/overlayPortalContainer';
 
 import { useAllowTouchSelection } from '@/hooks/useAllowTouchSelection';
 import { cn } from '@/lib/utils';
@@ -42,12 +47,16 @@ function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.C
 
 function DialogOverlay({
   className,
+  floating,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof DialogPrimitive.Overlay> & { floating?: boolean }) {
   return (
     <DialogPrimitive.Overlay
       data-slot="chatroom-dialog-overlay"
-      className={cn(chatroomIndustrialOverlayClassName, className)}
+      className={cn(
+        floating ? chatroomIndustrialFloatingOverlayClassName : chatroomIndustrialOverlayClassName,
+        className
+      )}
       {...props}
     />
   );
@@ -77,22 +86,29 @@ export function DialogScrollBody({ className, children, ...props }: React.Compon
 function DialogContent({
   className,
   children,
+  floating,
   onEscapeKeyDown,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & { floating?: boolean }) {
   useAllowTouchSelection();
+  const portalContainer = useOverlayPortalContainer();
+  const isFloating = floating ?? portalContainer != null;
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const safeClassName = stripOverflowFromClassName(className);
 
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay floating={isFloating} />
       <DialogPrimitive.Content
         data-slot="chatroom-dialog-content"
         className={cn(
-          chatroomIndustrialModalContentClassName,
+          isFloating
+            ? chatroomIndustrialFloatingModalContentClassName
+            : chatroomIndustrialModalContentClassName,
           safeClassName,
-          'overflow-visible relative flex flex-col'
+          // Keep overflow-visible for portaled popovers. Never add position/display
+          // utilities here — tailwind-merge will strip industrial fixed/grid (445ae39b5 regression).
+          'overflow-visible'
         )}
         onEscapeKeyDown={onEscapeKeyDown}
         {...props}

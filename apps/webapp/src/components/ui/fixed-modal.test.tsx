@@ -2,9 +2,22 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import React, { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { FixedModal } from './fixed-modal';
+import {
+  FixedModal,
+  FixedModalBody,
+  FixedModalContent,
+  FixedModalHeader,
+  FixedModalSidebar,
+  FixedModalTitle,
+} from './fixed-modal';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/modules/chatroom/components/ui/popover';
+
+function queryModalOverlays(): NodeListOf<HTMLElement> {
+  return document.body.querySelectorAll<HTMLElement>(
+    '.fixed.inset-0:not([data-slot="chatroom-dialog-portal-host"])'
+  );
+}
 
 describe('FixedModal', () => {
   afterEach(() => {
@@ -23,7 +36,7 @@ describe('FixedModal', () => {
       </>
     );
 
-    const overlays = document.body.querySelectorAll<HTMLElement>('.fixed.inset-0');
+    const overlays = queryModalOverlays();
     expect(overlays).toHaveLength(2);
     expect(overlays[0]?.compareDocumentPosition(overlays[1]!)).toBe(4);
   });
@@ -126,7 +139,7 @@ describe('FixedModal', () => {
     };
     render(<Wrapper />);
     fireEvent.click(screen.getByText('open detail'));
-    const overlays = document.body.querySelectorAll<HTMLElement>('.fixed.inset-0');
+    const overlays = queryModalOverlays();
     expect(overlays).toHaveLength(2);
     expect(overlays[0]?.compareDocumentPosition(overlays[1]!)).toBe(4);
   });
@@ -162,5 +175,47 @@ describe('FixedModal', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('FixedModal sidebar layout', () => {
+  it('places sidebar before content as direct dialog descendants', () => {
+    render(
+      <FixedModal isOpen onClose={() => undefined} maxWidth="max-w-5xl">
+        <FixedModalSidebar>
+          <FixedModalHeader>
+            <FixedModalTitle>Nav</FixedModalTitle>
+          </FixedModalHeader>
+        </FixedModalSidebar>
+        <FixedModalContent>
+          <FixedModalBody>Body</FixedModalBody>
+        </FixedModalContent>
+      </FixedModal>
+    );
+
+    const dialog = screen.getByRole('dialog');
+    const sidebar = dialog.querySelector('[data-slot="fixed-modal-sidebar"]');
+    const content = dialog.querySelector('[data-slot="fixed-modal-content"]');
+
+    expect(sidebar).not.toBeNull();
+    expect(content).not.toBeNull();
+    // Sidebar precedes content in DOM (horizontal row layout contract)
+    expect(
+      sidebar!.compareDocumentPosition(content!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('renders content-only modal without sidebar slot', () => {
+    render(
+      <FixedModal isOpen onClose={() => undefined}>
+        <FixedModalContent>
+          <FixedModalBody>Only content</FixedModalBody>
+        </FixedModalContent>
+      </FixedModal>
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.querySelector('[data-slot="fixed-modal-content"]')).not.toBeNull();
+    expect(dialog.querySelector('[data-slot="fixed-modal-sidebar"]')).toBeNull();
   });
 });
