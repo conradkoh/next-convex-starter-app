@@ -8,7 +8,11 @@ import { describe, expect, test } from 'vitest';
 
 import { api } from '../../convex/_generated/api';
 import { t } from '../../test.setup';
-import { createTestSession, registerMachineWithDaemon } from '../helpers/integration';
+import {
+  createDuoTeamChatroom,
+  createTestSession,
+  registerMachineWithDaemon,
+} from '../helpers/integration';
 
 function gzipContent(text: string) {
   return {
@@ -37,6 +41,15 @@ describe('workspace file content requests', () => {
     const { sessionId } = await createTestSession('test-wfc-v2-cached');
     const machineId = 'machine-wfc-v2-cached';
     await registerMachineWithDaemon(sessionId, machineId);
+    const chatroomId = await createDuoTeamChatroom(sessionId);
+    await t.mutation(api.workspaces.registerWorkspace, {
+      sessionId: sessionId as never,
+      chatroomId,
+      machineId,
+      workingDir: '/tmp/v2-cache-test',
+      hostname: 'test-host',
+      registeredBy: 'builder',
+    });
 
     const filePath = 'hello.md';
     const workingDir = '/tmp/v2-cache-test';
