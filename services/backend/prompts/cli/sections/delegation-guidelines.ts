@@ -64,13 +64,14 @@ flowchart TD
 - **Spell out what to avoid** — anti-patterns and recurring mistakes you have seen from builders on similar work (scope creep, wrong abstractions, forbidden refactors).
 - **One slice ≈ one focused review surface.** If you can't imagine reviewing it in one sitting, split it.
 - **Order by dependency**, not by team convention. A slice should be runnable/testable when its dependencies are done.
+- **A slice is shippable only when verified end-to-end** — infra/helper files alone are not a complete slice.
 - **Skip phases that don't apply** (e.g., no frontend for a backend-only change, no schema for a pure refactor).
 
 **Code review:** For code-producing work, review before delivering. Activate the review framework with: ${cmd('skill activate code-review')}.
 
 **Backlog items:** When the task originates from a backlog item, activate the backlog skill: ${cmd('skill activate backlog')}.
 
-**If stuck:** After 2 failed rework attempts → step back, replan the slice, or deliver partial results with a clear explanation.
+**If stuck:** After 2 failed rework attempts → replan or hand back to planner as blocked. No partial PR, \`mark-for-review\`, or user delivery.
 
 **Review loop:**
 - Review completed work before moving to the next slice.

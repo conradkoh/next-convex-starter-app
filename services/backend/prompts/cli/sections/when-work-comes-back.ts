@@ -15,8 +15,8 @@ export function getWhenWorkComesBackSection(
   config: Pick<TeamCompositionConfig, 'hasBuilder'>
 ): string {
   const reworkLine = config.hasBuilder
-    ? '3. If requirements are NOT met → hand back to `builder` for rework'
-    : '3. If requirements are NOT met → revise your own implementation and re-validate';
+    ? '3. If requirements are NOT met (including partial work) → hand back to `builder` for rework'
+    : '3. If requirements are NOT met (including partial work) → revise and re-validate';
 
   return `**When you receive work back from team members:**
 1. Review the completed work against the original user request
