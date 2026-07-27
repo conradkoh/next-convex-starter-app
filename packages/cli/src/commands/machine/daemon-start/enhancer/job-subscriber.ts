@@ -1,5 +1,3 @@
-import { NATIVE_WAITING_ACTION } from '@workspace/backend/src/domain/entities/participant.js';
-import { getHarnessCapabilities } from '@workspace/backend/src/domain/entities/harness/types.js';
 import type { ConvexClient } from 'convex/browser';
 
 import { ENHANCER_AGENT_ROLE } from './constants.js';
@@ -9,6 +7,10 @@ import { api, type Id } from '../../../../api.js';
 import type { BackendOps } from '../../../../infrastructure/deps/index.js';
 import type { RemoteAgentService } from '../../../../infrastructure/services/remote-agents/remote-agent-service.js';
 import { createSpawnPrompt } from '../../../../infrastructure/services/remote-agents/spawn-prompt.js';
+import {
+  emitNativeWaitingAfterSpawn,
+  wireThrottledTokenActivityOnOutput,
+} from '../../../../infrastructure/services/remote-agents/native-spawn-presence.js';
 
 export interface EnhancerJobSubscriberHandles {
   stop: () => void;
@@ -94,31 +96,23 @@ export function startEnhancerJobSubscriber(
               writeEnhancerLog(line);
             });
 
-            if (getHarnessCapabilities(payload.agentHarness as any).supportsNativeIntegration) {
-              await backend.mutation(api.participants.join, {
+            await emitNativeWaitingAfterSpawn(
+              {
+                backend,
                 sessionId,
                 chatroomId: payload.chatroomId,
                 role: ENHANCER_AGENT_ROLE,
-                action: NATIVE_WAITING_ACTION,
-              });
-            }
+              },
+              payload.agentHarness
+            );
 
-            {
-              let lastReportedTokenAt = 0;
-              spawnResult.onOutput?.(() => {
-                const now = Date.now();
-                if (lastReportedTokenAt === 0 || now - lastReportedTokenAt >= 30_000) {
-                  lastReportedTokenAt = now;
-                  void backend
-                    .mutation(api.participants.updateTokenActivity, {
-                      sessionId,
-                      chatroomId: payload.chatroomId,
-                      role: ENHANCER_AGENT_ROLE,
-                    })
-                    .catch(() => {});
-                }
-              });
-            }
+            wireThrottledTokenActivityOnOutput({
+              backend,
+              sessionId,
+              chatroomId: payload.chatroomId,
+              role: ENHANCER_AGENT_ROLE,
+              spawnResult,
+            });
 
             const sr = spawnResult!;
             const outcome = await waitForEnhancerJobResolution({
