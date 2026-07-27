@@ -24,6 +24,25 @@ export type CompactFileTreeDeltaOp =
   | { o: 'r'; p: string }
   | { o: 't'; p: string; e: 'f' | 'd' };
 
+export const verboseFileTreeDeltaOperationValidator = v.object({
+  operation: v.union(v.literal('add'), v.literal('remove'), v.literal('type-change')),
+  path: v.string(),
+  entryType: v.optional(v.union(v.literal('file'), v.literal('directory'))),
+  size: v.optional(v.number()),
+  modifiedAt: v.optional(v.number()),
+});
+
+export const storedFileTreeDeltaOperationValidator = v.union(
+  compactFileTreeDeltaOperationValidator,
+  verboseFileTreeDeltaOperationValidator
+);
+
+export function isVerboseFileTreeDeltaOp(
+  op: CompactFileTreeDeltaOp | VerboseFileTreeDeltaOp
+): op is VerboseFileTreeDeltaOp {
+  return 'operation' in op;
+}
+
 export type VerboseFileTreeDeltaOp =
   | {
       operation: 'add';

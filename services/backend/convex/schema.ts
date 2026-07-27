@@ -1,7 +1,7 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
-import { compactFileTreeDeltaOperationValidator } from './lib/fileTreeDeltaOps';
+import { storedFileTreeDeltaOperationValidator } from './lib/fileTreeDeltaOps';
 import { agentHarnessValidator, agentTypeValidator } from '../src/domain/entities/agent';
 
 const attachedSnippetValidator = v.object({
@@ -2591,7 +2591,7 @@ export default defineSchema({
     operationId: v.optional(v.string()),
     baseRevision: v.number(),
     revision: v.number(),
-    operations: v.array(compactFileTreeDeltaOperationValidator),
+    operations: v.array(storedFileTreeDeltaOperationValidator),
     createdAt: v.optional(v.number()),
   })
     .index('by_machine_workingDir_revision', ['machineId', 'workingDir', 'revision'])

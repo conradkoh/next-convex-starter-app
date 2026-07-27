@@ -4,6 +4,7 @@ import {
   compactFileTreeDeltaOperation,
   expandFileTreeDeltaOperation,
   expandFileTreeDeltaOperations,
+  isVerboseFileTreeDeltaOp,
   type CompactFileTreeDeltaOp,
   type VerboseFileTreeDeltaOp,
 } from './fileTreeDeltaOps';
@@ -114,6 +115,27 @@ describe('expandFileTreeDeltaOperation', () => {
       size: 100,
     };
     expect(expandFileTreeDeltaOperation(verbose)).toBe(verbose);
+  });
+});
+
+describe('isVerboseFileTreeDeltaOp', () => {
+  test('detects verbose add operation', () => {
+    expect(isVerboseFileTreeDeltaOp({ operation: 'add', path: 'a.ts', entryType: 'file' })).toBe(
+      true
+    );
+  });
+  test('detects compact add operation', () => {
+    expect(isVerboseFileTreeDeltaOp({ o: 'a', p: 'a.ts', e: 'f' })).toBe(false);
+  });
+});
+
+describe('legacy delta compaction round trip', () => {
+  test('compacts verbose operations array', () => {
+    const legacy: VerboseFileTreeDeltaOp[] = [
+      { operation: 'add', path: 'legacy.ts', entryType: 'file' },
+    ];
+    const compacted = expandFileTreeDeltaOperations(legacy).map(compactFileTreeDeltaOperation);
+    expect(compacted).toEqual([{ o: 'a', p: 'legacy.ts', e: 'f' }]);
   });
 });
 
