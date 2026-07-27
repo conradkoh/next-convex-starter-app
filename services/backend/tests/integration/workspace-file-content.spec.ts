@@ -2,7 +2,8 @@
  * Workspace File Content — Integration Tests
  */
 
-import { gzipSync } from 'bun';
+import { gzipSync } from 'node:zlib';
+
 import { describe, expect, test } from 'vitest';
 
 import { api } from '../../convex/_generated/api';
