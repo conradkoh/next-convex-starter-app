@@ -3,6 +3,11 @@ import { Migrations } from '@convex-dev/migrations';
 import { components, internal } from './_generated/api';
 import type { DataModel, Doc } from './_generated/dataModel';
 import {
+  compactFileTreeDeltaOperation,
+  expandFileTreeDeltaOperations,
+  isVerboseFileTreeDeltaOp,
+} from './lib/fileTreeDeltaOps';
+import {
   isLegacyMachineFavoriteScopeKey,
   normalizeMachineFavoriteScopeKey,
 } from './utils/machineFavoriteScopeKey';
@@ -505,6 +510,26 @@ export const seedStandingInstructionHistory = migrations.define({
   },
 });
 
+// --- Workspace File Tree Migrations ---
+
+/**
+ * Migration: Compact legacy verbose file-tree delta operations to short-key format.
+ * Required after PR #1122 changed the stored schema; production rows may still use
+ * {operation, path, entryType} shape.
+ *
+ * Run via: npx convex run migrations:run '{"fn": "migrations:compactWorkspaceFileTreeDeltaOperations"}'
+ * Idempotent: rows already compact are skipped.
+ */
+export const compactWorkspaceFileTreeDeltaOperations = migrations.define({
+  table: 'chatroom_workspaceFileTreeDelta',
+  migrateOne: async (_ctx, row) => {
+    if (!row.operations.some(isVerboseFileTreeDeltaOp)) return;
+    return {
+      operations: expandFileTreeDeltaOperations(row.operations).map(compactFileTreeDeltaOperation),
+    };
+  },
+});
+
 // ========================================
 // Batch Runners
 // ========================================
@@ -532,6 +557,8 @@ export const runAll = migrations.runner([
   // Cleanup
   internal.migrations.deduplicateTeamAgentConfigs,
   internal.migrations.purgeWorkspaceCommitDetails,
+  // Workspace File Tree
+  internal.migrations.compactWorkspaceFileTreeDeltaOperations,
   // Git State
   internal.migrations.dropEmbeddedRecentCommits,
   // Machine Models
