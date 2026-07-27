@@ -114,7 +114,17 @@ describe('expandFileTreeDeltaOperation', () => {
       entryType: 'file',
       size: 100,
     };
-    expect(expandFileTreeDeltaOperation(verbose)).toBe(verbose);
+    expect(expandFileTreeDeltaOperation(verbose)).toEqual(verbose);
+  });
+
+  test('normalizes legacy add without entryType to file', () => {
+    const legacy = { operation: 'add' as const, path: 'no-type.ts' };
+    const expected: VerboseFileTreeDeltaOp = {
+      operation: 'add',
+      path: 'no-type.ts',
+      entryType: 'file',
+    };
+    expect(expandFileTreeDeltaOperation(legacy)).toEqual(expected);
   });
 });
 
