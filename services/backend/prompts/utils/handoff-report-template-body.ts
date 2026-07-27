@@ -1,10 +1,7 @@
 import { CODE_CHANGE_VERIFICATION_CONFIRMATION } from './code-change-verification';
 import { getContextReadDisclosureBlock } from './context-disclosure';
 import { getFileReferenceProofOfCompletionExample } from './file-reference-guidance';
-import {
-  getHandoffQualityPrinciplesCommentBlock,
-  PROOF_OF_PRINCIPLES_HEADING_H3,
-} from './handoff-quality-principles';
+import { getHandoffQualityPrinciplesSectionBlock } from './handoff-quality-principles';
 import { getRoleGuidanceDisclosureBlock } from './role-guidance-disclosure';
 import { getUnresolvedDecisionsSectionBlock } from './unresolved-decisions';
 import type { RoleGuidanceCommandParams } from '../cli/role-guidance/command';
@@ -12,10 +9,15 @@ import type { RoleGuidanceCommandParams } from '../cli/role-guidance/command';
 export function getHandoffReportTemplateBody(
   roleGuidanceContext?: RoleGuidanceCommandParams
 ): string {
-  return `## Summary
+  return `<handoff-overview>
+## Summary
 <what was accomplished, in plain terms — no references to prior messages>
 
-<!-- Wrap proof sections in <handoff-proofs> and detail sections in <handoff-details> — UI collapses these by default -->
+## What changed
+<high-level view of what changed since the user's message>
+</handoff-overview>
+
+<!-- UI collapses proofs, direction, and notes by default; overview and action required are expanded -->
 
 <handoff-proofs>
 ## Template Disclosure Confirmation
@@ -23,57 +25,67 @@ export function getHandoffReportTemplateBody(
 ${getRoleGuidanceDisclosureBlock(roleGuidanceContext)}
 
 ## Proof of Planning
-<!-- Demonstrate the goal was decomposed into actionable steps with clear outcomes before implementation. -->
+<!-- REQUIRED. List planning steps, or write "Not Applicable" for trivial single-step tasks. Do not omit this section. -->
 - <step 1: concrete artifact or outcome>
 - <step 2: concrete artifact or outcome>
-<Omit for trivial single-step tasks.>
 
-## What changed
-<high-level view of what changed since the user's message before the detailed proofs below>
+${getHandoffQualityPrinciplesSectionBlock()}
 
-${PROOF_OF_PRINCIPLES_HEADING_H3}
-${getHandoffQualityPrinciplesCommentBlock()}
-<how this work follows the principles above — localized changes, readable structure, correctness provable from source then tests>
-
-### Proof of Completion
+## Proof of Completion
 ${getContextReadDisclosureBlock(roleGuidanceContext)}
 ${getFileReferenceProofOfCompletionExample()}
 <evidence the goal was met — list every file you (or the builder) modified>
 
 ## Backlog Tasks Implemented
+<!-- REQUIRED. List backlog items addressed, or write "Not Applicable" if none were in scope. Do not omit this section. -->
 - \`backlog-item-id\` — <backlog item title/summary and how this work addresses it>
-<Omit if no backlog items were in scope.>
 
 ## Backlog Pending User Review Confirmation
+<!-- REQUIRED. Complete the attestation, or write "Not Applicable" if no backlog items apply. Do not omit this section. -->
 - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` after the feature was verified end-to-end and a PR was raised for user review
 - PR URL(s): <link to PR(s)>
-<Omit this section if no backlog items apply.>
 
 ## Code Change Verification
 ${CODE_CHANGE_VERIFICATION_CONFIRMATION}
 </handoff-proofs>
 
-<handoff-details>
+<handoff-direction>
+## What exists today
+<!-- REQUIRED. Describe current state after this work, or write "Not Applicable". Do not omit this section. -->
+<current state after this work — what the user can now do, what is in place, how the system behaves>
+
 ## Key Technical Decisions
+<!-- REQUIRED. List decisions, or write "Not Applicable". Do not omit this section. -->
 - <schema design, modules, interfaces, domain entities — what you chose and why>
 
 ## Key Tradeoffs
+<!-- REQUIRED. List tradeoffs, or write "Not Applicable". Do not omit this section. -->
 - <what was weighed against what, and why you chose this path>
 
-## Tech Debt Observed
-- <issues noticed but intentionally left out of scope of this change>
-
 ## System Design
-<include a mermaid diagram when the change has non-trivial structure; omit for trivial changes>
+<!-- REQUIRED. Include a mermaid diagram when the change has non-trivial structure, or write "Not Applicable". Do not omit this section. -->
 
 \`\`\`mermaid
 flowchart TD
     A[Component] --> B[Component]
 \`\`\`
+</handoff-direction>
+
+<handoff-notes>
+## Notes
+<!-- REQUIRED. Write notes, or "Not Applicable" if none. Do not omit this section. -->
+<anything the user should know — context, caveats, or observations not covered above>
+</handoff-notes>
+
+<handoff-action>
+## Tech Debt Observed
+<!-- REQUIRED. List tech debt, or write "Not Applicable". Do not omit this section. -->
+- <issues noticed but intentionally left out of scope of this change>
 
 ${getUnresolvedDecisionsSectionBlock()}
 
-## Notes
-<anything the user should know — context, caveats, or observations not covered above. Omit if none.>
-</handoff-details>`;
+## Manual steps
+<!-- REQUIRED. List manual steps outside the system, or write "Not Applicable". Do not omit this section. -->
+<steps the user must take outside the system — deploy, configure credentials, run commands, verify in production, etc.>
+</handoff-action>`;
 }

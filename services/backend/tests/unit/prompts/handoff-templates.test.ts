@@ -109,13 +109,18 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
 
       ---
 
-      **Report Template (Planner → User)** — include every section that applies to this handoff. **Omit sections that do not apply** — do not write \`Not Applicable\` as filler:
+      **Report Template (Planner → User)** — complete every section below. Do not omit sections, principles, or XML wrappers:
 
       \`\`\`markdown
+      <handoff-overview>
       ## Summary
       <what was accomplished, in plain terms — no references to prior messages>
 
-      <!-- Wrap proof sections in <handoff-proofs> and detail sections in <handoff-details> — UI collapses these by default -->
+      ## What changed
+      <high-level view of what changed since the user's message>
+      </handoff-overview>
+
+      <!-- UI collapses proofs, direction, and notes by default; overview and action required are expanded -->
 
       <handoff-proofs>
       ## Template Disclosure Confirmation
@@ -124,26 +129,31 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <!-- Role guidance is static for your role and does not change between tasks. Run once if needed: \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom get-role-guidance --chatroom-id="000000000000010002chatroom_rooms" --role="planner"\`. You do not need to re-read it on every task if you have already read it once. -->
 
       ## Proof of Planning
-      <!-- Demonstrate the goal was decomposed into actionable steps with clear outcomes before implementation. -->
+      <!-- REQUIRED. List planning steps, or write "Not Applicable" for trivial single-step tasks. Do not omit this section. -->
       - <step 1: concrete artifact or outcome>
       - <step 2: concrete artifact or outcome>
-      <Omit for trivial single-step tasks.>
 
-      ## What changed
-      <high-level view of what changed since the user's message before the detailed proofs below>
+      ## Proof of Principles
+      <!-- REQUIRED: Complete every principle below. Write an explanation or "Not Applicable" for each — do not omit this section or skip any principle bullet. -->
+      - **Semantic Consistency:** <how this work demonstrates semantic consistency, or Not Applicable>
+      <!-- Semantic Consistency: the organization of the code, the code and the functionality of the code use a consistent and well maintained set of terms. -->
 
-      ### Proof of Principles
-      <!-- Demonstrate adherence to:
-      - Semantic Consistency: the organization of the code, the code and the functionality of the code use a consistent and well maintained set of terms.
-      - Organization & Maintainability: a small change in requirements should result in a small change in code in a small number of files and folders.
-      - Reducing Optionality: code contains the minimum number of code paths to support the functionality required presently.
-      - Static Evaluability and Provability: the system's behavior should be provably correct by looking at the source code, then automated tests, then manual tests, in this order.
-      - No Revisit: implemented in a way so the user does not have to revisit this implementation again.
-      - Leave It Better: leave the code in a slightly better state than before when touching files.
-      -->
-      <how this work follows the principles above — localized changes, readable structure, correctness provable from source then tests>
+      - **Organization & Maintainability:** <how this work demonstrates organization & maintainability, or Not Applicable>
+      <!-- Organization & Maintainability: a small change in requirements should result in a small change in code in a small number of files and folders. -->
 
-      ### Proof of Completion
+      - **Reducing Optionality:** <how this work demonstrates reducing optionality, or Not Applicable>
+      <!-- Reducing Optionality: code contains the minimum number of code paths to support the functionality required presently. -->
+
+      - **Static Evaluability and Provability:** <how this work demonstrates static evaluability and provability, or Not Applicable>
+      <!-- Static Evaluability and Provability: the system's behavior should be provably correct by looking at the source code, then automated tests, then manual tests, in this order. -->
+
+      - **No Revisit:** <how this work demonstrates no revisit, or Not Applicable>
+      <!-- No Revisit: implemented in a way so the user does not have to revisit this implementation again. -->
+
+      - **Leave It Better:** <how this work demonstrates leave it better, or Not Applicable>
+      <!-- Leave It Better: leave the code in a slightly better state than before when touching files. -->
+
+      ## Proof of Completion
       - [ ] I confirm that I read the current chatroom task context using the command below and that the goal stated in that context has been met
       <!-- Read context before handoff if not already done this task: \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom context read --chatroom-id="000000000000010002chatroom_rooms" --role="planner"\`. State the context goal and confirm it was achieved. -->
       <!-- File references (clickable in workspace UI): use repo-relative paths with a file extension — e.g. \`apps/webapp/src/modules/chatroom/foo.ts\` or [apps/webapp/src/foo.ts](apps/webapp/src/foo.ts). Avoid absolute paths, file:// prefixes, and paths without / or extension. -->
@@ -151,44 +161,60 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <evidence the goal was met — list every file you (or the builder) modified>
 
       ## Backlog Tasks Implemented
+      <!-- REQUIRED. List backlog items addressed, or write "Not Applicable" if none were in scope. Do not omit this section. -->
       - \`backlog-item-id\` — <backlog item title/summary and how this work addresses it>
-      <Omit if no backlog items were in scope.>
 
       ## Backlog Pending User Review Confirmation
+      <!-- REQUIRED. Complete the attestation, or write "Not Applicable" if no backlog items apply. Do not omit this section. -->
       - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` after the feature was verified end-to-end and a PR was raised for user review
       - PR URL(s): <link to PR(s)>
-      <Omit this section if no backlog items apply.>
 
       ## Code Change Verification
       - [ ] I confirm that I have run typecheck and tests for the project (only required if code changes were made)
       </handoff-proofs>
 
-      <handoff-details>
+      <handoff-direction>
+      ## What exists today
+      <!-- REQUIRED. Describe current state after this work, or write "Not Applicable". Do not omit this section. -->
+      <current state after this work — what the user can now do, what is in place, how the system behaves>
+
       ## Key Technical Decisions
+      <!-- REQUIRED. List decisions, or write "Not Applicable". Do not omit this section. -->
       - <schema design, modules, interfaces, domain entities — what you chose and why>
 
       ## Key Tradeoffs
+      <!-- REQUIRED. List tradeoffs, or write "Not Applicable". Do not omit this section. -->
       - <what was weighed against what, and why you chose this path>
 
-      ## Tech Debt Observed
-      - <issues noticed but intentionally left out of scope of this change>
-
       ## System Design
-      <include a mermaid diagram when the change has non-trivial structure; omit for trivial changes>
+      <!-- REQUIRED. Include a mermaid diagram when the change has non-trivial structure, or write "Not Applicable". Do not omit this section. -->
 
       \`\`\`mermaid
       flowchart TD
           A[Component] --> B[Component]
       \`\`\`
+      </handoff-direction>
+
+      <handoff-notes>
+      ## Notes
+      <!-- REQUIRED. Write notes, or "Not Applicable" if none. Do not omit this section. -->
+      <anything the user should know — context, caveats, or observations not covered above>
+      </handoff-notes>
+
+      <handoff-action>
+      ## Tech Debt Observed
+      <!-- REQUIRED. List tech debt, or write "Not Applicable". Do not omit this section. -->
+      - <issues noticed but intentionally left out of scope of this change>
 
       ## Unresolved Decisions
-      <!-- Decisions that need user input before work can proceed. Omit this section when there are no open decisions. -->
+      <!-- REQUIRED. List open decisions needing user input, or write "Not Applicable" if none. Do not omit this section. -->
       - <decision or question — options considered, recommendation if any>
       <Carry forward decisions still open from earlier handoffs in this chatroom. Remove items the user has resolved. Do not decide on the user's behalf unless they explicitly asked you to.>
 
-      ## Notes
-      <anything the user should know — context, caveats, or observations not covered above. Omit if none.>
-      </handoff-details>
+      ## Manual steps
+      <!-- REQUIRED. List manual steps outside the system, or write "Not Applicable". Do not omit this section. -->
+      <steps the user must take outside the system — deploy, configure credentials, run commands, verify in production, etc.>
+      </handoff-action>
       \`\`\`"
     `);
   });
@@ -216,7 +242,7 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
 
       ---
 
-      **Handoff Template (Builder → Planner)** — include every section that applies to this handoff. **Omit sections that do not apply** — do not write \`Not Applicable\` as filler:
+      **Handoff Template (Builder → Planner)** — complete every section below. Do not omit sections, principles, or XML wrappers:
 
       \`\`\`markdown
       ## Summary
@@ -228,15 +254,24 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <!-- Role guidance is static for your role and does not change between tasks. Run once if needed: \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom get-role-guidance --chatroom-id="000000000000010002chatroom_rooms" --role="builder"\`. You do not need to re-read it on every task if you have already read it once. -->
 
       ## Proof of Principles
-      <!-- Demonstrate adherence to:
-      - Semantic Consistency: the organization of the code, the code and the functionality of the code use a consistent and well maintained set of terms.
-      - Organization & Maintainability: a small change in requirements should result in a small change in code in a small number of files and folders.
-      - Reducing Optionality: code contains the minimum number of code paths to support the functionality required presently.
-      - Static Evaluability and Provability: the system's behavior should be provably correct by looking at the source code, then automated tests, then manual tests, in this order.
-      - No Revisit: implemented in a way so the user does not have to revisit this implementation again.
-      - Leave It Better: leave the code in a slightly better state than before when touching files.
-      -->
-      <how this work follows the principles above — localized changes, readable structure, correctness provable from source then tests>
+      <!-- REQUIRED: Complete every principle below. Write an explanation or "Not Applicable" for each — do not omit this section or skip any principle bullet. -->
+      - **Semantic Consistency:** <how this work demonstrates semantic consistency, or Not Applicable>
+      <!-- Semantic Consistency: the organization of the code, the code and the functionality of the code use a consistent and well maintained set of terms. -->
+
+      - **Organization & Maintainability:** <how this work demonstrates organization & maintainability, or Not Applicable>
+      <!-- Organization & Maintainability: a small change in requirements should result in a small change in code in a small number of files and folders. -->
+
+      - **Reducing Optionality:** <how this work demonstrates reducing optionality, or Not Applicable>
+      <!-- Reducing Optionality: code contains the minimum number of code paths to support the functionality required presently. -->
+
+      - **Static Evaluability and Provability:** <how this work demonstrates static evaluability and provability, or Not Applicable>
+      <!-- Static Evaluability and Provability: the system's behavior should be provably correct by looking at the source code, then automated tests, then manual tests, in this order. -->
+
+      - **No Revisit:** <how this work demonstrates no revisit, or Not Applicable>
+      <!-- No Revisit: implemented in a way so the user does not have to revisit this implementation again. -->
+
+      - **Leave It Better:** <how this work demonstrates leave it better, or Not Applicable>
+      <!-- Leave It Better: leave the code in a slightly better state than before when touching files. -->
 
       ## Proof of Completion
       - [ ] I confirm the delegation brief is fully met: all (Required) files done, verified end-to-end, acceptance criteria pass
@@ -249,10 +284,12 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       - [ ] I confirm that I have run typecheck and tests for the project (only required if code changes were made)
 
       ## Blockers / questions
-      <anything needing planner decision. Omit if none.>
+      <!-- REQUIRED. List blockers, or write "Not Applicable". Do not omit this section. -->
+      <anything needing planner decision>
 
       ## Notes for review
-      <specific areas for planner to check. Omit if none.>
+      <!-- REQUIRED. List review notes, or write "Not Applicable". Do not omit this section. -->
+      <specific areas for planner to check>
       \`\`\`"
     `);
   });
@@ -488,13 +525,18 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
 
       ---
 
-      **Report Template (Solo → User)** — include every section that applies to this handoff. **Omit sections that do not apply** — do not write \`Not Applicable\` as filler:
+      **Report Template (Solo → User)** — complete every section below. Do not omit sections, principles, or XML wrappers:
 
       \`\`\`markdown
+      <handoff-overview>
       ## Summary
       <what was accomplished, in plain terms — no references to prior messages>
 
-      <!-- Wrap proof sections in <handoff-proofs> and detail sections in <handoff-details> — UI collapses these by default -->
+      ## What changed
+      <high-level view of what changed since the user's message>
+      </handoff-overview>
+
+      <!-- UI collapses proofs, direction, and notes by default; overview and action required are expanded -->
 
       <handoff-proofs>
       ## Template Disclosure Confirmation
@@ -503,26 +545,31 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <!-- Role guidance is static for your role and does not change between tasks. Run once if needed: \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom get-role-guidance --chatroom-id="000000000000010002chatroom_rooms" --role="solo"\`. You do not need to re-read it on every task if you have already read it once. -->
 
       ## Proof of Planning
-      <!-- Demonstrate the goal was decomposed into actionable steps with clear outcomes before implementation. -->
+      <!-- REQUIRED. List planning steps, or write "Not Applicable" for trivial single-step tasks. Do not omit this section. -->
       - <step 1: concrete artifact or outcome>
       - <step 2: concrete artifact or outcome>
-      <Omit for trivial single-step tasks.>
 
-      ## What changed
-      <high-level view of what changed since the user's message before the detailed proofs below>
+      ## Proof of Principles
+      <!-- REQUIRED: Complete every principle below. Write an explanation or "Not Applicable" for each — do not omit this section or skip any principle bullet. -->
+      - **Semantic Consistency:** <how this work demonstrates semantic consistency, or Not Applicable>
+      <!-- Semantic Consistency: the organization of the code, the code and the functionality of the code use a consistent and well maintained set of terms. -->
 
-      ### Proof of Principles
-      <!-- Demonstrate adherence to:
-      - Semantic Consistency: the organization of the code, the code and the functionality of the code use a consistent and well maintained set of terms.
-      - Organization & Maintainability: a small change in requirements should result in a small change in code in a small number of files and folders.
-      - Reducing Optionality: code contains the minimum number of code paths to support the functionality required presently.
-      - Static Evaluability and Provability: the system's behavior should be provably correct by looking at the source code, then automated tests, then manual tests, in this order.
-      - No Revisit: implemented in a way so the user does not have to revisit this implementation again.
-      - Leave It Better: leave the code in a slightly better state than before when touching files.
-      -->
-      <how this work follows the principles above — localized changes, readable structure, correctness provable from source then tests>
+      - **Organization & Maintainability:** <how this work demonstrates organization & maintainability, or Not Applicable>
+      <!-- Organization & Maintainability: a small change in requirements should result in a small change in code in a small number of files and folders. -->
 
-      ### Proof of Completion
+      - **Reducing Optionality:** <how this work demonstrates reducing optionality, or Not Applicable>
+      <!-- Reducing Optionality: code contains the minimum number of code paths to support the functionality required presently. -->
+
+      - **Static Evaluability and Provability:** <how this work demonstrates static evaluability and provability, or Not Applicable>
+      <!-- Static Evaluability and Provability: the system's behavior should be provably correct by looking at the source code, then automated tests, then manual tests, in this order. -->
+
+      - **No Revisit:** <how this work demonstrates no revisit, or Not Applicable>
+      <!-- No Revisit: implemented in a way so the user does not have to revisit this implementation again. -->
+
+      - **Leave It Better:** <how this work demonstrates leave it better, or Not Applicable>
+      <!-- Leave It Better: leave the code in a slightly better state than before when touching files. -->
+
+      ## Proof of Completion
       - [ ] I confirm that I read the current chatroom task context using the command below and that the goal stated in that context has been met
       <!-- Read context before handoff if not already done this task: \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom context read --chatroom-id="000000000000010002chatroom_rooms" --role="solo"\`. State the context goal and confirm it was achieved. -->
       <!-- File references (clickable in workspace UI): use repo-relative paths with a file extension — e.g. \`apps/webapp/src/modules/chatroom/foo.ts\` or [apps/webapp/src/foo.ts](apps/webapp/src/foo.ts). Avoid absolute paths, file:// prefixes, and paths without / or extension. -->
@@ -530,44 +577,60 @@ describe('handoff-templates > full template snapshots (delivery params)', () => 
       <evidence the goal was met — list every file you (or the builder) modified>
 
       ## Backlog Tasks Implemented
+      <!-- REQUIRED. List backlog items addressed, or write "Not Applicable" if none were in scope. Do not omit this section. -->
       - \`backlog-item-id\` — <backlog item title/summary and how this work addresses it>
-      <Omit if no backlog items were in scope.>
 
       ## Backlog Pending User Review Confirmation
+      <!-- REQUIRED. Complete the attestation, or write "Not Applicable" if no backlog items apply. Do not omit this section. -->
       - [ ] I confirm that every backlog item implemented in this work has been moved to \`pending_user_review\` via \`chatroom backlog mark-for-review\` after the feature was verified end-to-end and a PR was raised for user review
       - PR URL(s): <link to PR(s)>
-      <Omit this section if no backlog items apply.>
 
       ## Code Change Verification
       - [ ] I confirm that I have run typecheck and tests for the project (only required if code changes were made)
       </handoff-proofs>
 
-      <handoff-details>
+      <handoff-direction>
+      ## What exists today
+      <!-- REQUIRED. Describe current state after this work, or write "Not Applicable". Do not omit this section. -->
+      <current state after this work — what the user can now do, what is in place, how the system behaves>
+
       ## Key Technical Decisions
+      <!-- REQUIRED. List decisions, or write "Not Applicable". Do not omit this section. -->
       - <schema design, modules, interfaces, domain entities — what you chose and why>
 
       ## Key Tradeoffs
+      <!-- REQUIRED. List tradeoffs, or write "Not Applicable". Do not omit this section. -->
       - <what was weighed against what, and why you chose this path>
 
-      ## Tech Debt Observed
-      - <issues noticed but intentionally left out of scope of this change>
-
       ## System Design
-      <include a mermaid diagram when the change has non-trivial structure; omit for trivial changes>
+      <!-- REQUIRED. Include a mermaid diagram when the change has non-trivial structure, or write "Not Applicable". Do not omit this section. -->
 
       \`\`\`mermaid
       flowchart TD
           A[Component] --> B[Component]
       \`\`\`
+      </handoff-direction>
+
+      <handoff-notes>
+      ## Notes
+      <!-- REQUIRED. Write notes, or "Not Applicable" if none. Do not omit this section. -->
+      <anything the user should know — context, caveats, or observations not covered above>
+      </handoff-notes>
+
+      <handoff-action>
+      ## Tech Debt Observed
+      <!-- REQUIRED. List tech debt, or write "Not Applicable". Do not omit this section. -->
+      - <issues noticed but intentionally left out of scope of this change>
 
       ## Unresolved Decisions
-      <!-- Decisions that need user input before work can proceed. Omit this section when there are no open decisions. -->
+      <!-- REQUIRED. List open decisions needing user input, or write "Not Applicable" if none. Do not omit this section. -->
       - <decision or question — options considered, recommendation if any>
       <Carry forward decisions still open from earlier handoffs in this chatroom. Remove items the user has resolved. Do not decide on the user's behalf unless they explicitly asked you to.>
 
-      ## Notes
-      <anything the user should know — context, caveats, or observations not covered above. Omit if none.>
-      </handoff-details>
+      ## Manual steps
+      <!-- REQUIRED. List manual steps outside the system, or write "Not Applicable". Do not omit this section. -->
+      <steps the user must take outside the system — deploy, configure credentials, run commands, verify in production, etc.>
+      </handoff-action>
       \`\`\`"
     `);
   });
@@ -617,7 +680,11 @@ describe('handoff-templates > invariants', () => {
   for (const [label, template] of deliveredTemplates) {
     test(`${label} instructs omitting inapplicable sections`, () => {
       expect(template).toBeTruthy();
-      expect(template).toMatch(/Omit (sections|fields) that do not apply/);
+      if (label.includes('→ builder')) {
+        expect(template).toMatch(/Omit fields that do not apply/);
+      } else {
+        expect(template).toMatch(/complete every section/);
+      }
       expect(template).not.toMatch(/do not delete the section/i);
     });
 
