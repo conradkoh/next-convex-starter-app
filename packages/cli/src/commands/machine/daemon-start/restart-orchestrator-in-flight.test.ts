@@ -53,10 +53,16 @@ describe('restart-orchestrator-in-flight', () => {
     _resetRestartOrchestratorInFlightForTests();
     markRestartOrchestratorInFlight('room_1', 'builder', 'corr-1');
 
-    const snapshots = [
+    type TestSnapshot = {
+      chatroomId: string;
+      agentConfig: { role: string };
+      taskId: string;
+    };
+
+    const snapshots: TestSnapshot[] = [
       { chatroomId: 'room_1', agentConfig: { role: 'builder' }, taskId: 't1' },
       { chatroomId: 'room_1', agentConfig: { role: 'planner' }, taskId: 't2' },
-    ] as any;
+    ];
 
     const filtered = filterSnapshotsExcludingRestartInFlight(snapshots);
     expect(filtered).toHaveLength(1);
