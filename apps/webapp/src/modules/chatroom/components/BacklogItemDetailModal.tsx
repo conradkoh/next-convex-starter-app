@@ -11,16 +11,13 @@ import {
   Pencil,
   X,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import React, { useState, useCallback, useEffect } from 'react';
 import Markdown from 'react-markdown';
 
 import { type BacklogItem, getBacklogStatusBadge, getScoringBadge } from './backlog';
 import { chatroomRemarkPlugins } from './chatroomRemarkPlugins';
-import {
-  modalMarkdownComponents,
-  modalMarkdownWrapProseClassNames,
-  backlogProseClassNames,
-} from './markdown-utils';
+import { modalMarkdownComponents, backlogRichTextEditorProseClassNames } from './markdown-utils';
 import { useAttachments } from '../attachments';
 import { useOverlayDismissStack } from '../hooks/useOverlayDismissStack';
 import {
@@ -39,6 +36,11 @@ import {
   FixedModalBody,
 } from '@/components/ui/fixed-modal';
 
+const RichTextEditor = dynamic(
+  () => import('./rich-text').then((m) => ({ default: m.RichTextEditor })),
+  { ssr: false }
+);
+
 interface BacklogItemDetailModalProps {
   isOpen: boolean;
   item: BacklogItem | null;
@@ -53,7 +55,6 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
-  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
   // Track which item we've initialized for — prevents resetting during edits
   const [initializedItemId, setInitializedItemId] = useState<string | null>(null);
@@ -73,7 +74,6 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
     if (isOpen && item && item._id !== initializedItemId) {
       setEditedContent(item.content);
       setIsEditing(false);
-      setActiveTab('edit');
       setInitializedItemId(item._id);
     } else if (!isOpen) {
       setInitializedItemId(null);
@@ -157,73 +157,21 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
           </div>
         </FixedModalHeader>
 
-        <FixedModalBody>
+        <FixedModalBody
+          className={isEditing ? 'flex flex-col min-h-0 p-0 overflow-hidden' : undefined}
+        >
           {isEditing ? (
-            // Tab-based editor with Edit/Preview tabs
-            <div className="flex flex-col h-full">
-              {/* Tab Bar */}
-              <div className="flex border-b-2 border-chatroom-border-strong bg-chatroom-bg-tertiary flex-shrink-0">
-                <button
-                  onClick={() => setActiveTab('edit')}
-                  className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors border-b-2 -mb-[2px] ${
-                    activeTab === 'edit'
-                      ? 'border-chatroom-accent text-chatroom-text-primary bg-chatroom-bg-primary'
-                      : 'border-transparent text-chatroom-text-muted hover:text-chatroom-text-secondary'
-                  }`}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => setActiveTab('preview')}
-                  className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors border-b-2 -mb-[2px] ${
-                    activeTab === 'preview'
-                      ? 'border-chatroom-accent text-chatroom-text-primary bg-chatroom-bg-primary'
-                      : 'border-transparent text-chatroom-text-muted hover:text-chatroom-text-secondary'
-                  }`}
-                >
-                  Preview
-                </button>
-              </div>
-
-              {/* Tab Content */}
-              <div className="flex-1 flex flex-col overflow-hidden min-h-[260px]">
-                {activeTab === 'edit' ? (
-                  // Edit Tab — Full-width textarea
-                  <textarea
-                    value={editedContent}
-                    onChange={(e) => setEditedContent(e.target.value)}
-                    onKeyDown={(e) => {
-                      // Cmd+Enter or Ctrl+Enter to save
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                        e.preventDefault();
-                        if (editedContent.trim()) {
-                          handleSave();
-                        }
-                      }
-                    }}
-                    className="flex-1 w-full bg-chatroom-bg-primary border-0 text-chatroom-text-primary text-sm p-4 resize-none focus:outline-none font-mono"
-                    autoFocus
-                    placeholder="Write your markdown here..."
-                  />
-                ) : (
-                  // Preview Tab — Read-only rendered markdown
-                  <div
-                    className={`h-full overflow-y-auto overflow-x-hidden p-4 min-w-0 ${backlogProseClassNames} ${modalMarkdownWrapProseClassNames}`}
-                  >
-                    <Markdown
-                      remarkPlugins={chatroomRemarkPlugins}
-                      components={modalMarkdownComponents}
-                    >
-                      {editedContent || '*No content yet*'}
-                    </Markdown>
-                  </div>
-                )}
-              </div>
-            </div>
+            <RichTextEditor
+              value={editedContent}
+              onChange={setEditedContent}
+              placeholder="Write your markdown here..."
+              onCmdEnter={handleSave}
+              className="flex-1 flex flex-col min-h-0"
+            />
           ) : (
             // View mode — Read-only rendered markdown
             <div
-              className={`p-4 min-w-0 overflow-x-hidden ${backlogProseClassNames} ${modalMarkdownWrapProseClassNames}`}
+              className={`p-4 min-w-0 overflow-x-hidden ${backlogRichTextEditorProseClassNames}`}
             >
               <Markdown remarkPlugins={chatroomRemarkPlugins} components={modalMarkdownComponents}>
                 {item.content}
