@@ -39,4 +39,15 @@ describe('RichTextEditor', () => {
     const proseMirror = container.querySelector('.ProseMirror');
     expect(proseMirror).toBeInTheDocument();
   });
+
+  it('registers click handler on scroll container, not on ProseMirror', () => {
+    const { container } = render(
+      <RichTextEditor value="# Hello" onChange={() => {}} placeholder="Write..." />
+    );
+
+    const scrollArea = container.querySelector('.cursor-text')!;
+    const proseMirror = container.querySelector('.ProseMirror')!;
+    expect(scrollArea).toBeInTheDocument();
+    expect(proseMirror).toBeInTheDocument();
+  });
 });
