@@ -90,7 +90,6 @@ export class TimelineScrollCoordinator {
 
   private userScrolling = false;
   private userScrollTimeout: ReturnType<typeof setTimeout> | null = null;
-  private resizing = false;
   private programmaticScroll = false;
   private programmaticScrollDepth = 0;
 
@@ -215,7 +214,7 @@ export class TimelineScrollCoordinator {
     this.el = el;
 
     this.resizeObserver = new ResizeObserver(() => {
-      if (this.pinned && !this.resizing && this.computeIsAtBottom()) {
+      if (this.pinned) {
         this.enqueue({ type: 'snap' });
       }
     });
@@ -264,16 +263,10 @@ export class TimelineScrollCoordinator {
     this.virtualizer = api;
   }
 
-  beginResize(): void {
-    this.resizing = true;
-  }
-
-  endResize(): void {
-    this.resizing = false;
+  /** Called when the messages panel container resizes (e.g. composer footer growth). */
+  notifyContainerResize(): void {
     if (this.pinned) {
-      this.enqueue({ type: 'follow_tail', behavior: 'auto' });
-      this.enqueue({ type: 'tail_settle' });
-      this.schedulePinnedTailGuard();
+      this.enqueue({ type: 'snap' });
     }
   }
 
@@ -607,13 +600,7 @@ export class TimelineScrollCoordinator {
   }
 
   private canRunPinnedTailGuard(): boolean {
-    return (
-      this.pinned &&
-      !this.resizing &&
-      !this.userScrolling &&
-      !this.isTailBlockedByPrepend() &&
-      this.el !== null
-    );
+    return this.pinned && !this.userScrolling && !this.isTailBlockedByPrepend() && this.el !== null;
   }
 
   private isBelowMaxScroll(): boolean {
