@@ -40,8 +40,6 @@ import { useVisualViewportKeyboardInset } from '@/hooks/useMobileKeyboard';
 
 export interface MessageInputProps {
   chatroomId: string;
-  onBeforeResize?: () => void;
-  onAfterResize?: () => void;
   onRegisterFocus?: (focusFn: () => void) => void;
   /** Available workspace files for @ autocomplete (tagged with workspaceId) */
   files?: FileEntry[];
@@ -141,8 +139,6 @@ function cleanupOldDrafts(currentKey: string) {
 
 export function MessageInput({
   chatroomId,
-  onBeforeResize,
-  onAfterResize,
   onRegisterFocus,
   files = [],
   hasAutocompleteWorkspace = false,
@@ -242,23 +238,32 @@ export function MessageInput({
   const lastTextareaHeightRef = useRef(0);
   const resizeFrameRef = useRef<number | null>(null);
 
-  const autoResize = useCallback(() => {
-    if (resizeFrameRef.current !== null) return;
+  const applyTextareaHeight = useCallback(
+    (textarea: HTMLTextAreaElement) => {
+      const nextHeight = measureTextareaContentHeightPx(textarea, effectiveMaxTextareaHeightPx);
+      textarea.style.height = `${nextHeight}px`;
+      lastTextareaHeightRef.current = nextHeight;
+    },
+    [effectiveMaxTextareaHeightPx]
+  );
 
+  // Sync path: message changes — before paint (no rAF)
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    applyTextareaHeight(textarea);
+  }, [message, applyTextareaHeight]);
+
+  // Async path: width changes via ResizeObserver only
+  const scheduleResize = useCallback(() => {
+    if (resizeFrameRef.current !== null) return;
     resizeFrameRef.current = requestAnimationFrame(() => {
       resizeFrameRef.current = null;
       const textarea = textareaRef.current;
       if (!textarea) return;
-
-      const nextHeight = measureTextareaContentHeightPx(textarea, effectiveMaxTextareaHeightPx);
-      textarea.style.height = `${nextHeight}px`;
-
-      if (nextHeight === lastTextareaHeightRef.current) return;
-      onBeforeResize?.();
-      lastTextareaHeightRef.current = nextHeight;
-      onAfterResize?.();
+      applyTextareaHeight(textarea);
     });
-  }, [onBeforeResize, onAfterResize, effectiveMaxTextareaHeightPx]);
+  }, [applyTextareaHeight]);
 
   useEffect(() => {
     return () => {
@@ -268,16 +273,15 @@ export function MessageInput({
     };
   }, []);
 
-  // Re-measure when the composer width changes (e.g. explorer split panel resize).
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    const observer = new ResizeObserver(() => autoResize());
+    const observer = new ResizeObserver(() => scheduleResize());
     observer.observe(textarea);
     return () => observer.disconnect();
-  }, [autoResize]);
+  }, [scheduleResize]);
 
-  // ── Shared @ file reference autocomplete (after autoResize is defined) ──────
+  // ── Shared @ file reference autocomplete (after resize is set up) ──────
   const fileAutocomplete = useFileReferenceAutocomplete({
     files,
     hasWorkspace: hasAutocompleteWorkspace,
@@ -290,11 +294,6 @@ export function MessageInput({
       setSendError(null);
     },
   });
-
-  // Single resize path per message change (avoid duplicate measure from change handler + effect).
-  useLayoutEffect(() => {
-    autoResize();
-  }, [message, autoResize]);
 
   // ── Send logic ─────────────────────────────────────────────────────────────
   const doSend = useCallback(

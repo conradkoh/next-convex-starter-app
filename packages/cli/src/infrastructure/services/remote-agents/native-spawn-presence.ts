@@ -4,6 +4,9 @@ import type { AgentHarness } from '../../machine/types.js';
 import type { BackendOps } from '../../deps/index.js';
 import { api } from '../../../api.js';
 import type { SpawnResult } from './remote-agent-service.js';
+import { isTeamAgentRole } from '../../../domain/execution-kind.js';
+import { TOKEN_ACTIVITY_KINDS } from '../../../domain/harness-activity-emitter.js';
+import type { HarnessActivityEmitter } from '../../../domain/harness-activity-emitter.js';
 
 export const NATIVE_TOKEN_ACTIVITY_THROTTLE_MS = 30_000;
 
@@ -19,6 +22,8 @@ export interface WireThrottledTokenActivityOpts extends NativeSpawnPresenceConte
   /** Defaults to Date.now — APM passes clock.now for testability */
   now?: () => number;
   throttleMs?: number;
+  /** Optional typed activity emitter. When present, subscribes to TOKEN_ACTIVITY_KINDS instead of raw onOutput. */
+  activityEmitter?: HarnessActivityEmitter;
 }
 
 /**
@@ -30,6 +35,7 @@ export async function emitNativeWaitingAfterSpawn(
   harness: AgentHarness | string,
   opts?: { onError?: (err: Error) => void }
 ): Promise<boolean> {
+  if (!isTeamAgentRole(ctx.role)) return false;
   if (!getHarnessCapabilities(harness as AgentHarness).supportsNativeIntegration) {
     return false;
   }
@@ -54,25 +60,63 @@ export async function emitNativeWaitingAfterSpawn(
  * Wire spawnResult.onOutput to throttled participants.updateTokenActivity.
  * First output fires immediately; subsequent calls throttled (default 30s).
  */
+function fireTokenActivity(
+  backend: BackendOps,
+  sessionId: string,
+  chatroomId: string,
+  role: string,
+  now: () => number,
+  lastReportedTokenAt: { value: number },
+  throttleMs: number
+): void {
+  const t = now();
+  if (lastReportedTokenAt.value === 0 || t - lastReportedTokenAt.value >= throttleMs) {
+    lastReportedTokenAt.value = t;
+    void backend
+      .mutation(api.participants.updateTokenActivity, {
+        sessionId,
+        chatroomId,
+        role,
+      })
+      .catch(() => {});
+  }
+}
+
 export function wireThrottledTokenActivityOnOutput(opts: WireThrottledTokenActivityOpts): void {
+  if (!isTeamAgentRole(opts.role)) return;
   const now = opts.now ?? (() => Date.now());
   const throttleMs = opts.throttleMs ?? NATIVE_TOKEN_ACTIVITY_THROTTLE_MS;
-  let lastReportedTokenAt = 0;
+  const lastReportedTokenAt = { value: 0 };
+
+  if (opts.activityEmitter) {
+    for (const kind of TOKEN_ACTIVITY_KINDS) {
+      opts.activityEmitter.onActivity(() => {
+        fireTokenActivity(
+          opts.backend,
+          opts.sessionId,
+          opts.chatroomId,
+          opts.role,
+          now,
+          lastReportedTokenAt,
+          throttleMs
+        );
+      });
+    }
+    return;
+  }
 
   const register = opts.spawnResult.onOutput;
   if (!register) return;
 
   register(() => {
-    const t = now();
-    if (lastReportedTokenAt === 0 || t - lastReportedTokenAt >= throttleMs) {
-      lastReportedTokenAt = t;
-      void opts.backend
-        .mutation(api.participants.updateTokenActivity, {
-          sessionId: opts.sessionId,
-          chatroomId: opts.chatroomId,
-          role: opts.role,
-        })
-        .catch(() => {});
-    }
+    fireTokenActivity(
+      opts.backend,
+      opts.sessionId,
+      opts.chatroomId,
+      opts.role,
+      now,
+      lastReportedTokenAt,
+      throttleMs
+    );
   });
 }

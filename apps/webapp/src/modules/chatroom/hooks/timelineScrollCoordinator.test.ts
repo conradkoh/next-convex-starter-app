@@ -592,10 +592,9 @@ describe('TimelineScrollCoordinator', () => {
     expect(scrollToEnd).toHaveBeenCalled();
   });
 
-  it('endResize enqueues follow and tail settle when pinned', () => {
-    coordinator.beginResize();
+  it('notifyContainerResize enqueues snap when pinned', () => {
     scrollToEnd.mockClear();
-    coordinator.endResize();
+    coordinator.notifyContainerResize();
     expect(scrollToEnd).toHaveBeenCalled();
   });
 

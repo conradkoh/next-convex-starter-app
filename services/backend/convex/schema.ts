@@ -623,9 +623,7 @@ export default defineSchema({
     taskAssignedTo: v.optional(v.string()),
     taskCreatedAt: v.number(),
     taskUpdatedAt: v.number(),
-    sessionAugmentation: v.optional(
-      v.union(v.literal('none'), v.literal('compact'), v.literal('new_session'))
-    ),
+    sessionAugmentation: v.optional(v.union(v.literal('none'), v.literal('new_session'))),
 
     agentHarness: v.string(),
     model: v.optional(v.string()),
@@ -1407,7 +1405,7 @@ export default defineSchema({
         harnessSessionId: v.optional(v.string()),
         timestamp: v.number(),
       }),
-      // Session augmentation applied on task delivery (none / compact / new_session)
+      // Session augmentation applied on task delivery (none / new_session; compact retained for historical events only)
       v.object({
         type: v.literal('agent.sessionAugmented'),
         chatroomId: v.id('chatroom_rooms'),
@@ -3115,6 +3113,23 @@ export default defineSchema({
     .index('by_machine_status', ['machineId', 'status'])
     .index('by_status_nextRetryAt', ['status', 'nextRetryAt'])
     .index('by_chatroom_originUserMessageId', ['chatroomId', 'originUserMessageId']),
+
+  chatroom_taskDeliveryReceipts: defineTable({
+    chatroomId: v.id('chatroom_rooms'),
+    taskId: v.id('chatroom_tasks'),
+    role: v.string(),
+    deliveryKind: v.union(
+      v.literal('native_inject'),
+      v.literal('enhancer_claim'),
+      v.literal('cli_get_next_task')
+    ),
+    harnessSessionId: v.optional(v.string()),
+    jobId: v.optional(v.id('chatroom_enhancerJobs')),
+    deliveredAt: v.number(),
+    startedAt: v.optional(v.number()),
+  })
+    .index('by_chatroom_role_task', ['chatroomId', 'role', 'taskId'])
+    .index('by_taskId', ['taskId']),
 
   /**
    * Messages produced by a harness session (both user prompts and assistant
