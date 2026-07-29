@@ -643,6 +643,48 @@ messagesCommand
     }
   );
 
+messagesCommand
+  .command('download')
+  .description('Download chatroom message history to local files for reading/grep')
+  .requiredOption('--chatroom-id <id>', 'Chatroom identifier')
+  .requiredOption('--role <role>', 'Your role')
+  .option('--format <format>', 'Download format (default: linear)', 'linear')
+  .option(
+    '--output-dir <path>',
+    'Output directory (default: .chatroom/downloads/messages/linear/<download-id>)'
+  )
+  .option('--limit <n>', 'Max messages to download (default: 10, max: 5000)')
+  .action(
+    async (options: {
+      chatroomId: string;
+      role: string;
+      format?: string;
+      outputDir?: string;
+      limit?: string;
+    }) => {
+      await maybeRequireAuth();
+      if (options.format && options.format !== 'linear') {
+        console.error('❌ Unsupported format. Only --format=linear is supported.');
+        process.exit(1);
+      }
+      let parsedLimit: number | undefined;
+      if (options.limit) {
+        parsedLimit = parseInt(options.limit, 10);
+        if (isNaN(parsedLimit) || parsedLimit < 1) {
+          console.error('❌ --limit must be a positive integer (1-5000)');
+          process.exit(1);
+        }
+      }
+      const { downloadMessages } = await import('./commands/messages/download.js');
+      await downloadMessages(options.chatroomId, {
+        role: options.role,
+        format: 'linear',
+        outputDir: options.outputDir,
+        limit: parsedLimit,
+      });
+    }
+  );
+
 // ============================================================================
 // CONTEXT COMMANDS (auth required)
 // ============================================================================

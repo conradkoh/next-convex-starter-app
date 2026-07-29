@@ -1,5 +1,4 @@
 import * as nodeFs from 'node:fs/promises';
-import * as nodePath from 'node:path';
 
 import { Context, Effect, Layer } from 'effect';
 
@@ -9,6 +8,10 @@ export interface MessagesFsServiceShape {
     path: string,
     options?: { recursive?: boolean }
   ) => Effect.Effect<string | undefined, Error>;
+  rm: (
+    path: string,
+    options?: { recursive?: boolean; force?: boolean }
+  ) => Effect.Effect<void, Error>;
 }
 
 export class MessagesFsService extends Context.Tag('MessagesFsService')<
@@ -27,6 +30,11 @@ export const MessagesFsServiceLive: Layer.Layer<MessagesFsService> = Layer.succe
     mkdir: (path, opts) =>
       Effect.tryPromise({
         try: () => nodeFs.mkdir(path, opts) as Promise<string | undefined>,
+        catch: (e) => (e instanceof Error ? e : new Error(String(e))),
+      }),
+    rm: (path, opts) =>
+      Effect.tryPromise({
+        try: () => nodeFs.rm(path, opts) as Promise<void>,
         catch: (e) => (e instanceof Error ? e : new Error(String(e))),
       }),
   }
@@ -58,4 +66,29 @@ export function buildMessageMarkdown(msg: {
   parts.push('');
   parts.push(msg.content);
   return parts.join('\n');
+}
+
+const SORT_KEY_MAX = 9_999_999_999_999;
+
+export function messageFilename(msg: {
+  _id: string;
+  _creationTime: number;
+  senderRole: string;
+  targetRole?: string | null;
+}): string {
+  const sortPrefix = String(SORT_KEY_MAX - msg._creationTime).padStart(13, '0');
+  const receiver = msg.targetRole ?? 'all';
+  return `${sortPrefix}_${msg.senderRole}-to-${receiver}_${msg._id}.md`;
+}
+
+/** Simple linear format — no YAML frontmatter */
+export function buildLinearMessageContent(msg: {
+  _creationTime: number;
+  senderRole: string;
+  targetRole?: string | null;
+  content: string;
+}): string {
+  const ts = new Date(msg._creationTime).toISOString();
+  const receiver = msg.targetRole ? ` → ${msg.targetRole}` : '';
+  return `${ts} | ${msg.senderRole}${receiver}\n\n${msg.content}`;
 }
