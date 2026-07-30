@@ -28,7 +28,6 @@
     "@base-ui/react",
     "class-variance-authority",
     "react-day-picker",
-    "vaul",
     "@legendapp/state",
     "@base-ui/react",
   ],
