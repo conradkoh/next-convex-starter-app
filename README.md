@@ -49,6 +49,8 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
 
 3. Run `pnpm dev` in the root directory to start the NextJS application and Convex backend
 
+   After pulling schema changes, run `pnpm migrate` while `convex dev` is running (see [AGENTS.md](AGENTS.md#database-migrations)).
+
 #### Manual Setup (Alternative)
 
 If you prefer to set up manually:
@@ -106,6 +108,12 @@ This will start:
 
 - The webapp at http://localhost:3000
 - The Convex backend development server
+
+## Documentation
+
+- **[Shadcn → Base UI Migration Guide](docs/developer/shadcn-base-ui-migration.md)** — upgrading UI components from Radix-based shadcn to Base UI (`base-vega`); includes a downstream migration playbook for forks built on this template.
+- [Testing Guide](guides/testing/testing.md)
+- [AGENTS.md](AGENTS.md) — development guidelines for agents and contributors
 
 ## Testing
 
