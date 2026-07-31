@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { renderEnhancerTaskEnvelope } from './render-task-envelope';
+import { getEnhancerToPlannerHandoffTemplate } from '../teams/duo/handoff-templates/enhancer-to-planner.js';
 
 describe('renderEnhancerTaskEnvelope', () => {
   const params = {
@@ -86,5 +87,26 @@ describe('renderEnhancerTaskEnvelope', () => {
     expect(result).toContain('Single-turn only.');
     expect(result).toContain('No subagents');
     expect(result).not.toContain('No tools');
+  });
+
+  it('does not embed a separate ux-reference block', () => {
+    const result = renderEnhancerTaskEnvelope(params);
+    expect(result).not.toContain('<ux-reference>');
+  });
+
+  it('requirements mention optional UX section and output order', () => {
+    const result = renderEnhancerTaskEnvelope(params);
+    expect(result).toContain('optional **UX** section');
+    expect(result).toContain('Suggested edits');
+    expect(result).toContain('must be last');
+  });
+
+  it('handoff-templates output embeds the UX reference catalog', () => {
+    const result = renderEnhancerTaskEnvelope({
+      ...params,
+      outputTemplateContent: getEnhancerToPlannerHandoffTemplate(),
+    });
+    expect(result).toContain('Layout simplification');
+    expect(result).toContain('overflow-menu');
   });
 });
