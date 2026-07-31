@@ -6,21 +6,23 @@ import { memo, useState } from 'react';
 import { HandoffEnvelopeView } from './HandoffEnvelopeView';
 import { HandoffReportView } from './HandoffReportView';
 import { TimelineMarkdownBody } from './TimelineMarkdownBody';
-import { hasHandoffEnvelope } from '../../utils/parseHandoffEnvelope';
-import { hasHandoffReport } from '../../utils/parseHandoffReport';
 import {
   BADGE_BASE,
   formatMachineLabel,
   getSenderClasses,
   ICON_SIZE,
+  TIMELINE_MESSAGE_BODY,
   TIMELINE_MESSAGE_HEADER_STICKY,
   TIMELINE_ROW_BORDER,
+  TIMELINE_ROW_ROOT,
   type MachineNameEntry,
 } from './timelineRowStyles';
 import { MessageAttachmentChips } from '../../attachments';
 import { EnhancerContentToggle } from '../../features/enhancers/components/EnhancerContentToggle';
 import { EnhancerMessageDiffSection } from '../../features/enhancers/components/EnhancerMessageDiffSection';
 import type { Message } from '../../types/message';
+import { hasHandoffEnvelope } from '../../utils/parseHandoffEnvelope';
+import { hasHandoffReport } from '../../utils/parseHandoffReport';
 
 function getMessageTypeBadge(type: string) {
   if (type === 'handoff') {
@@ -63,11 +65,11 @@ export const TimelineTeamMessage = memo(function TimelineTeamMessage({
 
   return (
     <div
-      className={`px-4 py-3 ${TIMELINE_ROW_BORDER} bg-transparent`}
+      className={`${TIMELINE_ROW_BORDER} bg-transparent ${TIMELINE_ROW_ROOT}`}
       data-testid="timeline-team-message"
     >
       <div
-        className={`flex flex-wrap justify-between items-center gap-y-1 gap-x-2 -mx-4 px-4 py-1.5 mb-2 ${TIMELINE_MESSAGE_HEADER_STICKY}`}
+        className={`flex flex-wrap justify-between items-center gap-y-1 gap-x-2 px-4 py-1.5 mb-2 ${TIMELINE_MESSAGE_HEADER_STICKY}`}
         data-testid="timeline-message-header"
       >
         <div className="flex items-center flex-wrap gap-y-1 gap-x-1.5">
@@ -105,32 +107,34 @@ export const TimelineTeamMessage = memo(function TimelineTeamMessage({
         </div>
       </div>
 
-      {hasFeatureTitle && (
-        <div className="mb-2 px-3 py-2 bg-chatroom-status-warning/10 dark:bg-chatroom-status-warning/15 border border-chatroom-status-warning/20 cursor-pointer hover:bg-chatroom-status-warning/20 transition-colors">
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-chatroom-status-warning flex-shrink-0" />
-            <span className="text-sm font-semibold text-chatroom-text-primary">
-              {message.featureTitle}
-            </span>
+      <div className={`px-4 py-3 ${TIMELINE_MESSAGE_BODY}`}>
+        {hasFeatureTitle && (
+          <div className="mb-2 px-3 py-2 bg-chatroom-status-warning/10 dark:bg-chatroom-status-warning/15 border border-chatroom-status-warning/20 cursor-pointer hover:bg-chatroom-status-warning/20 transition-colors">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-chatroom-status-warning flex-shrink-0" />
+              <span className="text-sm font-semibold text-chatroom-text-primary">
+                {message.featureTitle}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {message.type === 'handoff' && hasHandoffEnvelope(displayContent) ? (
-        <HandoffEnvelopeView content={displayContent} variant="timeline" />
-      ) : message.type === 'handoff' && hasHandoffReport(displayContent) ? (
-        <HandoffReportView content={displayContent} variant="timeline" />
-      ) : (
-        <TimelineMarkdownBody content={displayContent} />
-      )}
-      <div className="mt-2 empty:hidden">
-        <MessageAttachmentChips message={message} />
+        {message.type === 'handoff' && hasHandoffEnvelope(displayContent) ? (
+          <HandoffEnvelopeView content={displayContent} variant="timeline" />
+        ) : message.type === 'handoff' && hasHandoffReport(displayContent) ? (
+          <HandoffReportView content={displayContent} variant="timeline" />
+        ) : (
+          <TimelineMarkdownBody content={displayContent} />
+        )}
+        <div className="mt-2 empty:hidden">
+          <MessageAttachmentChips message={message} />
+        </div>
+        <EnhancerMessageDiffSection
+          message={message}
+          displayContent={displayContent}
+          hasEnhancerOriginal={hasEnhancerOriginal}
+        />
       </div>
-      <EnhancerMessageDiffSection
-        message={message}
-        displayContent={displayContent}
-        hasEnhancerOriginal={hasEnhancerOriginal}
-      />
     </div>
   );
 });

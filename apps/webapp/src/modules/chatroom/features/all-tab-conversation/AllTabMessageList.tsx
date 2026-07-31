@@ -3,6 +3,10 @@
 import { useEffect, useRef } from 'react';
 
 import { TimelineEventRow } from '../../components/timeline/TimelineEventRow';
+import {
+  TIMELINE_SCROLL_CONTAINER,
+  TIMELINE_SCROLL_CONTAINER_STYLE,
+} from '../../components/timeline/timelineRowStyles';
 import type { MachineNameEntry } from '../../components/timeline/timelineRowStyles';
 import type { TimelineEvent } from '../../timeline/types';
 
@@ -28,7 +32,8 @@ export function AllTabMessageList({
     return (
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center text-chatroom-text-muted text-sm"
+        className={`flex-1 ${TIMELINE_SCROLL_CONTAINER} flex items-center justify-center text-chatroom-text-muted text-sm`}
+        style={TIMELINE_SCROLL_CONTAINER_STYLE}
       >
         No messages yet
       </div>
@@ -36,7 +41,12 @@ export function AllTabMessageList({
   }
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto" data-testid="all-tab-message-list">
+    <div
+      ref={containerRef}
+      className={`flex-1 ${TIMELINE_SCROLL_CONTAINER}`}
+      style={TIMELINE_SCROLL_CONTAINER_STYLE}
+      data-testid="all-tab-message-list"
+    >
       {events.map((event) => (
         <TimelineEventRow key={event.id} event={event} chatroomId="" machines={machines} />
       ))}
