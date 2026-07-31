@@ -1,48 +1,60 @@
 /**
  * XML-wrapped planning feedback body for enhancer → planner handoffs.
- * Maps the 8 advisory sections into 5 collapsible UI categories
- * (same tags as planner→user report handoffs).
+ * Maps 8 sections into 6 collapsible UI tags (same tags as
+ * planner→user report handoffs plus handoff-ux). UX is its own optional
+ * tag between direction and notes; Suggested edits is the last `##`
+ * heading — code examples come last for LLM generation.
  */
 import { getFileReferenceGuidanceComment } from './file-reference-guidance';
 
 export function getEnhancerFeedbackTemplateBody(): string {
   return `<handoff-overview>
 ## Summary
-<one paragraph: overall assessment — strengths, main risks, and whether the approach is sound>
+<overall assessment — cite specific strengths, risks, and whether the approach is sound; reference concrete elements from the check-in>
 
 ## User intent alignment
-<does the planner's reading of the user request match what was asked? misreadings or missing constraints?>
+<specific misreadings or missing constraints — what the user asked vs what the planner proposed>
 </handoff-overview>
 
-<!-- UI collapses proofs, direction, and notes by default; overview and action required are expanded -->
+<!-- UI collapses proofs, direction, ux, and notes by default; overview and action required are expanded -->
 
 <handoff-proofs>
 ## Reasoning review
-<logical errors, weak inference, contradictions — challenge assumptions>
+<specific logical errors, weak inference, or contradictions — cite the claim and why it fails>
 </handoff-proofs>
 
 <handoff-direction>
 ## Alignment with eventual user handoff
-<will this approach produce a credible planner→user report? what's missing for user-facing completeness?>
+<specific gaps for user-facing completeness — what proof or report sections would be missing>
 </handoff-direction>
+
+<handoff-ux>
+<!-- Optional — write exactly "Not Applicable." when no UI changes are proposed -->
+<!-- When UI is proposed: specific findings tied to the planner's proposal. No code blocks (use Suggested edits). -->
+- **Flows:** <specific finding — click count, nested modals, simpler alternatives>
+- **Patterns:** <which existing pattern fits; recommend one if multiple; mobile vs desktop>
+- **Layout:** <compact rows, trailing CTAs, unnecessary wrappers>
+- **Shortcuts:** <alignment with catalog; gaps or conflicts>
+</handoff-ux>
 
 <handoff-notes>
 ## Knowledge gaps
-<facts, context, or research the planner should verify — advisory questions, not answers from codebase>
+<specific facts, files, or research to verify — name what to check and why>
 </handoff-notes>
 
 <handoff-action>
 ## Risks & failure modes
-<what could go wrong if they proceed as planned? common pitfalls for this kind of work?>
+<specific risks tied to this plan — what fails, under what conditions, and how to mitigate>
 
-## Questions for the planner
-<specific questions they should answer before delegating — not instructions disguised as questions>
+## Recommendations
+<!-- SECOND-LAST — concrete, actionable suggestions tied to the check-in. Include tradeoffs and considerations. No code blocks here (use Suggested edits for snippets). -->
 
 ## Suggested edits (remove or change only)
-When you recommend removing or changing specific content in the planner's check-in (grounding, builder-handoff sections, or proposed approach), list each change here with file-level detail and code examples. **Omit this entire section** if you have no concrete removals or changes to suggest — keep other sections abstract.
+<!-- LAST — proposed edits to grounding and builder-handoff. File paths and code snippets required when recommending changes. Omit entirely if none. -->
+When you recommend removing or changing specific content in the planner's check-in, list each change here with file-level detail and code examples.
 ${getFileReferenceGuidanceComment()}
 
-### <section or claim to remove or change — e.g. "builder-handoff > Files to implement" or "grounding: auth middleware claim">
+### <section or claim to remove or change>
 **File:** \`apps/webapp/src/path/to/file.ts\`
 **Change:** <what to remove, replace, or correct and why>
 

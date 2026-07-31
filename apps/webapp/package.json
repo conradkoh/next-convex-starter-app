@@ -1,6 +1,6 @@
 {
   "name": "@workspace/webapp",
-  "version": "1.84.3",
+  "version": "1.84.4",
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.local -- next dev",
