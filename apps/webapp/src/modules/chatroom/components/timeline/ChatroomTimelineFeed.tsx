@@ -19,13 +19,10 @@ import type {
   TimelineScrollCoordinator,
 } from '../../hooks/timelineScrollCoordinator';
 import { useChatroomTimelineFeedData } from '../../hooks/useChatroomTimelineFeedData';
-import type { EventStreamEvent } from '../../viewModels/eventStreamViewModel';
-import { EventStreamModal } from '../EventStreamModal';
 import { QueuedMessagesIndicator } from '../QueuedMessagesIndicator';
 import { ComposerPreflightBar } from './ComposerPreflightBar';
 import { TimelineEventCountMenu } from './TimelineEventCountMenu';
 import { TimelineEventRow } from './TimelineEventRow';
-import { TimelineLatestEventTicker } from './TimelineLatestEventTicker';
 import { logLoadOlder } from './timelineLoadOlderDebug';
 import {
   getTimelineVirtualRowZIndex,
@@ -51,23 +48,17 @@ import { ChatroomLoader } from '@/components/ui/chatroom-loader';
 export interface ChatroomTimelineFeedProps {
   chatroomId: string;
   coordinator: React.MutableRefObject<TimelineScrollCoordinator>;
-  onRegisterOpenEventStream?: (openFn: () => void) => void;
-  onRegisterMessageStoreActions?: (actions: {
-    removeMessagesForTask: (taskId: string) => void;
-  }) => void;
   machines?: Map<string, MachineNameEntry>;
-  senderRoleFilter?: string | null;
+  senderRoleFilter: string;
 }
 
 export function ChatroomTimelineFeed({
   chatroomId,
   coordinator,
-  onRegisterOpenEventStream,
-  onRegisterMessageStoreActions,
   machines,
   senderRoleFilter,
 }: ChatroomTimelineFeedProps) {
-  const isUserFilteredView = senderRoleFilter?.toLowerCase() === 'user';
+  const isUserFilteredView = senderRoleFilter.toLowerCase() === 'user';
   const [selectedAnchorId, setSelectedAnchorId] = useState<Id<'chatroom_messages'> | null>(null);
   const scrollParentRef = useRef<HTMLDivElement>(null);
   const boundCoordinatorRef = useRef<TimelineScrollCoordinator | null>(null);
@@ -106,19 +97,8 @@ export function ChatroomTimelineFeed({
     };
   }, []);
 
-  const {
-    events,
-    isLoading,
-    hasMoreOlder,
-    isLoadingOlder,
-    loadOlderEvents,
-    removeMessagesForTask,
-    purgeToInitialWindow,
-    isEventStreamOpen,
-    setIsEventStreamOpen,
-    latestEvent,
-    eventsPaginated,
-  } = useChatroomTimelineFeedData(chatroomId, senderRoleFilter ?? null);
+  const { events, isLoading, hasMoreOlder, isLoadingOlder, loadOlderEvents, purgeToInitialWindow } =
+    useChatroomTimelineFeedData(chatroomId, senderRoleFilter);
 
   const isPinned = useSyncExternalStore(
     (onStoreChange) => coordinator.current.subscribe(onStoreChange),
@@ -134,14 +114,6 @@ export function ChatroomTimelineFeed({
     }
     prevChatroomIdRef.current = chatroomId;
   }, [chatroomId, coordinator]);
-
-  useEffect(() => {
-    onRegisterOpenEventStream?.(() => setIsEventStreamOpen(true));
-  }, [onRegisterOpenEventStream, setIsEventStreamOpen]);
-
-  useEffect(() => {
-    onRegisterMessageStoreActions?.({ removeMessagesForTask });
-  }, [onRegisterMessageStoreActions, removeMessagesForTask]);
 
   const initialMeasurementsCache = useMemo((): VirtualItem[] => {
     // Snapshot the cache once at mount. Re-mounts (chatroom switch) re-create.
@@ -397,12 +369,7 @@ export function ChatroomTimelineFeed({
     <div ref={footerChromeRefCallback} data-testid="timeline-footer-chrome">
       <ComposerPreflightBar chatroomId={chatroomId as Id<'chatroom_rooms'>} />
       <QueuedMessagesIndicator chatroomId={chatroomId as Id<'chatroom_rooms'>} />
-      <div className="flex items-center justify-between px-4 py-2 bg-chatroom-bg-surface border-t-2 border-chatroom-border-strong">
-        <TimelineLatestEventTicker
-          key={latestEvent?._id}
-          event={latestEvent}
-          onClick={() => setIsEventStreamOpen((prev) => !prev)}
-        />
+      <div className="flex items-center justify-end px-4 py-2 bg-chatroom-bg-surface border-t-2 border-chatroom-border-strong">
         <TimelineEventCountMenu
           eventCount={events.length}
           canPurge={events.length > MESSAGE_STORE_LIMIT}
@@ -412,23 +379,7 @@ export function ChatroomTimelineFeed({
     </div>
   );
 
-  const footer = (
-    <>
-      <EventStreamModal
-        isOpen={isEventStreamOpen}
-        onClose={() => setIsEventStreamOpen(false)}
-        events={(eventsPaginated.results as EventStreamEvent[] | undefined) ?? []}
-        isLoading={
-          isEventStreamOpen &&
-          (eventsPaginated.results === undefined || eventsPaginated.status === 'LoadingFirstPage')
-        }
-        onLoadMore={() => eventsPaginated.loadMore(20)}
-        hasMore={eventsPaginated.status === 'CanLoadMore'}
-        machines={machines}
-      />
-      {footerChrome}
-    </>
-  );
+  const footer = footerChrome;
 
   if (isLoading && events.length === 0) {
     return (
