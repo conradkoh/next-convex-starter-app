@@ -404,9 +404,6 @@ ${taskDeliveryPrompt.fullCliOutput}
       [TIMESTAMP] 📨 CHATROOM TASK received
 
       <task task-id="000000000000010007chatroom_tasks" origin-message-id="000000000010006chatroom_messages" sender="user">
-      <context>
-        <hint>(read if needed) → \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom context read --chatroom-id="000000000000010002chatroom_rooms" --role="builder"\`</hint>
-      </context>
 
       <attachments>
         <attachment type="backlog" backlog-item-id="0000000000010005chatroom_backlog">

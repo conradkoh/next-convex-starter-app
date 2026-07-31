@@ -20,9 +20,6 @@ const BASE_PARAMS = {
     _id: 'test-task-id',
     content: 'Implement the feature as described',
   },
-  currentContext: null,
-  followUpCountSinceOrigin: 0,
-  originMessageCreatedAt: null,
   isEntryPoint: true,
   availableHandoffTargets: ['builder', 'user'],
 };
@@ -35,11 +32,6 @@ describe('Duo Team > Planner > Get Next Task', () => {
         _id: 'test-message-id',
         senderRole: 'user',
         content: 'Please implement dark mode for the settings page',
-      },
-      originMessage: {
-        senderRole: 'user',
-        content: 'Please implement dark mode for the settings page',
-        classification: null,
       },
     });
 
@@ -75,11 +67,6 @@ describe('Duo Team > Planner > Get Next Task', () => {
         senderRole: 'user',
         content: 'Please implement dark mode for the settings page',
       },
-      originMessage: {
-        senderRole: 'user',
-        content: 'Please implement dark mode for the settings page',
-        classification: null,
-      },
     });
 
     expect(output).toContain('<handoff-enhancer>');
@@ -102,11 +89,6 @@ describe('Duo Team > Planner > Get Next Task', () => {
         senderRole: 'user',
         content: 'Please implement dark mode for the settings page',
       },
-      originMessage: {
-        senderRole: 'user',
-        content: 'Please implement dark mode for the settings page',
-        classification: null,
-      },
     });
 
     expect(output).not.toContain('<handoff-enhancer>');
@@ -120,11 +102,6 @@ describe('Duo Team > Planner > Get Next Task', () => {
         _id: 'test-message-id',
         senderRole: 'user',
         content: 'Please implement dark mode for the settings page',
-      },
-      originMessage: {
-        senderRole: 'user',
-        content: 'Please implement dark mode for the settings page',
-        classification: null,
       },
     });
 
@@ -143,11 +120,6 @@ describe('Duo Team > Planner > Get Next Task', () => {
         senderRole: 'enhancer',
         content: '## Summary\nPlanning feedback',
       },
-      originMessage: {
-        senderRole: 'user',
-        content: 'Please implement dark mode for the settings page',
-        classification: null,
-      },
     });
 
     expect(output).toContain('<enhancer-review>');
@@ -163,11 +135,6 @@ describe('Duo Team > Planner > Get Next Task', () => {
         _id: 'test-message-id',
         senderRole: 'builder',
         content: 'Implementation complete. All tests pass.',
-      },
-      originMessage: {
-        senderRole: 'user',
-        content: 'Please implement dark mode for the settings page',
-        classification: 'new_feature',
       },
     });
 

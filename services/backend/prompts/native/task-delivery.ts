@@ -61,10 +61,6 @@ function appendNativeTaskSection(
     | 'message'
     | 'isEntryPoint'
     | 'sourceAttachments'
-    | 'currentContext'
-    | 'originMessage'
-    | 'followUpCountSinceOrigin'
-    | 'originMessageCreatedAt'
     | 'standingInstructions'
   >
 ): void {
@@ -90,10 +86,6 @@ export function generateNativeTaskDeliveryOutput(params: NativeTaskDeliveryParam
     availableHandoffTargets,
     isEntryPoint,
     sourceAttachments,
-    currentContext,
-    originMessage,
-    followUpCountSinceOrigin,
-    originMessageCreatedAt,
     standingInstructions,
     plannerEnhancerEnabled,
   } = params;
@@ -107,10 +99,6 @@ export function generateNativeTaskDeliveryOutput(params: NativeTaskDeliveryParam
     message,
     isEntryPoint,
     sourceAttachments,
-    currentContext,
-    originMessage,
-    followUpCountSinceOrigin,
-    originMessageCreatedAt,
     standingInstructions,
   });
   appendNativeTaskIntake(lines, {

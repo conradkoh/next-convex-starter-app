@@ -35,10 +35,6 @@ const BASE_PARAMS = {
     senderRole: 'user',
     content: 'Can you work on this item',
   },
-  currentContext: null,
-  originMessage: null,
-  followUpCountSinceOrigin: 0,
-  originMessageCreatedAt: null,
   isEntryPoint: false,
   availableHandoffTargets: ['planner'],
 };

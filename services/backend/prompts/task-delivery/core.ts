@@ -4,7 +4,6 @@
  * Used by both native and CLI task delivery paths.
  */
 
-import type { TaskDeliveryContextWindow } from './context-staleness';
 import {
   appendPlanningReviewOutcomeGuidance,
   appendTaskDeliveryEnhancerGuidance,
@@ -17,7 +16,7 @@ import { inferPrimaryHandoffTarget } from '../../src/domain/handoff/infer-primar
 import { handoffCommand } from '../cli/handoff/command';
 import { appendNativeDeliveryHandoffTemplates as appendTaskDeliveryHandoffTemplates } from '../native/delivery-handoff-templates.js';
 
-export interface TaskDeliveryParams extends TaskDeliveryContextWindow {
+export interface TaskDeliveryParams {
   chatroomId: string;
   role: string;
   cliEnvPrefix: string;

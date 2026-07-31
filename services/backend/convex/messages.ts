@@ -26,7 +26,6 @@ import { getAgentConfig } from '../src/domain/usecase/agent/get-agent-config';
 import { getTeamRolesFromChatroom } from '../src/domain/usecase/chatroom/get-team-roles';
 import { sendAutomatedUserMessage } from '../src/domain/usecase/chatroom/send-automated-user-message';
 import { markChatroomUnread } from '../src/domain/usecase/chatroom/unread-status';
-import { loadCurrentContext } from '../src/domain/usecase/context/load-current-context';
 import { createEnhancerJobFromHandoff } from '../src/domain/usecase/enhancer/create-enhancer-job-from-handoff';
 import { getEnhancerConfigForUser } from '../src/domain/usecase/enhancer/get-enhancer-config-for-user';
 import {
@@ -1690,9 +1689,6 @@ export const getTaskDeliveryPrompt = query({
     // Validate session and check chatroom access
     const { chatroom, session } = await requireChatroomAccess(ctx, args.sessionId, args.chatroomId);
 
-    // Fetch current context (time-based staleness only — no message reads).
-    const currentContext = await loadCurrentContext(ctx, args.chatroomId);
-
     // Fetch the task
     const task = await ctx.db.get('chatroom_tasks', args.taskId);
     if (!task) {
@@ -1803,21 +1799,6 @@ export const getTaskDeliveryPrompt = query({
           originMessage = msg;
           originIndex = i;
           break;
-        }
-      }
-    }
-
-    // Calculate follow-up count since origin message
-    let followUpCountSinceOrigin = 0;
-    if (originIndex >= 0) {
-      for (let i = originIndex + 1; i < contextMessages.length; i++) {
-        const msg = contextMessages[i];
-        if (
-          msg.senderRole.toLowerCase() === 'user' &&
-          msg.type === 'message' &&
-          msg.classification === 'follow_up'
-        ) {
-          followUpCountSinceOrigin++;
         }
       }
     }
@@ -1975,16 +1956,6 @@ export const getTaskDeliveryPrompt = query({
             content: message.content,
           }
         : null,
-      currentContext,
-      originMessage: originMessage
-        ? {
-            senderRole: originMessage.senderRole,
-            content: originMessage.content,
-            classification: originMessage.classification,
-          }
-        : null,
-      followUpCountSinceOrigin,
-      originMessageCreatedAt: originMessage?._creationTime ?? null,
       isEntryPoint,
       availableHandoffTargets: availableHandoffRoles,
       nativeIntegration,
