@@ -19,6 +19,7 @@ import {
   resolvePrimaryDeliveryAssemblyInput,
 } from '../src/domain/entities/assemble-primary-delivery-attachments';
 import { isNativeHarness } from '../src/domain/entities/harness/types';
+import type { PrimaryDeliveryAttachments } from '../src/domain/entities/message-attachments';
 import { isActiveParticipant } from '../src/domain/entities/participant';
 import { getActiveStandingInstructions } from '../src/domain/entities/standing-instructions';
 import { getTeamEntryPoint } from '../src/domain/entities/team';
@@ -139,6 +140,88 @@ async function enrichMessageAttachments(
     ...(attachedMessages && attachedMessages.length > 0 && { attachedMessages }),
     ...(msg.attachedSnippets?.length && { attachedSnippets: msg.attachedSnippets }),
   };
+}
+
+/**
+ * Resolves primary-delivery attachments for task delivery from a task source
+ * message's attachment IDs only (on-demand DB lookups). Returns undefined when
+ * the message is absent or carries no primary-delivery attachments.
+ */
+async function resolveSourceAttachmentsForDelivery(
+  ctx: QueryCtx,
+  message: {
+    attachedSnippets?: { reference: string; fileSource: string; selectedContent: string }[];
+    attachedTaskIds?: Id<'chatroom_tasks'>[];
+    attachedBacklogItemIds?: Id<'chatroom_backlog'>[];
+    attachedMessageIds?: Id<'chatroom_messages'>[];
+  } | null
+): Promise<PrimaryDeliveryAttachments | undefined> {
+  if (!message) return undefined;
+
+  const attachedTasksMap = new Map<
+    string,
+    { id: string; content: string; status: TaskStatus; createdBy: string }
+  >();
+  if (message.attachedTaskIds?.length) {
+    for (const taskId of message.attachedTaskIds) {
+      const t = await ctx.db.get('chatroom_tasks', taskId);
+      if (t) {
+        attachedTasksMap.set(taskId, {
+          id: t._id,
+          content: t.content,
+          status: t.status,
+          createdBy: t.createdBy,
+        });
+      }
+    }
+  }
+
+  const attachedBacklogItemsMap = new Map<
+    string,
+    { id: string; content: string; status: string }
+  >();
+  if (message.attachedBacklogItemIds?.length) {
+    for (const itemId of message.attachedBacklogItemIds) {
+      const item = await ctx.db.get('chatroom_backlog', itemId);
+      if (item) {
+        attachedBacklogItemsMap.set(itemId, {
+          id: item._id,
+          content: item.content,
+          status: item.status,
+        });
+      }
+    }
+  }
+
+  const attachedMessagesMap = new Map<
+    string,
+    { id: string; content: string; senderRole: string }
+  >();
+  if (message.attachedMessageIds?.length) {
+    for (const msgId of message.attachedMessageIds) {
+      const m = await ctx.db.get('chatroom_messages', msgId);
+      if (m) {
+        attachedMessagesMap.set(msgId, { id: m._id, content: m.content, senderRole: m.senderRole });
+      }
+    }
+  }
+
+  const primaryDeliveryInput = resolvePrimaryDeliveryAssemblyInput(
+    {
+      ...(message.attachedSnippets?.length ? { attachedSnippets: message.attachedSnippets } : {}),
+      ...(message.attachedBacklogItemIds?.length
+        ? { attachedBacklogItemIds: message.attachedBacklogItemIds }
+        : {}),
+      ...(message.attachedTaskIds?.length ? { attachedTaskIds: message.attachedTaskIds } : {}),
+      ...(message.attachedMessageIds?.length
+        ? { attachedMessageIds: message.attachedMessageIds }
+        : {}),
+    },
+    attachedBacklogItemsMap,
+    attachedTasksMap,
+    attachedMessagesMap
+  );
+  return assemblePrimaryDeliveryAttachments(primaryDeliveryInput);
 }
 
 /**
@@ -1158,130 +1241,6 @@ export const getProgressForTask = query({
   },
 });
 
-/** Returns the context window: messages from the latest non-follow-up user message onward. */
-export const getContextWindow = query({
-  args: {
-    ...SessionIdArg,
-    chatroomId: v.id('chatroom_rooms'),
-  },
-  handler: async (ctx, args) => {
-    // Validate session and check chatroom access (chatroom not needed)
-    await requireChatroomAccess(ctx, args.sessionId, args.chatroomId);
-
-    // Fetch recent messages (limited to 200 for performance)
-    // This handles most chatrooms efficiently
-    const recentMessages = await ctx.db
-      .query('chatroom_messages')
-      .withIndex('by_chatroom', (q) => q.eq('chatroomId', args.chatroomId))
-      .order('desc')
-      .take(200);
-
-    // Reverse to get chronological order
-    let messages = recentMessages.reverse();
-
-    // Filter out unacknowledged user messages (still queued, not yet worked on)
-    // Non-user messages (handoffs, agent messages) are always included
-    messages = messages.filter((msg) => {
-      // Non-user messages are always included
-      if (msg.senderRole.toLowerCase() !== 'user') return true;
-      // User messages must have acknowledgedAt to be included
-      return msg.acknowledgedAt !== undefined;
-    });
-
-    if (messages.length === 0) {
-      return {
-        originMessage: null,
-        contextMessages: [],
-        classification: null,
-      };
-    }
-
-    // Fast path: Check if most recent user message has taskOriginMessageId
-    // This is set for follow-up messages and points directly to the origin
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg.senderRole.toLowerCase() === 'user' && msg.type === 'message') {
-        // If this is a follow-up with origin reference, use it directly
-        if (msg.classification === 'follow_up' && msg.taskOriginMessageId) {
-          const originMessage = await ctx.db.get('chatroom_messages', msg.taskOriginMessageId);
-          if (originMessage) {
-            // Find where the origin is in our recent messages, or just return from origin
-            const originIndex = messages.findIndex((m) => m._id === originMessage._id);
-            if (originIndex !== -1) {
-              // Origin is in our recent messages, return from there
-              const contextMessages = messages.slice(originIndex);
-              return {
-                originMessage,
-                contextMessages,
-                classification: originMessage.classification || null,
-              };
-            }
-            // Origin is older than our recent window — use compound index to fetch
-            // messages from the origin's creation time onward (avoids loading ALL messages)
-            const contextMessages = await ctx.db
-              .query('chatroom_messages')
-              .withIndex('by_chatroom', (q) =>
-                q
-                  .eq('chatroomId', args.chatroomId)
-                  .gte('_creationTime', originMessage._creationTime)
-              )
-              .collect();
-            return {
-              originMessage,
-              contextMessages,
-              classification: originMessage.classification || null,
-            };
-          }
-        }
-
-        // This is the origin itself (non-follow-up user message)
-        if (msg.classification !== 'follow_up') {
-          const contextMessages = messages.slice(i);
-          return {
-            originMessage: msg,
-            contextMessages,
-            classification: msg.classification || null,
-          };
-        }
-        break;
-      }
-    }
-
-    // Standard path: Find the latest non-follow-up user message in recent messages
-    let originIndex = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (
-        msg.senderRole.toLowerCase() === 'user' &&
-        msg.type === 'message' &&
-        msg.classification !== 'follow_up'
-      ) {
-        originIndex = i;
-        break;
-      }
-    }
-
-    // If no origin found in recent messages, return recent messages (fallback)
-    if (originIndex === -1) {
-      return {
-        originMessage: null,
-        contextMessages: messages,
-        classification: null,
-      };
-    }
-
-    // Get the origin message and all messages after it
-    const originMessage = messages[originIndex];
-    const contextMessages = messages.slice(originIndex);
-
-    return {
-      originMessage,
-      contextMessages,
-      classification: originMessage?.classification || null,
-    };
-  },
-});
-
 /** Claims a broadcast message for a specific role to prevent duplicate processing. */
 export const claimMessage = mutation({
   args: {
@@ -1746,177 +1705,8 @@ export const getTaskDeliveryPrompt = query({
       includeEnhancer: plannerEnhancerEnabled && deliveryMessageSenderRole !== 'enhancer',
     });
 
-    // Get context window (reuse getContextWindow logic)
-    // Fetch recent messages for context
-    // Origin/follow-up resolution for context window (separate concern from attachment rendering).
-    // fallow-ignore-next-line code-duplication
-    const contextRecentMessages = await ctx.db
-      .query('chatroom_messages')
-      .withIndex('by_chatroom', (q) => q.eq('chatroomId', args.chatroomId))
-      .order('desc')
-      .take(200);
-
-    let contextMessages = contextRecentMessages.reverse();
-    // Filter out unacknowledged user messages
-    contextMessages = contextMessages.filter((msg) => {
-      if (msg.senderRole.toLowerCase() !== 'user') return true;
-      return msg.acknowledgedAt !== undefined;
-    });
-
-    // Find origin message
-    let originMessage = null;
-    let originIndex = -1;
-
-    // Check for follow-up with origin reference
-    for (let i = contextMessages.length - 1; i >= 0; i--) {
-      const msg = contextMessages[i];
-      if (msg.senderRole.toLowerCase() === 'user' && msg.type === 'message') {
-        if (msg.classification === 'follow_up' && msg.taskOriginMessageId) {
-          originMessage = await ctx.db.get('chatroom_messages', msg.taskOriginMessageId);
-          if (originMessage) {
-            const found = originMessage;
-            originIndex = contextMessages.findIndex((m) => m._id === found._id);
-            break;
-          }
-        }
-        if (msg.classification !== 'follow_up') {
-          originMessage = msg;
-          originIndex = i;
-          break;
-        }
-      }
-    }
-
-    // If no origin found via follow-up, search for non-follow-up user message
-    if (!originMessage) {
-      for (let i = contextMessages.length - 1; i >= 0; i--) {
-        const msg = contextMessages[i];
-        if (
-          msg.senderRole.toLowerCase() === 'user' &&
-          msg.type === 'message' &&
-          msg.classification !== 'follow_up'
-        ) {
-          originMessage = msg;
-          originIndex = i;
-          break;
-        }
-      }
-    }
-
-    // Get messages from origin onwards
-    const contextMessagesSlice =
-      originIndex >= 0 ? contextMessages.slice(originIndex) : contextMessages;
-
-    // Fetch attached tasks if any exist in context messages or the task source message
-    const allAttachedTaskIds: Id<'chatroom_tasks'>[] = [];
-    if (message?.attachedTaskIds && message.attachedTaskIds.length > 0) {
-      allAttachedTaskIds.push(...message.attachedTaskIds);
-    }
-    if (originMessage?.attachedTaskIds && originMessage.attachedTaskIds.length > 0) {
-      allAttachedTaskIds.push(...originMessage.attachedTaskIds);
-    }
-    for (const msg of contextMessagesSlice) {
-      if (msg.attachedTaskIds && msg.attachedTaskIds.length > 0) {
-        allAttachedTaskIds.push(...msg.attachedTaskIds);
-      }
-    }
-
-    // Fetch attached task details
-    const attachedTasksMap = new Map<
-      string,
-      { id: string; content: string; status: TaskStatus; createdBy: string }
-    >();
-    if (allAttachedTaskIds.length > 0) {
-      const uniqueTaskIds = [...new Set(allAttachedTaskIds)];
-      for (const taskId of uniqueTaskIds) {
-        const attachedTask = await ctx.db.get('chatroom_tasks', taskId);
-        if (attachedTask) {
-          attachedTasksMap.set(taskId, {
-            id: attachedTask._id,
-            content: attachedTask.content,
-            status: attachedTask.status,
-            createdBy: attachedTask.createdBy,
-          });
-        }
-      }
-    }
-
-    // Fetch attached backlog items if any exist in context messages or the task source message
-    const allAttachedBacklogItemIds: Id<'chatroom_backlog'>[] = [];
-    if (message?.attachedBacklogItemIds && message.attachedBacklogItemIds.length > 0) {
-      allAttachedBacklogItemIds.push(...message.attachedBacklogItemIds);
-    }
-    if (originMessage?.attachedBacklogItemIds && originMessage.attachedBacklogItemIds.length > 0) {
-      allAttachedBacklogItemIds.push(...originMessage.attachedBacklogItemIds);
-    }
-    for (const msg of contextMessagesSlice) {
-      if (msg.attachedBacklogItemIds && msg.attachedBacklogItemIds.length > 0) {
-        allAttachedBacklogItemIds.push(...msg.attachedBacklogItemIds);
-      }
-    }
-
-    // Fetch attached backlog item details
-    const attachedBacklogItemsMap = new Map<
-      string,
-      { id: string; content: string; status: string }
-    >();
-    if (allAttachedBacklogItemIds.length > 0) {
-      // fallow-ignore-next-line code-duplication
-      const uniqueItemIds = [...new Set(allAttachedBacklogItemIds)];
-      for (const itemId of uniqueItemIds) {
-        const item = await ctx.db.get('chatroom_backlog', itemId);
-        if (item) {
-          attachedBacklogItemsMap.set(itemId, {
-            id: item._id,
-            content: item.content,
-            status: item.status,
-          });
-        }
-      }
-    }
-
-    // Fetch attached messages from the task source message
-    const attachedMessagesMap = new Map<
-      string,
-      { id: string; content: string; senderRole: string }
-    >();
-    if (message?.attachedMessageIds && message.attachedMessageIds.length > 0) {
-      for (const msgId of message.attachedMessageIds) {
-        const attachedMsg = await ctx.db.get('chatroom_messages', msgId);
-        if (attachedMsg) {
-          attachedMessagesMap.set(msgId, {
-            id: attachedMsg._id,
-            content: attachedMsg.content,
-            senderRole: attachedMsg.senderRole,
-          });
-        }
-      }
-    }
-
-    // Primary-delivery attachments: resolve from source message, then assemble typed payload.
-    // @see ../src/domain/entities/assemble-primary-delivery-attachments.ts
-    const primaryDeliveryInput = resolvePrimaryDeliveryAssemblyInput(
-      message
-        ? {
-            ...('attachedSnippets' in message && message.attachedSnippets?.length
-              ? { attachedSnippets: message.attachedSnippets }
-              : {}),
-            ...('attachedBacklogItemIds' in message && message.attachedBacklogItemIds?.length
-              ? { attachedBacklogItemIds: message.attachedBacklogItemIds }
-              : {}),
-            ...('attachedTaskIds' in message && message.attachedTaskIds?.length
-              ? { attachedTaskIds: message.attachedTaskIds }
-              : {}),
-            ...('attachedMessageIds' in message && message.attachedMessageIds?.length
-              ? { attachedMessageIds: message.attachedMessageIds }
-              : {}),
-          }
-        : null,
-      attachedBacklogItemsMap,
-      attachedTasksMap,
-      attachedMessagesMap
-    );
-    const sourceAttachments = assemblePrimaryDeliveryAttachments(primaryDeliveryInput);
+    // Primary-delivery attachments resolve from the task source message only.
+    const sourceAttachments = await resolveSourceAttachmentsForDelivery(ctx, message);
 
     // Build and return the complete prompt
     const cliEnvPrefix = getCliEnvPrefix(config.getConvexURLWithFallback(args.convexUrl));
