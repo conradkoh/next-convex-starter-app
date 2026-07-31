@@ -41,25 +41,6 @@ export interface FullCliOutputParams {
     content: string;
   } | null;
 
-  /** Explicit context (new system) */
-  currentContext: {
-    content: string;
-    elapsedHours: number;
-  } | null;
-
-  /** Origin message for fallback when no explicit context */
-  originMessage: {
-    senderRole: string;
-    content: string;
-    classification?: string | null;
-  } | null;
-
-  /** Number of follow-up messages since origin */
-  followUpCountSinceOrigin: number;
-
-  /** Timestamp of origin message creation */
-  originMessageCreatedAt: number | null;
-
   /** Whether this role is the team entry point (planner/coordinator). Only entry points can create contexts. */
   isEntryPoint: boolean;
 
@@ -87,13 +68,9 @@ function buildNativeTaskDeliveryOutput(params: FullCliOutputParams): string {
     teamId,
     task,
     message,
-    originMessage,
     availableHandoffTargets,
     isEntryPoint,
     sourceAttachments,
-    currentContext,
-    followUpCountSinceOrigin,
-    originMessageCreatedAt,
     standingInstructions,
     plannerEnhancerEnabled,
   } = params;
@@ -108,10 +85,6 @@ function buildNativeTaskDeliveryOutput(params: FullCliOutputParams): string {
     availableHandoffTargets,
     isEntryPoint,
     sourceAttachments,
-    currentContext,
-    originMessage: originMessage ? { senderRole: originMessage.senderRole } : null,
-    followUpCountSinceOrigin,
-    originMessageCreatedAt,
     standingInstructions,
     plannerEnhancerEnabled,
   });
@@ -153,10 +126,6 @@ export function generateFullCliOutput(params: FullCliOutputParams): string {
     teamId,
     task,
     message,
-    currentContext,
-    originMessage,
-    followUpCountSinceOrigin,
-    originMessageCreatedAt,
     isEntryPoint,
     availableHandoffTargets,
     nativeIntegration = false,
@@ -177,10 +146,6 @@ export function generateFullCliOutput(params: FullCliOutputParams): string {
     isEntryPoint,
     task,
     message: message ? { _id: message._id, senderRole: message.senderRole } : null,
-    currentContext,
-    originMessage,
-    followUpCountSinceOrigin,
-    originMessageCreatedAt,
     sourceAttachments,
     standingInstructions,
   });

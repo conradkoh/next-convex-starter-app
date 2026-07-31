@@ -404,9 +404,6 @@ ${taskDeliveryPrompt.fullCliOutput}
       [TIMESTAMP] 📨 CHATROOM TASK received
 
       <task task-id="000000000000010007chatroom_tasks" origin-message-id="000000000010006chatroom_messages" sender="user">
-      <context>
-        <hint>(read if needed) → \`CHATROOM_CONVEX_URL=http://127.0.0.1:3210 chatroom context read --chatroom-id="000000000000010002chatroom_rooms" --role="builder"\`</hint>
-      </context>
 
       <attachments>
         <attachment type="backlog" backlog-item-id="0000000000010005chatroom_backlog">
@@ -571,7 +568,6 @@ ${taskDeliveryPrompt.fullCliOutput}
     // ===== VERIFY TASK DELIVERY PROMPT =====
     expect(taskDeliveryPrompt).toBeDefined();
     expect(taskDeliveryPrompt.fullCliOutput).toBeDefined();
-    expect(taskDeliveryPrompt.json).toBeDefined();
 
     // ===== VERIFY context view-template hint presence (init prompt only) =====
     expect(fullCliMessage).toContain('chatroom context view-template');
@@ -591,51 +587,14 @@ ${taskDeliveryPrompt.fullCliOutput}
     // Should have environment variable prefix
     expect(fullOutput).toContain('CHATROOM_CONVEX_URL=http://127.0.0.1:3210');
 
-    // ===== VERIFY JSON CONTEXT =====
-    const jsonContext = taskDeliveryPrompt.json;
+    // ===== VERIFY FULL CLI OUTPUT CONTENT =====
 
-    // Should have task information
-    expect(jsonContext.task).toBeDefined();
-    expect(jsonContext.task._id).toBe(startResult.taskId);
-    expect(jsonContext.task.status).toBe('in_progress');
+    // Backlog item content is rendered in the delivery envelope
+    expect(fullOutput).toContain('Fix: Agent lacks knowledge of backlog listing');
 
-    // Should have message information
-    expect(jsonContext.message).toBeDefined();
-    expect(jsonContext.message?._id).toBe(userMessageId);
-    expect(jsonContext.message?.senderRole).toBe('user');
-    expect(jsonContext.message?.content).toContain('backlog section');
-
-    // Should have context window
-    expect(jsonContext.contextWindow).toBeDefined();
-    expect(jsonContext.contextWindow.originMessage).toBeDefined();
-    expect(jsonContext.contextWindow.originMessage?.content).toContain('backlog section');
-
-    // Should have attached backlog item in context
-    expect(jsonContext.contextWindow.originMessage?.attachedBacklogItemIds).toBeDefined();
-    expect(jsonContext.contextWindow.originMessage?.attachedBacklogItemIds?.length).toBeGreaterThan(
-      0
-    );
-    expect(jsonContext.contextWindow.originMessage?.attachedBacklogItems).toBeDefined();
-    expect(jsonContext.contextWindow.originMessage?.attachedBacklogItems?.length).toBeGreaterThan(
-      0
-    );
-
-    // Verify backlog item details
-    const attachedItem = jsonContext.contextWindow.originMessage?.attachedBacklogItems?.[0];
-    expect(attachedItem).toBeDefined();
-    expect(attachedItem?.content).toContain('Fix: Agent lacks knowledge');
-    expect(attachedItem?.status).toBe('backlog');
-
-    // Should have role prompt context
-    expect(jsonContext.rolePrompt).toBeDefined();
-    expect(jsonContext.rolePrompt.availableHandoffRoles).toContain('planner');
-
-    // Should have chatroom metadata
-    expect(jsonContext.chatroomId).toBe(chatroomId);
-    expect(jsonContext.role).toBe('builder');
-    expect(jsonContext.teamName).toBe('Duo Team');
-    expect(jsonContext.teamRoles).toContain('builder');
-    expect(jsonContext.teamRoles).toContain('planner');
+    // Handoff roles are surfaced in the delivery
+    expect(fullOutput).toContain('**planner**');
+    expect(fullOutput).toContain('--next-role="planner"');
   });
 
   test('formats task info section correctly for CLI display', async () => {
@@ -676,87 +635,18 @@ ${taskDeliveryPrompt.fullCliOutput}
       convexUrl: 'http://127.0.0.1:3210',
     });
 
-    // Verify JSON contains all necessary info for CLI to format task info section
-    const jsonContext = taskDeliveryPrompt.json;
+    // Verify fullCliOutput contains all necessary info for CLI task info display
+    const fullOutput = taskDeliveryPrompt.fullCliOutput;
 
     // CLI needs task ID to show in TASK section
-    expect(jsonContext.task._id).toBeDefined();
-    expect(typeof jsonContext.task._id).toBe('string');
+    expect(fullOutput).toContain(`task-id="${startResult.taskId}"`);
 
-    // CLI needs message ID if present
-    expect(jsonContext.message?._id).toBeDefined();
+    // CLI needs origin message ID and sender for TASK section
+    expect(fullOutput).toContain(`origin-message-id="${userMessageId}"`);
+    expect(fullOutput).toContain('sender="user"');
 
-    // CLI needs origin message for TASK section
-    expect(jsonContext.contextWindow.originMessage).toBeDefined();
-    expect(jsonContext.contextWindow.originMessage?.content).toBe('Fix the dark mode toggle');
-    expect(jsonContext.contextWindow.originMessage?.senderRole).toBe('user');
-
-    // Verify classification is accessible (even if null for new message)
-    expect(jsonContext.contextWindow.classification).toBeDefined();
-  });
-
-  test('includes classification info when message is tagged', async () => {
-    // Setup
-    const { sessionId } = await createTestSession('test-classification-info');
-    const chatroomId = await createDuoTeamChatroom(sessionId);
-    await joinParticipants(sessionId, chatroomId, ['planner', 'builder']);
-
-    // User sends message
-    await t.mutation(api.messages.sendMessage, {
-      sessionId,
-      chatroomId,
-      senderRole: 'user',
-      content: 'Add user authentication',
-      type: 'message',
-    });
-
-    // Builder claims and starts
-    await t.mutation(api.tasks.claimTask, {
-      sessionId,
-      chatroomId,
-      role: 'builder',
-    });
-
-    const startResult = await t.mutation(api.tasks.startTask, {
-      sessionId,
-      chatroomId,
-      role: 'builder',
-    });
-
-    // Get task delivery prompt
-    const taskDeliveryPrompt = await t.query(api.messages.getTaskDeliveryPrompt, {
-      sessionId,
-      chatroomId,
-      role: 'builder',
-      taskId: startResult.taskId,
-      convexUrl: 'http://127.0.0.1:3210',
-    });
-
-    // Role prompt has no classification until message is tagged (legacy data model)
-    expect(taskDeliveryPrompt.json.rolePrompt.currentClassification).toBeNull();
-
-    const task = await t.run(async (ctx) => ctx.db.get('chatroom_tasks', startResult.taskId));
-    expect(task?.sourceMessageId).toBeDefined();
-    await t.run(async (ctx) => {
-      await ctx.db.patch('chatroom_messages', task!.sourceMessageId!, {
-        classification: 'new_feature',
-        featureTitle: 'User Authentication',
-        featureDescription: 'Add login/logout functionality',
-        featureTechSpecs: 'Use JWT tokens, bcrypt for passwords',
-      });
-    });
-
-    // Get updated prompt
-    const updatedPrompt = await t.query(api.messages.getTaskDeliveryPrompt, {
-      sessionId,
-      chatroomId,
-      role: 'builder',
-      taskId: startResult.taskId,
-      convexUrl: 'http://127.0.0.1:3210',
-    });
-
-    // Should now have classification
-    expect(updatedPrompt.json.rolePrompt.currentClassification).toBe('new_feature');
+    // Origin message content is rendered in the delivery
+    expect(fullOutput).toContain('Fix the dark mode toggle');
   });
 });
 
@@ -877,7 +767,7 @@ describe('Get-Next-Task Recent Improvements', () => {
     expect(reminder).toContain('get-next-task');
   });
 
-  test('attached backlog tasks appear in task delivery prompt JSON', async () => {
+  test('attached backlog items appear in task delivery prompt fullCliOutput', async () => {
     // ===== SETUP =====
     const { sessionId } = await createTestSession('test-attached-backlog-in-prompt');
     const chatroomId = await createDuoTeamChatroom(sessionId);
@@ -924,21 +814,12 @@ describe('Get-Next-Task Recent Improvements', () => {
       convexUrl: 'http://127.0.0.1:3210',
     });
 
-    // Verify attached backlog items appear in the prompt JSON
-    const originMessage = taskDeliveryPrompt.json.contextWindow.originMessage;
-    expect(originMessage).toBeDefined();
-    expect(originMessage?.attachedBacklogItems).toBeDefined();
-    expect(originMessage?.attachedBacklogItems?.length).toBe(1);
-
-    const attachedItem = originMessage?.attachedBacklogItems?.[0];
-    expect(attachedItem?.content).toBe(
-      'Recovery of acknowledged tasks: implement 1-min grace period'
-    );
-    expect(attachedItem?.status).toBeDefined();
-
-    // Verify the full CLI output also exists
-    expect(taskDeliveryPrompt.fullCliOutput).toBeDefined();
-    expect(taskDeliveryPrompt.fullCliOutput.length).toBeGreaterThan(0);
+    // Verify attached backlog items appear in the fullCliOutput
+    const fullOutput = taskDeliveryPrompt.fullCliOutput;
+    expect(fullOutput).toContain('<attachments>');
+    expect(fullOutput).toContain('type="backlog"');
+    expect(fullOutput).toContain(`backlog-item-id="${backlogItemId}"`);
+    expect(fullOutput).toContain('Recovery of acknowledged tasks: implement 1-min grace period');
   });
 
   test('getPendingTasksForRole returns acknowledged tasks for recovery', async () => {
@@ -1156,23 +1037,6 @@ describe('Get-Next-Task Recent Improvements', () => {
       messageId: userMessageId,
       convexUrl: 'http://127.0.0.1:3210',
     });
-
-    // ── Verify JSON context has the attached backlog item ──────────────────────
-    const originMessage = taskDeliveryPrompt.json.contextWindow.originMessage;
-    expect(originMessage).toBeDefined();
-
-    // The backlog item ID should appear in attachedBacklogItemIds
-    expect(originMessage?.attachedBacklogItemIds).toBeDefined();
-    expect(originMessage?.attachedBacklogItemIds).toContain(backlogItemId);
-
-    // The resolved item should appear in attachedBacklogItems
-    expect(originMessage?.attachedBacklogItems).toBeDefined();
-    expect(originMessage?.attachedBacklogItems?.length).toBe(1);
-    const attachedItem = originMessage?.attachedBacklogItems?.[0];
-    expect(attachedItem?.content).toBe(
-      'Refactor: extract shared auth helpers into a utility module'
-    );
-    expect(attachedItem?.status).toBe('backlog');
 
     // ── Verify CLI output includes backlog attachment in primary delivery ──
     const fullOutput = taskDeliveryPrompt.fullCliOutput;
@@ -1429,8 +1293,6 @@ describe('Get-Next-Task Recent Improvements', () => {
     expect(fullOutput).toContain('<user-selected-content>');
     expect(fullOutput).toContain('# Shadcn');
     expect(fullOutput).toContain('[attachment: attachment-reference-001]');
-
-    expect(taskDeliveryPrompt.json.message?.attachedSnippets).toHaveLength(1);
   });
 
   test('readTask mutation returns no attachedBacklogItems when source message has none', async () => {
