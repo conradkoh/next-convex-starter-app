@@ -57,8 +57,6 @@ const config = getConfig();
 // Types for task delivery prompt response
 interface TaskDeliveryPromptResponse {
   fullCliOutput: string; // Complete CLI output for task delivery (backend-generated)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  json: any; // Dynamic JSON structure from prompt generator
 }
 
 // =============================================================================
@@ -1678,7 +1676,7 @@ export const getInitPrompt = query({
   },
 });
 
-/** Returns the complete task delivery prompt and structured JSON context for an agent receiving a task. */
+/** Returns the complete task delivery prompt for an agent receiving a task. */
 export const getTaskDeliveryPrompt = query({
   args: {
     ...SessionIdArg,
@@ -1736,7 +1734,6 @@ export const getTaskDeliveryPrompt = query({
     );
 
     const availableRoles = waitingParticipants.map((p) => p.role);
-    const currentClassification = await getLatestUserMessageClassification(ctx, args.chatroomId);
 
     const enhancerConfig = await getEnhancerConfigForUser(ctx, args.chatroomId, session.userId);
 
@@ -1939,96 +1936,6 @@ export const getTaskDeliveryPrompt = query({
       attachedMessagesMap
     );
     const sourceAttachments = assemblePrimaryDeliveryAttachments(primaryDeliveryInput);
-    const sourceSnippets = primaryDeliveryInput.attachedSnippets;
-
-    // Build context for prompt generation
-    const deliveryContext = {
-      chatroomId: args.chatroomId,
-      role: args.role,
-      task: {
-        _id: task._id,
-        content: task.content,
-        status: task.status,
-        createdBy: task.createdBy,
-        queuePosition: task.queuePosition,
-      },
-      message: message
-        ? {
-            _id: message._id,
-            content: message.content,
-            senderRole: message.senderRole,
-            type: message.type,
-            targetRole: message.targetRole,
-            ...(sourceSnippets && { attachedSnippets: sourceSnippets }),
-          }
-        : null,
-      participants: participants.map((p) => ({
-        role: p.role,
-        lastSeenAction: p.lastSeenAction ?? null,
-      })),
-      contextWindow: {
-        // Explicit context (new system)
-        currentContext,
-        // Origin message (legacy, for fallback when no context set)
-        originMessage: originMessage
-          ? {
-              _id: originMessage._id,
-              senderRole: originMessage.senderRole,
-              content: originMessage.content,
-              type: originMessage.type,
-              targetRole: originMessage.targetRole,
-              classification: originMessage.classification,
-              attachedTaskIds: originMessage.attachedTaskIds,
-              attachedTasks: originMessage.attachedTaskIds
-                ?.map((id) => attachedTasksMap.get(id))
-                .filter(Boolean) as {
-                id: string;
-                content: string;
-                status: string;
-                createdBy: string;
-                backlogStatus?: string;
-              }[],
-              attachedBacklogItemIds: originMessage.attachedBacklogItemIds,
-              attachedBacklogItems: originMessage.attachedBacklogItemIds
-                ?.map((id) => attachedBacklogItemsMap.get(id))
-                .filter(Boolean) as { id: string; content: string; status: string }[],
-            }
-          : null,
-        contextMessages: contextMessagesSlice.map((m) => ({
-          _id: m._id,
-          senderRole: m.senderRole,
-          content: m.content,
-          type: m.type,
-          targetRole: m.targetRole,
-          classification: m.classification,
-          attachedTaskIds: m.attachedTaskIds,
-          attachedTasks: m.attachedTaskIds
-            ?.map((id) => attachedTasksMap.get(id))
-            .filter(Boolean) as {
-            id: string;
-            content: string;
-            status: string;
-            createdBy: string;
-            backlogStatus?: string;
-          }[],
-          attachedBacklogItemIds: m.attachedBacklogItemIds,
-          attachedBacklogItems: m.attachedBacklogItemIds
-            ?.map((id) => attachedBacklogItemsMap.get(id))
-            .filter(Boolean) as { id: string; content: string; status: string }[],
-        })),
-        classification: originMessage?.classification || null,
-        // Staleness metadata for warning display
-        originMessageCreatedAt: originMessage?._creationTime ?? null,
-        followUpCountSinceOrigin,
-      },
-      rolePrompt: {
-        currentClassification,
-        availableHandoffRoles,
-      },
-      teamName: chatroom.teamName || 'Team',
-      teamRoles: chatroom.teamRoles || [],
-      currentTimestamp: new Date().toISOString(),
-    };
 
     // Build and return the complete prompt
     const cliEnvPrefix = getCliEnvPrefix(config.getConvexURLWithFallback(args.convexUrl));
@@ -2088,7 +1995,6 @@ export const getTaskDeliveryPrompt = query({
 
     return {
       fullCliOutput,
-      json: deliveryContext,
     };
   },
 });
