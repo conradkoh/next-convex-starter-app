@@ -76,10 +76,12 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
       permission={SYSTEM_ADMIN_ACCESS_PERMISSION}
       fallback={_renderSystemAdminAccessDenied()}
     >
-      <div className="flex h-full min-h-0">
-        {_renderMobileHeader(pathname)}
+      <div className="flex min-h-0 flex-1">
         {_renderDesktopSidebar(pathname)}
-        {_renderMainContent(children)}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {_renderMobileHeader(pathname)}
+          {_renderMainContent(children)}
+        </div>
       </div>
     </RequirePermission>
   );
@@ -126,7 +128,7 @@ function _renderMobileHeader(pathname: string) {
   const ActiveIcon = activeModule.icon;
 
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-background border-b p-4">
+    <div className="lg:hidden shrink-0 border-b bg-background p-4">
       <div className="flex items-center justify-between gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -176,7 +178,7 @@ function _renderDesktopSidebar(pathname: string) {
 function _renderMainContent(children: React.ReactNode) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-      <div className="pt-20 lg:pt-0 p-4 lg:p-6">{children}</div>
+      <div className="p-4 lg:p-6">{children}</div>
     </div>
   );
 }
