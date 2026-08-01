@@ -21,6 +21,7 @@ import type * as presentations from "../presentations.js";
 import type * as serviceDesk from "../serviceDesk.js";
 import type * as sessions from "../sessions.js";
 import type * as system_auth_google from "../system/auth/google.js";
+import type * as system_users from "../system/users.js";
 
 import type {
   ApiFromModules,
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   serviceDesk: typeof serviceDesk;
   sessions: typeof sessions;
   "system/auth/google": typeof system_auth_google;
+  "system/users": typeof system_users;
 }>;
 
 /**
