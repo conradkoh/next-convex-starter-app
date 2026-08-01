@@ -10,15 +10,18 @@ import { mutation, query, type MutationCtx } from '../_generated/server';
  * System User Role Management
  *
  * All functions are guarded by permission keys (not role-name checks):
- * - `listUsers`     requires `users:list`  (managers hold this via their role).
- * - `updateUserRoles` requires `users:write` (system admins hold this today).
+ * - `listUsers`       requires `users:list`  (system admins hold this via systemAdminPermissions).
+ * - `updateUserRoles` requires `users:write` (system admins hold this).
+ *
+ * Starter ships two built-in roles only (user, system_admin). Forks extend
+ * roleDefinitions and this UI separately for custom roles.
  */
 
 const USERS_LIST = 'users:list' as const;
 const USERS_WRITE = 'users:write' as const;
 
-/** Effective role preset sent from the UI */
-export type EffectiveRole = 'standard_user' | 'manager' | 'system_admin';
+/** Effective role preset — maps to the two built-in starter roles only */
+export type EffectiveRole = 'standard_user' | 'system_admin';
 
 export interface UserSummary {
   _id: Id<'users'>;
@@ -30,13 +33,8 @@ export interface UserSummary {
   effectiveRole: EffectiveRole;
 }
 
-function toEffectiveRole(user: {
-  accessLevel?: 'user' | 'system_admin';
-  roleNames?: string[];
-}): EffectiveRole {
+function toEffectiveRole(user: { accessLevel?: 'user' | 'system_admin' }): EffectiveRole {
   if (user.accessLevel === 'system_admin') return 'system_admin';
-  const roles = user.roleNames ?? [];
-  if (roles.includes('manager')) return 'manager';
   return 'standard_user';
 }
 
@@ -47,8 +45,6 @@ function presetToStorage(effectiveRole: EffectiveRole): {
   switch (effectiveRole) {
     case 'system_admin':
       return { accessLevel: 'system_admin', roleNames: undefined };
-    case 'manager':
-      return { accessLevel: 'user', roleNames: ['user', 'manager'] };
     case 'standard_user':
       return { accessLevel: 'user', roleNames: ['user'] };
   }
@@ -79,7 +75,7 @@ async function assertNotLastSystemAdmin(
 
 /**
  * Lists all users (including anonymous) with their effective role.
- * Permission: `users:list` — managers may call this per RBAC.
+ * Permission: `users:list` — system admins only in the starter; forks may grant via custom roles.
  */
 export const listUsers = query({
   args: { ...SessionIdArg },
@@ -107,16 +103,12 @@ export const listUsers = query({
 
 /**
  * Assigns an effective role preset to a user.
- * Permission: `users:write` — system admins hold this today; managers do not.
+ * Permission: `users:write` — system admins hold this.
  */
 export const updateUserRoles = mutation({
   args: {
     userId: v.id('users'),
-    effectiveRole: v.union(
-      v.literal('standard_user'),
-      v.literal('manager'),
-      v.literal('system_admin')
-    ),
+    effectiveRole: v.union(v.literal('standard_user'), v.literal('system_admin')),
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {

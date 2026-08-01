@@ -51,3 +51,20 @@ test('updateUserRoles allows demoting a system admin when another admin exists',
   const admin2User = await t.run((ctx) => ctx.db.get('users', admin2.userId));
   expect(admin2User?.accessLevel).toBe('system_admin');
 });
+
+test('listUsers maps legacy manager roleNames to standard_user effectiveRole', async () => {
+  const { sessionId } = await loginAsSystemAdmin();
+  const targetSessionId = `mgr-${Math.random().toString(36).slice(2)}` as SessionId;
+  const login = await t.mutation(api.auth.loginAnon, { sessionId: targetSessionId });
+  const targetUserId = login.userId as Id<'users'>;
+  await t.run(async (ctx) => {
+    await ctx.db.patch('users', targetUserId, {
+      accessLevel: 'user',
+      roleNames: ['user', 'manager'],
+    });
+  });
+
+  const users = await t.query(api.system.users.listUsers, { sessionId });
+  const target = users.find((u) => u._id === targetUserId);
+  expect(target?.effectiveRole).toBe('standard_user');
+});
