@@ -478,19 +478,10 @@ const ChatroomCard = memo(function ChatroomCard({
               {chatStatus !== 'completed' && (
                 <DropdownMenu>
                   <DropdownMenuTrigger
-                    render={
-                      <div
-                        className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover transition-all duration-100"
-                        onClick={(e) => e.stopPropagation()}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.stopPropagation();
-                          }
-                        }}
-                      />
-                    }
+                    type="button"
+                    className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover transition-all duration-100"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Chatroom actions"
                   >
                     <MoreVertical size={14} />
                   </DropdownMenuTrigger>
@@ -636,9 +627,9 @@ const ChatroomTable = memo(function ChatroomTable({
                 {chatroom.chatStatus !== 'completed' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      render={
-                        <div className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-tertiary transition-all duration-100 cursor-pointer" />
-                      }
+                      type="button"
+                      className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-tertiary transition-all duration-100"
+                      aria-label="Chatroom actions"
                     >
                       <MoreVertical size={14} />
                     </DropdownMenuTrigger>
