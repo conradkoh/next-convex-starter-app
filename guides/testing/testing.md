@@ -77,7 +77,11 @@ cd apps/webapp && pnpm e2e
 
 ### Upstream Flows
 
-Upstream template flows live in `apps/webapp/tests/e2e/specs/upstream/` and are tagged `@upstream`. They cover core auth/navigation flows (home, login, anonymous auth, app dashboard, unauthorized access, profile) and form the regression baseline for the upcoming base UI migration.
+Upstream template flows live in `apps/webapp/tests/e2e/specs/upstream/` and are tagged `@upstream`. They cover core auth/navigation flows (home, login, anonymous auth, app dashboard, unauthorized access, profile) and admin flows (`/app/admin`, `/app/admin/users`, `/app/admin/google-auth`) and form the regression baseline for the upcoming base UI migration.
+
+### Pre-Push Hook
+
+The `.husky/pre-push` hook runs `pnpm run test` → `pnpm run typecheck` → `pnpm run e2e`. Because e2e now includes admin specs, pushing requires the Convex deployment to have `E2E_SEEDING_ENABLED` set — see [apps/webapp/tests/e2e/README.md](../../apps/webapp/tests/e2e/README.md#e2e-admin-seeding) for the mandatory setup.
 
 ### Policy
 
@@ -88,7 +92,9 @@ New UI changes should include matching e2e tests in the appropriate folder:
 
 ### Coverage Phasing
 
-Slice 1 covers the core flows listed above. Admin pages, login code (`/login/code`), account recovery (`/recover`), and `/test/*` demo pages are phased for later slices.
+- Admin flows (`/app/admin`, `/app/admin/users`, `/app/admin/google-auth`) are now covered.
+- `/test/*` demo pages are explicitly **excluded** from e2e coverage by policy.
+- Login code (`/login/code`) and account recovery (`/recover`) are still phased for later slices.
 
 ## Frontend Testing
 

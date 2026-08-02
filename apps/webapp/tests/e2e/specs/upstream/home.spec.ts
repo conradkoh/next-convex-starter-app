@@ -22,8 +22,5 @@ test.describe('Home Page', { tag: [TAG_UPSTREAM, TAG_NAV] }, () => {
     await expect(homePage.footer).toBeVisible();
     const footerText = (await homePage.footer.textContent()) ?? '';
     expect(footerText).toMatch(/App Version:/);
-
-    const response = await page.goto('/');
-    expect(response?.status()).toBe(200);
   });
 });

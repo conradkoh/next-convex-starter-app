@@ -12,11 +12,14 @@ pnpm e2e
 cd apps/webapp && pnpm e2e
 ```
 
+`pnpm e2e` is also wired into the git **pre-push** hook (alongside `test` and `typecheck`), so admin specs require the Convex env setup below before pushing.
+
 ## Prerequisites
 
 - `apps/webapp/.env.local` must exist with a valid `NEXT_PUBLIC_CONVEX_URL`
 - The Convex dev deployment must be reachable from the dev server
 - Playwright browsers installed (`npx playwright install` if needed)
+- **For admin specs:** `E2E_SEEDING_ENABLED` must be set on the Convex deployment (see [E2E Admin Seeding](#e2e-admin-seeding) below)
 
 ## Folder Structure
 
@@ -27,15 +30,22 @@ tests/e2e/
   tsconfig.json
   fixtures/
     auth.fixture.ts        # authenticatedPage fixture (anonymous login)
+    admin.fixture.ts       # systemAdminPage fixture (anonymous login + promote + verify)
   support/
-    tags.ts                # TAG_UPSTREAM / TAG_DOWNSTREAM / TAG_AUTH / TAG_NAV
+    tags.ts                # TAG_UPSTREAM / TAG_DOWNSTREAM / TAG_AUTH / TAG_NAV / TAG_ADMIN
     upstream-flows.ts      # registry of upstream-owned routes (regression baseline)
+    env.ts                 # shared .env.local reader
+    convex-client.ts       # ConvexHttpClient wrapper (promoteSessionToSystemAdmin)
+    seed-guard.ts          # fail-fast guard when E2E_SEEDING_ENABLED is missing
   pages/
     base.page.ts           # shared BasePage (do not modify)
     home.page.ts           # public landing page
     login.page.ts          # /login
     app-dashboard.page.ts  # /app
     profile.page.ts        # /app/profile
+    admin-dashboard.page.ts      # /app/admin
+    admin-users.page.ts          # /app/admin/users
+    admin-google-auth.page.ts    # /app/admin/google-auth
   specs/
     upstream/              # template-owned flows (tagged @upstream)
     downstream/            # fork-specific flows (tagged @downstream)
@@ -61,6 +71,7 @@ Filter with `--grep`:
 ```bash
 cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @upstream
 cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @downstream
+cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @admin
 ```
 
 ## `support/upstream-flows.ts` Registry
@@ -70,10 +81,25 @@ cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config
 ## Page Object Pattern
 
 - Extend `BasePage`.
-- **Auth-related page objects must wait for specific UI signals (visible headings/buttons), not `networkidle`.** Convex keeps the WebSocket connection active, so `waitForLoad()`/`networkidle` never settles on auth pages. Override `navigate()` accordingly.
-- `HomePage.navigate()` keeps `waitForLoad()` — acceptable for the static home page.
+- **All page objects must wait for specific UI signals (visible headings/content), not `networkidle`.** Convex keeps the WebSocket connection active, so `waitForLoad()`/`networkidle` never settles on pages backed by Convex. Override `navigate()` and wait for the content that proves the page actually rendered.
+- Be careful with signals that appear during skeleton/loading states (e.g. the admin google-auth `h1` renders during loading too). Wait for a **loaded-only** signal (e.g. `Google Authentication Control` card title, or a real user-list row rather than a skeleton).
+- `BasePage.waitForLoad()` (networkidle) still exists on the base class but should not be used — it is deprecated for this suite.
 
-## Auth Fixture
+## E2E Admin Seeding
+
+Admin specs promote the anonymous test user to `system_admin` via a dev-only, env-gated Convex mutation (`services/backend/convex/e2e.ts`). The gate is the deployment env var `E2E_SEEDING_ENABLED`.
+
+**Mandatory one-time setup** on the deployment matching `NEXT_PUBLIC_CONVEX_URL` in `apps/webapp/.env.local`:
+
+```bash
+cd services/backend && npx convex env set E2E_SEEDING_ENABLED true
+```
+
+- **Never set `E2E_SEEDING_ENABLED` on production deployments** — local/dev only.
+- The mutation is safe by default: when the env var is missing it throws `FORBIDDEN`.
+- If the env var is missing, the `systemAdminPage` fixture fails fast with actionable setup instructions (`support/seed-guard.ts`).
+
+## Auth & Admin Fixtures
 
 `fixtures/auth.fixture.ts` uses `test.extend` to provide `authenticatedPage`, which performs an anonymous login before each test:
 
@@ -84,6 +110,20 @@ test('shows dashboard when authenticated', async ({ authenticatedPage }) => {
   // authenticatedPage is already logged in
 });
 ```
+
+`fixtures/admin.fixture.ts` provides `systemAdminPage` — anonymous login, promotion to `system_admin` (via the seeding mutation), a page reload, and a verification that `/app/admin` shows the `Admin Dashboard` heading before the test body runs:
+
+```typescript
+import { test } from '../../fixtures/admin.fixture';
+
+test('shows the admin dashboard', async ({ systemAdminPage }) => {
+  // systemAdminPage is authenticated as a system admin
+});
+```
+
+## Excluded Pages
+
+`/test/*` demo pages are explicitly **excluded** from e2e coverage by policy. Login code (`/login/code`) and account recovery (`/recover`) flows are also excluded for now (phased for later slices).
 
 ## Standing Policy
 

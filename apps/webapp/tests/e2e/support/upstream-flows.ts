@@ -36,6 +36,26 @@ export const UPSTREAM_FLOWS = {
     description: 'User profile and account settings',
     specFile: 'specs/upstream/profile.spec.ts',
   },
+  adminDashboard: {
+    path: '/app/admin',
+    description: 'System admin dashboard',
+    specFile: 'specs/upstream/admin-dashboard.spec.ts',
+  },
+  adminUsers: {
+    path: '/app/admin/users',
+    description: 'System admin user role management',
+    specFile: 'specs/upstream/admin-users.spec.ts',
+  },
+  adminGoogleAuth: {
+    path: '/app/admin/google-auth',
+    description: 'System admin Google OAuth configuration',
+    specFile: 'specs/upstream/admin-google-auth.spec.ts',
+  },
+  adminUnauthorized: {
+    path: '/app/admin',
+    description: 'Non-admin visit shows Access Denied',
+    specFile: 'specs/upstream/admin-unauthorized.spec.ts',
+  },
 } as const;
 
 export type UpstreamFlowKey = keyof typeof UPSTREAM_FLOWS;
