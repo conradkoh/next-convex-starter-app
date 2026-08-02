@@ -1,6 +1,6 @@
 {
   "name": "@workspace/local",
-  "version": "1.84.6",
+  "version": "1.84.7",
   "private": true,
   "type": "module",
   "scripts": {
