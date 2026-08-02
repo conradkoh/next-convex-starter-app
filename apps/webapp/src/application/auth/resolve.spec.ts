@@ -38,7 +38,11 @@ describe('getRolesForUser', () => {
 
 describe('getRolesForUser with roleNames', () => {
   it('reads roleNames when present', () => {
-    expect(getRolesForUser({ roleNames: ['user', 'manager'] })).toEqual(['user', 'manager']);
+    expect(getRolesForUser({ roleNames: ['user'] })).toEqual(['user']);
+  });
+
+  it('filters legacy manager role from roleNames after removal from registry', () => {
+    expect(getRolesForUser({ roleNames: ['user', 'manager'] })).toEqual(['user']);
   });
 
   it('falls back to accessLevel when roleNames is empty', () => {
@@ -70,13 +74,6 @@ describe('getRolesForUser with roleNames', () => {
 });
 
 describe('hasPermission with roleNames', () => {
-  it('unions permissions across multiple roles', () => {
-    const user = { roleNames: ['user', 'manager'] };
-    expect(hasPermission(user, 'attendance:read')).toBe(true);
-    expect(hasPermission(user, 'users:list')).toBe(true);
-    expect(hasPermission(user, 'system_admin:access')).toBe(false);
-  });
-
   it('grants system admin permissions without roleNames migration', () => {
     const user = { accessLevel: 'system_admin' as const };
     expect(hasPermission(user, 'system_admin:access')).toBe(true);

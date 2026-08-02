@@ -72,6 +72,8 @@ pnpm dlx shadcn@latest add dialog --overwrite
 
 > The CLI fetches the Base UI version of each component from the shadcn registry and overwrites the existing file.
 
+> **Tailwind prerequisite:** `base-vega` registry components use `data-horizontal:` / `data-vertical:` orientation shorthands that only resolve when `shadcn/tailwind.css` is imported (see [shadcn manual install](https://ui.shadcn.com/docs/installation/manual)). Without it, tabs, separators, and scroll-area scrollbars can render with zero dimensions. After CLI overwrite, run the orientation audit in the pre-migration checklist and apply the fix in Playbook section 4 — or install `shadcn` + `@import "shadcn/tailwind.css"` before migrating.
+
 ---
 
 ## Method B: Manual Migration
@@ -160,6 +162,9 @@ rg '@radix-ui/react-' src/ package.json
 
 # Radix state selectors in CSS/Tailwind (will silently break animations)
 rg 'data-\[state=' src/
+
+# Orientation shorthands (silently break layout without shadcn/tailwind.css)
+rg 'data-horizontal|data-vertical|group-data-horizontal|group-data-vertical' src/
 
 # Customized UI components (CLI --overwrite will destroy these)
 git diff origin/main -- src/components/ui/
@@ -341,6 +346,84 @@ Apply `buttonVariants()` directly on the trigger, or pass styling via `className
 | `data-[state=unchecked]` | `data-unchecked`     |
 | `data-[state=active]`    | `data-active` (tabs) |
 
+#### Orientation selectors (`data-horizontal` / `data-vertical` shorthands)
+
+**Problem:** shadcn's `base-vega` registry ships Tailwind classes such as `data-horizontal:h-px` and `group-data-horizontal/tabs:h-9`. These shorthand variants only work when `shadcn/tailwind.css` is imported in `globals.css` — it defines custom `@custom-variant` rules mapping `data-horizontal:` to `[data-orientation=horizontal]`. **This project does not import that file.** Base UI primitives render `data-orientation="horizontal"` or `data-orientation="vertical"` on the DOM, so the shorthands match nothing and styles **silently fail**.
+
+**Find:**
+
+```bash
+rg 'data-horizontal|data-vertical|group-data-horizontal|group-data-vertical' src/
+```
+
+**Affected components in this repo** (only these three):
+
+| File              | Symptom when broken                                                        |
+| ----------------- | -------------------------------------------------------------------------- |
+| `tabs.tsx`        | Horizontal tabs don't stack list above content; line indicators misaligned |
+| `separator.tsx`   | Separators render at 0×0 — effectively invisible                           |
+| `scroll-area.tsx` | ScrollBar track has no size (orientation sizing doesn't apply)             |
+
+> **Regression note:** CLI `add --overwrite` on these files will reintroduce broken shorthands. This repo has regression tests in `tabs.test.tsx` and `separator.test.tsx` that assert explicit selector class names.
+
+**Fix strategy A — official shadcn path**
+
+Install the `shadcn` package and import its Tailwind CSS (per [manual install docs](https://ui.shadcn.com/docs/installation/manual)):
+
+```bash
+cd apps/webapp && pnpm add -D shadcn
+```
+
+In `apps/webapp/src/app/globals.css`:
+
+```css
+@import 'shadcn/tailwind.css';
+```
+
+This resolves all `data-horizontal:` / `data-vertical:` shorthands project-wide.
+
+**Fix strategy B — explicit selectors (this repo's approach)**
+
+Replace shorthands with explicit attribute selectors — no new dependency, portable with standard Tailwind v4:
+
+| Broken shorthand              | Explicit selector                           |
+| ----------------------------- | ------------------------------------------- |
+| `data-horizontal:`            | `data-[orientation=horizontal]:`            |
+| `data-vertical:`              | `data-[orientation=vertical]:`              |
+| `group-data-horizontal/tabs:` | `group-data-[orientation=horizontal]/tabs:` |
+| `group-data-vertical/tabs:`   | `group-data-[orientation=vertical]/tabs:`   |
+
+```tsx
+// Before (shadcn base-vega registry — broken without shadcn/tailwind.css)
+'shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch';
+
+// After (explicit selectors — real fix in separator.tsx)
+'shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch';
+```
+
+**Tabs-specific:** The registry fix is not only CSS renames. Also pass `orientation={orientation}` to `TabsPrimitive.Root` (in addition to `data-orientation={orientation}`):
+
+```tsx
+<TabsPrimitive.Root
+  data-orientation={orientation}
+  orientation={orientation} // required — not in registry alone
+  className={cn('group/tabs flex gap-2 data-[orientation=horizontal]:flex-col', className)}
+  {...props}
+/>
+```
+
+**Regression tests:** Add orientation class assertions so future CLI overwrites fail CI:
+
+```tsx
+// separator.test.tsx
+expect(separator?.className).toContain('data-[orientation=horizontal]:h-px');
+
+// tabs.test.tsx
+expect(root?.className).toContain('data-[orientation=horizontal]:flex-col');
+```
+
+**Verify visually:** Admin google-auth page (`<Separator />` dividers), attendance tabs switcher, and any dropdown/select with `ScrollArea`.
+
 **Also check:** `globals.css`, Storybook styles, and e2e selectors.
 
 ---
@@ -486,6 +569,40 @@ Older apps should add tests **before** migrating consumers:
 pnpm typecheck
 pnpm test
 ```
+
+---
+
+### 10. Keeping the migration branch in sync with master
+
+**Problem:** A long-lived `feat/shadcn-base-ui-migration` branch diverges from `master`. New features merged to `master` after the branch was cut may use Radix patterns (especially `asChild`) that TypeScript rejects on Base UI components — even when the app still runs at runtime.
+
+**When:** After every `git merge master` (or rebase) into the migration branch.
+
+**Audit commands:**
+
+```bash
+cd apps/webapp
+rg 'asChild' src/                         # must return zero after fixes
+rg '@radix-ui/react-' src/ package.json   # must return zero on migration branch
+pnpm typecheck                            # catches API surface breaks (pre-push gate)
+pnpm test                                 # RTL component tests
+pnpm e2e                                  # root turbo e2e — matches pre-push hook
+```
+
+**Prerequisite for admin e2e:** `E2E_SEEDING_ENABLED=true` on the Convex deployment matching `NEXT_PUBLIC_CONVEX_URL`. See `apps/webapp/tests/e2e/README.md#e2e-admin-seeding`.
+
+**Common post-merge breaks:**
+
+| Symptom                                               | Cause                                            | Fix                                                                   |
+| ----------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
+| `Property 'asChild' does not exist` on Trigger/Button | New master code using Radix `asChild`            | Apply Pattern B (§1): `buttonVariants()` on trigger, remove `asChild` |
+| E2e passes but typecheck fails                        | TS catches removed props; runtime may still work | Always fix typecheck — `.husky/pre-push` blocks on it                 |
+| E2e `getByRole('heading')` fails on card titles       | ShadCN `CardTitle` renders `<div>`, not heading  | Use `getByText(..., { exact: true })`                                 |
+| New admin/mobile UI uses Radix dropdown pattern       | Feature landed on master while branch was stale  | Migrate trigger per §1 Pattern B                                      |
+
+**Real example (this repo):** Merging master into `feat/shadcn-base-ui-migration` brought `admin/layout.tsx` mobile module switcher (`<DropdownMenuTrigger asChild><Button>…</Button></DropdownMenuTrigger>`). Fixed by applying `buttonVariants()` on the trigger directly.
+
+**Regression gate:** The upstream e2e suite (`apps/webapp/tests/e2e/specs/upstream/`, 11 specs including `admin-interactions.spec.ts`) is the end-to-end regression baseline for the Base UI migration. Root `pnpm e2e` mirrors the pre-push hook exactly.
 
 ---
 
