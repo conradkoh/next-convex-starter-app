@@ -19,4 +19,14 @@ export class AdminDashboardPage extends BasePage {
     await this.page.goto(path);
     await expect(this.heading).toBeVisible();
   }
+
+  /** Verifies all dashboard status cards and the system information section render. */
+  async verifyReadOnlyInteractions(): Promise<void> {
+    await expect(this.heading).toBeVisible();
+    await expect(this.page.getByText('App Version', { exact: true })).toBeVisible();
+    await expect(this.page.getByText('Google Auth', { exact: true })).toBeVisible();
+    await expect(this.page.getByText('Your Access', { exact: true })).toBeVisible();
+    await expect(this.systemInformationHeading).toBeVisible();
+    await expect(this.page.getByText('Google Authentication:', { exact: true })).toBeVisible();
+  }
 }

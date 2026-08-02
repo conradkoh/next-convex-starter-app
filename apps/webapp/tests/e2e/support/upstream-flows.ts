@@ -51,6 +51,11 @@ export const UPSTREAM_FLOWS = {
     description: 'System admin Google OAuth configuration',
     specFile: 'specs/upstream/admin-google-auth.spec.ts',
   },
+  adminInteractions: {
+    path: '/app/admin',
+    description: 'Read-only verification of all admin UI controls (no mutations)',
+    specFile: 'specs/upstream/admin-interactions.spec.ts',
+  },
   adminUnauthorized: {
     path: '/app/admin',
     description: 'Non-admin visit shows Access Denied',
