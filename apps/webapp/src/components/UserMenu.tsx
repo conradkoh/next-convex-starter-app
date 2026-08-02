@@ -23,6 +23,7 @@ import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -137,22 +138,23 @@ function _renderUserDropdownMenu(
         {authState.user.name}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <Link href="/app/profile">
-          <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-        </Link>
-        <Link href="/app">
-          <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
-        </Link>
-        {showSystemAdminLink && (
-          <Link href="/app/admin">
-            <DropdownMenuItem className="cursor-pointer">
-              <Settings className="h-4 w-4" />
-              System Admin
-            </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <Link href="/app/profile">
+            <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
           </Link>
-        )}
+          <Link href="/app">
+            <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
+          </Link>
+          {showSystemAdminLink && (
+            <Link href="/app/admin">
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="h-4 w-4" />
+                System Admin
+              </DropdownMenuItem>
+            </Link>
+          )}
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
