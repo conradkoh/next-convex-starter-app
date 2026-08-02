@@ -6,6 +6,7 @@ This project uses [Vitest](https://vitest.dev/) for testing across both frontend
 
 - [Overview](#overview)
 - [Running Tests](#running-tests)
+- [End-to-End (Playwright)](#end-to-end-playwright)
 - [Frontend Testing](#frontend-testing)
 - [Backend Testing](#backend-testing)
 - [Best Practices](#best-practices)
@@ -59,6 +60,35 @@ cd services/backend && pnpm test:watch
 # Frontend tests with Vitest UI
 cd apps/webapp && pnpm test:ui
 ```
+
+## End-to-End (Playwright)
+
+Playwright e2e tests live in `apps/webapp/tests/e2e/`. See [apps/webapp/tests/e2e/README.md](../../apps/webapp/tests/e2e/README.md) for the full conventions doc.
+
+### Run E2E Tests
+
+```bash
+# From repo root
+pnpm e2e
+
+# Or from the webapp package
+cd apps/webapp && pnpm e2e
+```
+
+### Upstream Flows
+
+Upstream template flows live in `apps/webapp/tests/e2e/specs/upstream/` and are tagged `@upstream`. They cover core auth/navigation flows (home, login, anonymous auth, app dashboard, unauthorized access, profile) and form the regression baseline for the upcoming base UI migration.
+
+### Policy
+
+New UI changes should include matching e2e tests in the appropriate folder:
+
+- Template flows → `apps/webapp/tests/e2e/specs/upstream/` (tagged `@upstream`)
+- Fork-specific flows → `apps/webapp/tests/e2e/specs/downstream/` (tagged `@downstream`)
+
+### Coverage Phasing
+
+Slice 1 covers the core flows listed above. Admin pages, login code (`/login/code`), account recovery (`/recover`), and `/test/*` demo pages are phased for later slices.
 
 ## Frontend Testing
 
