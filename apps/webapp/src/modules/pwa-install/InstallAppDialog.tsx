@@ -5,6 +5,7 @@ import { Download } from 'lucide-react';
 import { DIALOG_TAB_GROUPS, getInstructionsForPlatform } from './installInstructions';
 import { InstallInstructionsPanel } from './InstallInstructionsPanel';
 import type { InstallPlatform } from './types';
+import { useAppDisplayName } from './useAppDisplayName';
 import { usePwaInstall } from './usePwaInstall';
 
 import { Button } from '@/components/ui/button';
@@ -31,21 +32,22 @@ function tabForPlatform(platform: InstallPlatform): DialogTab {
 export function InstallAppDialog() {
   const { platform, canNativeInstall, isReady, promptInstall, dialogOpen, setDialogOpen } =
     usePwaInstall();
+  const appName = useAppDisplayName();
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Install JCEP App</DialogTitle>
+          <DialogTitle>Install {appName}</DialogTitle>
           <DialogDescription>
-            Add JCEP to your home screen or desktop for quick access.
+            Add {appName} to your home screen or desktop for quick access.
           </DialogDescription>
         </DialogHeader>
 
         {canNativeInstall && (
           <Button onClick={promptInstall} className="w-full">
             <Download className="mr-2 h-4 w-4" />
-            Install JCEP App
+            Install {appName}
           </Button>
         )}
 

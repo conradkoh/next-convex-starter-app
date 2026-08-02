@@ -3,6 +3,7 @@
 import { Download } from 'lucide-react';
 
 import type { InstallInstructions } from './types';
+import { useAppDisplayName } from './useAppDisplayName';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,8 @@ export function InstallInstructionsPanel({
   showNativeInstallButton = false,
   onInstall,
 }: InstallInstructionsPanelProps) {
+  const appName = useAppDisplayName();
+
   return (
     <div className="space-y-3">
       {instructions.note && (
@@ -33,7 +36,7 @@ export function InstallInstructionsPanel({
       {showNativeInstallButton && onInstall && (
         <Button onClick={onInstall} className="w-full">
           <Download className="mr-2 h-4 w-4" />
-          Install JCEP App
+          Install {appName}
         </Button>
       )}
     </div>

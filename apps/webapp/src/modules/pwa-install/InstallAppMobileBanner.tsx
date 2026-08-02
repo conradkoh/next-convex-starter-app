@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 
 import { getInstructionsForPlatform } from './installInstructions';
 import { InstallInstructionsPanel } from './InstallInstructionsPanel';
+import { useAppDisplayName } from './useAppDisplayName';
 import { usePwaInstall } from './usePwaInstall';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -14,13 +15,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
  */
 export function InstallAppMobileBanner() {
   const { platform, isInstalled, canNativeInstall, isReady, promptInstall } = usePwaInstall();
+  const appName = useAppDisplayName();
 
   if (!isReady || isInstalled || platform === 'already-installed') {
     return null;
   }
 
   const instructions = getInstructionsForPlatform(
-    platform as Exclude<typeof platform, 'already-installed'>
+    platform as Exclude<typeof platform, 'already-installed'>,
+    appName
   );
 
   return (

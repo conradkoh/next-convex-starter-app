@@ -51,7 +51,7 @@ export const INSTALL_INSTRUCTIONS: Record<
     steps: [
       'Look for the install icon in the address bar (monitor with arrow).',
       'Click "Install" in the popup.',
-      'Alternatively: menu (⋮) → "Install JCEP…".',
+      'Alternatively: use the browser menu → "Install app…".',
     ],
   },
   'desktop-edge': {
@@ -84,7 +84,15 @@ export const DIALOG_TAB_GROUPS = {
 };
 
 export function getInstructionsForPlatform(
-  platform: Exclude<InstallPlatform, 'already-installed'>
+  platform: Exclude<InstallPlatform, 'already-installed'>,
+  appName = 'App'
 ): InstallInstructions {
-  return INSTALL_INSTRUCTIONS[platform];
+  const base = INSTALL_INSTRUCTIONS[platform];
+  if (platform === 'desktop-chrome') {
+    return {
+      ...base,
+      steps: [...base.steps.slice(0, 2), `Alternatively: menu (⋮) → "Install ${appName}…".`],
+    };
+  }
+  return base;
 }
