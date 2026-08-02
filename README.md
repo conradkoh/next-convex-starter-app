@@ -109,6 +109,12 @@ This will start:
 - The webapp at http://localhost:3000
 - The Convex backend development server
 
+## Documentation
+
+- **[Shadcn → Base UI Migration Guide](docs/developer/shadcn-base-ui-migration.md)** — upgrading UI components from Radix-based shadcn to Base UI (`base-vega`); includes a downstream migration playbook for forks built on this template.
+- [Testing Guide](guides/testing/testing.md)
+- [AGENTS.md](AGENTS.md) — development guidelines for agents and contributors
+
 ## Testing
 
 This project uses [Vitest](https://vitest.dev/) for testing across both frontend and backend.

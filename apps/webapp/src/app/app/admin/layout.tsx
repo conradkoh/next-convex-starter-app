@@ -15,7 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { RequirePermission, SYSTEM_ADMIN_ACCESS_PERMISSION } from '@/application/auth';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -133,12 +133,12 @@ function _renderMobileHeader(pathname: string) {
     <div className="lg:hidden shrink-0 border-b bg-background p-4">
       <div className="flex items-center justify-between gap-2">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2 max-w-[70%]">
-              <ActiveIcon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{activeModule.label}</span>
-              <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-            </Button>
+          <DropdownMenuTrigger
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 max-w-[70%]')}
+          >
+            <ActiveIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{activeModule.label}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>System Admin</DropdownMenuLabel>
