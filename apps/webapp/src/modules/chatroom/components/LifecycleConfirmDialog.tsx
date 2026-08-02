@@ -73,24 +73,22 @@ export const LifecycleConfirmDialog = memo(function LifecycleConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Archive this chat?</AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-2 text-left">
-              {impacts === undefined ? (
-                <p>Loading...</p>
-              ) : impactLines.length > 0 ? (
-                <>
-                  <p>The following will be disabled:</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    {impactLines.map((impact: any) => (
-                      <li key={impact.kind}>{formatImpactLine(impact)}</li>
-                    ))}
-                  </ul>
-                  <p>The chat will be moved to the Completed tab.</p>
-                </>
-              ) : (
-                <p>This chat will be moved to the Completed tab. You can still view its history.</p>
-              )}
-            </div>
+          <AlertDialogDescription render={<div className="space-y-2 text-left" />}>
+            {impacts === undefined ? (
+              <p>Loading...</p>
+            ) : impactLines.length > 0 ? (
+              <>
+                <p>The following will be disabled:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {impactLines.map((impact: any) => (
+                    <li key={impact.kind}>{formatImpactLine(impact)}</li>
+                  ))}
+                </ul>
+                <p>The chat will be moved to the Completed tab.</p>
+              </>
+            ) : (
+              <p>This chat will be moved to the Completed tab. You can still view its history.</p>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

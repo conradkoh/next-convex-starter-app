@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getMobileDrawerContentStyle } from './getMobileDrawerContentStyle';
 import {
@@ -9,7 +9,7 @@ import {
   MOBILE_DRAWER_CONTENT_CLASSNAME,
 } from './mobileDrawerLayout';
 import { useOverlayPortalContainer } from '../shared/overlayPortalContainer';
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 import {
   Drawer,
@@ -60,6 +60,7 @@ export function ResponsivePickerShell({
   const portalContainer = useOverlayPortalContainer();
   const [pointerAnchor, setPointerAnchor] = useState<{ x: number; y: number } | null>(null);
   const [triggerEl, setTriggerEl] = useState<HTMLElement | null>(null);
+  const anchorRef = useRef<HTMLDivElement | null>(null);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -120,7 +121,8 @@ export function ResponsivePickerShell({
         </div>
         <Popover open={open} onOpenChange={handleOpenChange}>
           {open && resolvedAnchor ? (
-            <PopoverAnchor
+            <div
+              ref={anchorRef}
               aria-hidden
               data-testid="picker-pointer-anchor"
               style={{
@@ -136,6 +138,7 @@ export function ResponsivePickerShell({
           <PopoverContent
             className={cn('p-0 overflow-hidden', contentClassName)}
             align="center"
+            anchor={anchorRef}
             {...(side ? { side } : {})}
           >
             <div className={DESKTOP_PICKER_CHILDREN_WRAPPER_CLASSNAME}>{children}</div>
@@ -149,7 +152,7 @@ export function ResponsivePickerShell({
   if (isDesktop) {
     return (
       <Popover open={open} onOpenChange={onOpenChange}>
-        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverTrigger render={React.isValidElement(trigger) ? trigger : undefined} />
         <PopoverContent
           className={cn('p-0 overflow-hidden', contentClassName)}
           align={align}

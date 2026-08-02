@@ -4,8 +4,12 @@ import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { Loader2, Power, PowerOff, Trash2 } from 'lucide-react';
 import React, { useCallback, useRef, useState } from 'react';
 
-import { formatSchedule, formatTime } from '../utils/scheduledPromptFormat';
 import { ScheduledPromptDetailDialog } from './ScheduledPromptDetailDialog';
+import { useOverlayPortalContainer } from '../../../components/shared/overlayPortalContainer';
+import { Popover, PopoverContent } from '../../../components/ui/popover';
+import { useOverlayDismissStack } from '../../../hooks/useOverlayDismissStack';
+import { formatSchedule, formatTime } from '../utils/scheduledPromptFormat';
+
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -17,9 +21,6 @@ import {
 } from '@/components/ui/drawer';
 import { Switch } from '@/components/ui/switch';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
-import { useOverlayDismissStack } from '../../../hooks/useOverlayDismissStack';
-import { useOverlayPortalContainer } from '../../../components/shared/overlayPortalContainer';
-import { Popover, PopoverAnchor, PopoverContent } from '../../../components/ui/popover';
 
 interface ScheduledPromptCardProps {
   prompt: {
@@ -250,12 +251,11 @@ export function ScheduledPromptCard({
 
       {isDesktop ? (
         <Popover open={actionsOpen} onOpenChange={setActionsOpen}>
-          <PopoverAnchor virtualRef={cardRef as any} />
           <PopoverContent
             side="bottom"
             align="end"
             className="w-56 p-2 rounded-none border-chatroom-border bg-chatroom-bg-secondary"
-            onOpenAutoFocus={(e: Event) => e.preventDefault()}
+            anchor={cardRef as React.RefObject<HTMLElement | null>}
           >
             <div className="space-y-2">{menuContent}</div>
           </PopoverContent>

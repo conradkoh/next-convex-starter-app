@@ -18,6 +18,7 @@ import React, { useState, useMemo, useCallback, memo, useRef } from 'react';
 
 import { createChatroomSelectKeyDown } from './chatroom-select-keydown';
 import { CreateChatroomForm } from './CreateChatroomForm';
+import { LifecycleConfirmDialog } from './LifecycleConfirmDialog';
 import { useChatroomListing, type ChatroomWithStatus } from '../context/ChatroomListingContext';
 import {
   getChatStatusDescription,
@@ -36,7 +37,6 @@ import {
 } from './ui/dropdown-menu';
 
 import { ChatroomLoader } from '@/components/ui/chatroom-loader';
-import { LifecycleConfirmDialog } from './LifecycleConfirmDialog';
 
 type TabType = 'current' | 'complete';
 type ViewMode = 'grid' | 'table';
@@ -477,20 +477,22 @@ const ChatroomCard = memo(function ChatroomCard({
               {/* Action Menu - only show for non-completed chatrooms */}
               {chatStatus !== 'completed' && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div
-                      className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover transition-all duration-100"
-                      onClick={(e) => e.stopPropagation()}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.stopPropagation();
-                        }
-                      }}
-                    >
-                      <MoreVertical size={14} />
-                    </div>
+                  <DropdownMenuTrigger
+                    render={
+                      <div
+                        className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover transition-all duration-100"
+                        onClick={(e) => e.stopPropagation()}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
+                    }
+                  >
+                    <MoreVertical size={14} />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[140px]">
                     <DropdownMenuItem onClick={handleArchive}>
@@ -633,10 +635,12 @@ const ChatroomTable = memo(function ChatroomTable({
               <StopClickPropagation className="flex items-center justify-center">
                 {chatroom.chatStatus !== 'completed' && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <div className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-tertiary transition-all duration-100 cursor-pointer">
-                        <MoreVertical size={14} />
-                      </div>
+                    <DropdownMenuTrigger
+                      render={
+                        <div className="w-7 h-7 flex items-center justify-center text-chatroom-text-muted hover:text-chatroom-text-primary hover:bg-chatroom-bg-tertiary transition-all duration-100 cursor-pointer" />
+                      }
+                    >
+                      <MoreVertical size={14} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[140px]">
                       <DropdownMenuItem onClick={(e) => handleArchive(e, chatroom._id)}>

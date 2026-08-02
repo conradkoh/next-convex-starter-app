@@ -258,15 +258,13 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
 
               {/* Actions dropdown */}
               <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    disabled={isLoading}
-                    className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="More actions"
-                  >
-                    <MoreHorizontal size={14} />
-                    Actions
-                  </button>
+                <DropdownMenuTrigger
+                  disabled={isLoading}
+                  className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="More actions"
+                >
+                  <MoreHorizontal size={14} />
+                  Actions
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[160px]">
                   {/* Edit — only available in backlog status (backend enforces this) */}
