@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 import type { InstallPlatform } from './types';
 
 export interface DetectInstallPlatformInput {

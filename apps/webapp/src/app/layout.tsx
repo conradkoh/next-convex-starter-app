@@ -9,6 +9,7 @@ import { Navigation } from '@/components/Navigation';
 import { Toaster } from '@/components/ui/sonner';
 import { AppInfoProvider } from '@/modules/app/AppInfoProvider';
 import { AuthProvider } from '@/modules/auth/AuthProvider';
+import { PwaInstallProvider, InstallAppMobileBanner } from '@/modules/pwa-install';
 import { ThemeProvider, themeScript } from '@/modules/theme/ThemeProvider';
 
 const geistSans = Geist({
@@ -72,12 +73,15 @@ export default function RootLayout({
             <AppInfoProvider>
               <AuthProvider>
                 <ThemeProvider>
-                  <div className="flex h-dvh flex-col overflow-hidden">
-                    <Navigation />
-                    <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
-                      {children}
-                    </main>
-                  </div>
+                  <PwaInstallProvider>
+                    <div className="flex h-dvh flex-col overflow-hidden">
+                      <Navigation />
+                      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+                        <InstallAppMobileBanner />
+                        {children}
+                      </main>
+                    </div>
+                  </PwaInstallProvider>
                 </ThemeProvider>
               </AuthProvider>
             </AppInfoProvider>

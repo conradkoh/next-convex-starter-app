@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 export type InstallPlatform =
   | 'ios-safari'
   | 'ios-other'
@@ -10,7 +9,6 @@ export type InstallPlatform =
   | 'desktop-other'
   | 'already-installed';
 
-// fallow-ignore-next-line unused-type
 export interface InstallInstructions {
   platform: InstallPlatform;
   label: string;
@@ -19,7 +17,6 @@ export interface InstallInstructions {
 }
 
 /** Chromium beforeinstallprompt event (not in lib.dom by default) */
-// fallow-ignore-next-line unused-type
 export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;

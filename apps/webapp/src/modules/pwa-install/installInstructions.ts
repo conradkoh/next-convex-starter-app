@@ -1,6 +1,7 @@
-// fallow-ignore-file unused-file
 import type { InstallInstructions, InstallPlatform } from './types';
 
+// Public data map — consumed via getInstructionsForPlatform / DIALOG_TAB_GROUPS.
+// fallow-ignore-next-line unused-export
 export const INSTALL_INSTRUCTIONS: Record<
   Exclude<InstallPlatform, 'already-installed'>,
   InstallInstructions
