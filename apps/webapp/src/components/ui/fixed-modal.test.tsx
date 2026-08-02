@@ -152,9 +152,7 @@ describe('FixedModal', () => {
     const view = render(
       <FixedModal isOpen onClose={onClose}>
         <Popover open onOpenChange={onPopoverOpenChange}>
-          <PopoverTrigger asChild>
-            <button type="button">open picker</button>
-          </PopoverTrigger>
+          <PopoverTrigger type="button">open picker</PopoverTrigger>
           <PopoverContent>picker panel</PopoverContent>
         </Popover>
       </FixedModal>
@@ -166,9 +164,7 @@ describe('FixedModal', () => {
     view.rerender(
       <FixedModal isOpen onClose={onClose}>
         <Popover open={false} onOpenChange={onPopoverOpenChange}>
-          <PopoverTrigger asChild>
-            <button type="button">open picker</button>
-          </PopoverTrigger>
+          <PopoverTrigger type="button">open picker</PopoverTrigger>
           <PopoverContent>picker panel</PopoverContent>
         </Popover>
       </FixedModal>

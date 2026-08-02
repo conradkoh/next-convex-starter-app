@@ -22,7 +22,7 @@
  */
 'use client';
 
-import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon } from 'lucide-react';
 import { useState } from 'react';
 import type * as React from 'react';
@@ -40,21 +40,20 @@ import {
   OverlayPortalContainerProvider,
   useOverlayPortalContainer,
 } from '../shared/overlayPortalContainer';
+import { releaseRadixBodyLock } from '../shared/releaseRadixBodyLock';
 
 import { useAllowTouchSelection } from '@/hooks/useAllowTouchSelection';
 import { cn } from '@/lib/utils';
-import { releaseRadixBodyLock } from '../shared/releaseRadixBodyLock';
 
-function Dialog({
-  modal = true,
-  onOpenChange,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  const handleOpenChange = (open: boolean) => {
+function Dialog({ modal = true, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
+  const handleOpenChange = (
+    open: boolean,
+    eventDetails: DialogPrimitive.Root.ChangeEventDetails
+  ) => {
     if (!open) {
       requestAnimationFrame(() => releaseRadixBodyLock());
     }
-    onOpenChange?.(open);
+    onOpenChange?.(open, eventDetails);
   };
   return (
     <DialogPrimitive.Root
@@ -66,15 +65,15 @@ function Dialog({
   );
 }
 
-function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
   return <DialogPrimitive.Trigger data-slot="chatroom-dialog-trigger" {...props} />;
 }
 
-function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="chatroom-dialog-portal" {...props} />;
 }
 
-function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
+function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
   return <DialogPrimitive.Close data-slot="chatroom-dialog-close" {...props} />;
 }
 
@@ -82,9 +81,9 @@ function DialogOverlay({
   className,
   floating,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay> & { floating?: boolean }) {
+}: DialogPrimitive.Backdrop.Props & { floating?: boolean }) {
   return (
-    <DialogPrimitive.Overlay
+    <DialogPrimitive.Backdrop
       data-slot="chatroom-dialog-overlay"
       className={cn(
         floating ? chatroomIndustrialFloatingOverlayClassName : chatroomIndustrialOverlayClassName,
@@ -121,18 +120,34 @@ function DialogContent({
   children,
   floating,
   onEscapeKeyDown,
+  initialFocus,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & { floating?: boolean }) {
+}: Omit<DialogPrimitive.Popup.Props, 'className'> & {
+  className?: string;
+  floating?: boolean;
+  onEscapeKeyDown?: (event: KeyboardEvent) => void;
+  initialFocus?: DialogPrimitive.Popup.Props['initialFocus'];
+}) {
   useAllowTouchSelection();
   const portalContainer = useOverlayPortalContainer();
   const isFloating = floating ?? portalContainer != null;
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const safeClassName = stripOverflowFromClassName(className);
 
+  // Intercept Escape so consumers can clear search / defer close before Base
+  // UI's document-level handler runs. preventDefault() signals "keep open".
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key !== 'Escape' || !onEscapeKeyDown) return;
+    onEscapeKeyDown(event.nativeEvent);
+    if (event.defaultPrevented) {
+      event.stopPropagation();
+    }
+  };
+
   return (
     <DialogPortal>
       <DialogOverlay floating={isFloating} />
-      <DialogPrimitive.Content
+      <DialogPrimitive.Popup
         data-slot="chatroom-dialog-content"
         className={cn(
           isFloating
@@ -143,7 +158,8 @@ function DialogContent({
           // utilities here — tailwind-merge will strip industrial fixed/grid (445ae39b5 regression).
           'overflow-visible'
         )}
-        onEscapeKeyDown={onEscapeKeyDown}
+        onKeyDown={handleKeyDown}
+        initialFocus={initialFocus}
         {...props}
       >
         <div
@@ -158,7 +174,7 @@ function DialogContent({
           <XIcon />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
-      </DialogPrimitive.Content>
+      </DialogPrimitive.Popup>
     </DialogPortal>
   );
 }
@@ -183,7 +199,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="chatroom-dialog-title"
@@ -193,10 +209,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   );
 }
 
-function DialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
       data-slot="chatroom-dialog-description"
