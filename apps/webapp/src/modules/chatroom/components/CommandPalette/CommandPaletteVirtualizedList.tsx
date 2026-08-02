@@ -12,7 +12,6 @@ import {
 } from './commandPaletteRows';
 import type { CommandItem } from './types';
 
-import { cn } from '@/lib/utils';
 import { CommandItem as CommandItemUI } from '@/components/ui/command';
 import {
   ContextMenu,
@@ -20,6 +19,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import { cn } from '@/lib/utils';
 
 interface CommandPaletteVirtualizedListProps {
   rows: CommandPaletteRow[];
@@ -85,8 +85,8 @@ export function CommandPaletteVirtualizedList({
 
       if (isBlacklisted && onBlacklist && onUnblacklist) {
         return (
-          <ContextMenu modal={false} key={command.id}>
-            <ContextMenuTrigger asChild>{item}</ContextMenuTrigger>
+          <ContextMenu key={command.id}>
+            <ContextMenuTrigger render={item as React.ReactElement} />
             <ContextMenuContent className="min-w-[180px] rounded-none">
               {isBlacklisted(command) ? (
                 <ContextMenuItem onSelect={() => onUnblacklist(command)} className="rounded-none">
