@@ -4,7 +4,8 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { CommandDialogContent } from './CommandDialogContent';
 
-import { Dialog, DialogPortal } from '@/components/ui/dialog';
+const Dialog = DialogPrimitive.Root;
+const DialogPortal = DialogPrimitive.Portal;
 
 vi.mock('@/hooks/useIsDesktop', () => ({
   useIsDesktop: vi.fn(() => true),
