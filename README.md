@@ -123,6 +123,12 @@ chatroom get-system-prompt --chatroom-id=<id> --role=<role>
 
 ---
 
+## Documentation
+
+- **[Shadcn → Base UI Migration Guide](docs/developer/shadcn-base-ui-migration.md)** — upgrading UI components from Radix-based shadcn to Base UI (`base-vega`); includes a downstream migration playbook for forks built on this template.
+- [Testing Guide](guides/testing/testing.md)
+- [AGENTS.md](AGENTS.md) — development guidelines for agents and contributors
+
 ## Testing
 
 Tests use [Vitest](https://vitest.dev/) across apps and packages.
