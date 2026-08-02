@@ -8,9 +8,10 @@ Forks and downstream repos adopting multi-role assignment should use [**PR #94 �
 
 - `roleNames` optional array on `users` (Convex schema)
 - `getRolesForUser` resolution: `accessLevel: 'system_admin'` first (no migration required for system admins), then `roleNames`, then default `['user']`
-- `manager` role in `roleDefinitions` (backend + webapp)
 - `backfillUserRoleNames` migration for non-admin users
 - Unit tests in `application/auth/resolve.spec.ts` and `rbac-registry-sync.spec.ts`
+
+The starter ships exactly two built-in roles — `user` and `system_admin`. Custom roles like `manager` are fork extensions (see [Add a new role](#add-a-new-role)).
 
 Port that diff when bringing the same capability into another repo.
 
@@ -205,24 +206,23 @@ Relevant tests: `application/auth/resolve.spec.ts`, `rbac-registry-sync.spec.ts`
 
 ### 1. Define the role (both `roles.ts` files)
 
-Append to `roleDefinitions`:
+The starter ships exactly two roles — `user` and `system_admin`. Append to `roleDefinitions`:
 
 ```typescript
+// Starter ships:
 export const roleDefinitions = [
   {
     role: 'user',
     permissions: [/* ... */] as const satisfies readonly Permission[],
   },
-  {
-    role: 'manager',
-    permissions: [
-      'users:list',
-      'users:read',
-      'attendance:manage',
-    ] as const satisfies readonly Permission[],
-  },
   { role: 'system_admin', permissions: systemAdminPermissions },
 ] as const;
+
+// Fork extension example — append a custom role:
+// {
+//   role: 'manager',
+//   permissions: ['users:list', 'users:read', 'attendance:manage'] as const satisfies readonly Permission[],
+// },
 ```
 
 `AppRole` is inferred from `roleDefinitions`. Use `satisfies readonly Permission[]` so invalid keys fail at compile time.
@@ -237,10 +237,9 @@ permissions: ['users:*', 'attendance:read'] as const satisfies readonly RolePerm
 
 **Phase 1b (current):** `roleNames` on `users` is the primary assignment field for non-admin users. Set an array of role strings matching keys in `roleDefinitions`:
 
-| `roleNames` value     | Resolved roles                |
-| --------------------- | ----------------------------- |
-| `['user']`            | Standard signed-in user       |
-| `['user', 'manager']` | User with manager permissions |
+| `roleNames` value | Resolved roles          |
+| ----------------- | ----------------------- |
+| `['user']`        | Standard signed-in user |
 
 **System administrators:** `accessLevel: 'system_admin'` always resolves to `['system_admin']` — no `roleNames` migration required. This takes priority over any `roleNames` value on the document.
 
@@ -253,7 +252,7 @@ permissions: ['users:*', 'attendance:read'] as const satisfies readonly RolePerm
 
 Run `npx convex run migrations:run '{fn: "migrations:backfillUserRoleNames"}'` to backfill `roleNames` for non-admin users (optional for system admins).
 
-Custom roles such as `manager` are defined in `roleDefinitions` and assignable via `roleNames`. There is no admin UI for role assignment yet — set `roleNames` directly on user documents or via a future mutation.
+The starter admin UI at `/app/admin/users` exposes **Standard User** and **System Administrator** presets. Forks that add custom roles should extend both `roleDefinitions` and the admin assignment UI/API.
 
 ### 3. Use the same backend and frontend patterns
 
@@ -321,7 +320,6 @@ Permissions come from the server. If a handler is not guarded, the UI may show c
 ## What is out of scope (current phase)
 
 - Database-backed `rbac_roles` / `rbac_permissions` tables
-- System-admin UI for assigning roles to users
 - Per-resource instance permissions (e.g. “only my attendance”)
 - Replacing `accessLevel` checks entirely in one pass
 

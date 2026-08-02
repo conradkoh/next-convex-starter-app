@@ -62,6 +62,21 @@ export const backfillUserRoleNames = migrations.define({
   },
 });
 
+/**
+ * Migration: Strip legacy `manager` role from roleNames.
+ * Starter now ships only `user` and `system_admin`; forks add custom roles.
+ */
+export const stripManagerRoleNames = migrations.define({
+  table: 'users',
+  migrateOne: async (_ctx, user) => {
+    if (!user.roleNames?.includes('manager')) {
+      return;
+    }
+    const filtered = user.roleNames.filter((role) => role !== 'manager');
+    return { roleNames: filtered.length > 0 ? filtered : ['user'] };
+  },
+});
+
 // ========================================
 // Batch Runners
 // ========================================
@@ -74,4 +89,5 @@ export const runAll = migrations.runner([
   internal.migrations.unsetSessionExpiration,
   internal.migrations.setUserAccessLevelDefault,
   internal.migrations.backfillUserRoleNames,
+  internal.migrations.stripManagerRoleNames,
 ]);
