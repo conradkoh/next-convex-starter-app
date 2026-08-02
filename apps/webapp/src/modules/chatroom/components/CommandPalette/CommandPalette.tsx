@@ -1,6 +1,5 @@
 'use client';
 
-import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { EyeOff } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
@@ -11,7 +10,7 @@ import type { CommandItem } from './types';
 import { CommandDialogContent } from '../shared/CommandDialogContent';
 
 import { Command, CommandEmpty, CommandInput, CommandList } from '@/components/ui/command';
-import { Dialog, DialogPortal } from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useCommandDialog } from '@/modules/chatroom/context/CommandDialogContext';
 import { useCommandBlacklist } from '@/modules/chatroom/hooks/useCommandBlacklist';
 import { useCommandDialogShortcut } from '@/modules/chatroom/hooks/useCommandDialogShortcut';
@@ -201,45 +200,41 @@ export function CommandPalette({ commands, inlineCommand }: CommandPaletteProps)
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen} modal={false}>
-        <DialogPortal>
-          <CommandDialogContent open={open} onEscapeKeyDown={handleEscapeKeyDown}>
-            <DialogPrimitive.Title className="sr-only">Command Palette</DialogPrimitive.Title>
-            <DialogPrimitive.Description className="sr-only">
-              Search and execute a command
-            </DialogPrimitive.Description>
+        <CommandDialogContent open={open} onEscapeKeyDown={handleEscapeKeyDown}>
+          <DialogTitle className="sr-only">Command Palette</DialogTitle>
+          <DialogDescription className="sr-only">Search and execute a command</DialogDescription>
 
-            {/* Command list section */}
-            <div className="flex flex-col w-full">
-              <Command
-                shouldFilter={false}
-                className="bg-chatroom-bg-primary text-chatroom-text-primary"
-              >
-                <CommandInput
-                  placeholder="Type a command..."
-                  className="text-chatroom-text-primary placeholder:text-chatroom-text-muted bg-transparent"
-                  value={searchValue}
-                  onValueChange={setSearchValue}
-                />
-                <CommandList className="min-h-[244px] h-[244px] p-0 overflow-hidden">
-                  <CommandEmpty className="text-chatroom-text-muted text-xs font-bold uppercase tracking-wider px-4">
-                    No commands found.
-                  </CommandEmpty>
-                  {rows.length > 0 && (
-                    <CommandPaletteVirtualizedList
-                      rows={rows}
-                      onSelect={handleSelect}
-                      renderCommandItemContent={renderCommandItemContent}
-                      scrollResetKey={searchValue}
-                      isBlacklisted={isBlacklisted}
-                      onBlacklist={blacklist}
-                      onUnblacklist={unblacklist}
-                    />
-                  )}
-                </CommandList>
-              </Command>
-            </div>
-          </CommandDialogContent>
-        </DialogPortal>
+          {/* Command list section */}
+          <div className="flex flex-col w-full">
+            <Command
+              shouldFilter={false}
+              className="bg-chatroom-bg-primary text-chatroom-text-primary"
+            >
+              <CommandInput
+                placeholder="Type a command..."
+                className="text-chatroom-text-primary placeholder:text-chatroom-text-muted bg-transparent"
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
+              <CommandList className="min-h-[244px] h-[244px] p-0 overflow-hidden">
+                <CommandEmpty className="text-chatroom-text-muted text-xs font-bold uppercase tracking-wider px-4">
+                  No commands found.
+                </CommandEmpty>
+                {rows.length > 0 && (
+                  <CommandPaletteVirtualizedList
+                    rows={rows}
+                    onSelect={handleSelect}
+                    renderCommandItemContent={renderCommandItemContent}
+                    scrollResetKey={searchValue}
+                    isBlacklisted={isBlacklisted}
+                    onBlacklist={blacklist}
+                    onUnblacklist={unblacklist}
+                  />
+                )}
+              </CommandList>
+            </Command>
+          </div>
+        </CommandDialogContent>
       </Dialog>
       <CommandOutputModal inlineCommand={inlineCommand} />
     </>

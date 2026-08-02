@@ -1,11 +1,10 @@
-import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { CommandDialogContent } from './CommandDialogContent';
 
 const Dialog = DialogPrimitive.Root;
-const DialogPortal = DialogPrimitive.Portal;
 
 vi.mock('@/hooks/useIsDesktop', () => ({
   useIsDesktop: vi.fn(() => true),
@@ -23,11 +22,9 @@ describe('CommandDialogContent dismiss backdrop', () => {
   it('renders backdrop when open and omits it when closed', () => {
     const { rerender } = render(
       <Dialog open onOpenChange={vi.fn()} modal={false}>
-        <DialogPortal>
-          <CommandDialogContent open data-testid="content">
-            body
-          </CommandDialogContent>
-        </DialogPortal>
+        <CommandDialogContent open data-testid="content">
+          body
+        </CommandDialogContent>
       </Dialog>
     );
     vi.advanceTimersByTime(0);
@@ -35,11 +32,9 @@ describe('CommandDialogContent dismiss backdrop', () => {
 
     rerender(
       <Dialog open={false} onOpenChange={vi.fn()} modal={false}>
-        <DialogPortal>
-          <CommandDialogContent open={false} data-testid="content">
-            body
-          </CommandDialogContent>
-        </DialogPortal>
+        <CommandDialogContent open={false} data-testid="content">
+          body
+        </CommandDialogContent>
       </Dialog>
     );
     expect(document.querySelector('[data-slot="command-dialog-dismiss-backdrop"]')).toBeNull();
@@ -48,11 +43,9 @@ describe('CommandDialogContent dismiss backdrop', () => {
   it('backdrop is z-40; content is z-50', () => {
     render(
       <Dialog open onOpenChange={vi.fn()} modal={false}>
-        <DialogPortal>
-          <CommandDialogContent open data-testid="content">
-            body
-          </CommandDialogContent>
-        </DialogPortal>
+        <CommandDialogContent open data-testid="content">
+          body
+        </CommandDialogContent>
       </Dialog>
     );
     vi.advanceTimersByTime(0);
@@ -69,12 +62,10 @@ describe('CommandDialogContent dismiss backdrop', () => {
           beneath
         </button>
         <Dialog open onOpenChange={onOpenChange} modal={false}>
-          <DialogPortal>
-            <CommandDialogContent open>
-              <DialogPrimitive.Title className="sr-only">Test</DialogPrimitive.Title>
-              dialog body
-            </CommandDialogContent>
-          </DialogPortal>
+          <CommandDialogContent open>
+            <DialogPrimitive.Title className="sr-only">Test</DialogPrimitive.Title>
+            dialog body
+          </CommandDialogContent>
         </Dialog>
       </div>
     );

@@ -107,7 +107,13 @@ export function NewFileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" initialFocus={inputRef}>
+      <DialogContent
+        className="sm:max-w-md"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>New File</DialogTitle>
           <DialogDescription>

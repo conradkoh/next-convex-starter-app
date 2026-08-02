@@ -91,7 +91,21 @@ function DropdownMenuContent({
   );
 }
 
-function DropdownMenuItem({ className, ...props }: DropdownMenuPrimitive.Item.Props) {
+function DropdownMenuItem({
+  className,
+  onSelect,
+  onClick,
+  ...props
+}: Omit<DropdownMenuPrimitive.Item.Props, 'onClick'> & {
+  onSelect?: (event: { preventDefault: () => void }) => void;
+  onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+}) {
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    onClick?.(event);
+    if (!event.defaultPrevented) {
+      onSelect?.(event);
+    }
+  };
   return (
     <DropdownMenuPrimitive.Item
       data-slot="chatroom-dropdown-menu-item"
@@ -100,6 +114,7 @@ function DropdownMenuItem({ className, ...props }: DropdownMenuPrimitive.Item.Pr
         chatroomDropdownMenuItemHighlightClassName,
         className
       )}
+      onClick={handleClick}
       {...props}
     />
   );
@@ -136,11 +151,11 @@ function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: DropdownMenuPrimitive.GroupLabel.Props & {
+}: React.ComponentProps<'div'> & {
   inset?: boolean;
 }) {
   return (
-    <DropdownMenuPrimitive.GroupLabel
+    <div
       data-slot="chatroom-dropdown-menu-label"
       data-inset={inset}
       className={cn(

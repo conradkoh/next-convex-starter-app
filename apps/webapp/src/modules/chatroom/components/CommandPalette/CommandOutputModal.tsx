@@ -1,12 +1,11 @@
 'use client';
 
-import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useCallback } from 'react';
 
 import { CommandOutputPanel } from './CommandOutputPanel';
 import { CommandDialogContent } from '../shared/CommandDialogContent';
 
-import { Dialog, DialogPortal } from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import type { CommandPaletteOutputState } from '@/modules/chatroom/hooks/useCommandRunOutputV2';
 
 interface CommandOutputModalProps {
@@ -56,33 +55,27 @@ export function CommandOutputModal({ inlineCommand }: CommandOutputModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange} modal={false}>
-      <DialogPortal>
-        <CommandDialogContent
-          open={open}
-          onEscapeKeyDown={handleEscapeKeyDown}
-          className="h-[320px]"
-        >
-          <DialogPrimitive.Title className="sr-only">Command Output</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="sr-only">
-            Output for {inlineCommand.commandName ?? 'command'}
-          </DialogPrimitive.Description>
+      <CommandDialogContent open={open} onEscapeKeyDown={handleEscapeKeyDown} className="h-[320px]">
+        <DialogTitle className="sr-only">Command Output</DialogTitle>
+        <DialogDescription className="sr-only">
+          Output for {inlineCommand.commandName ?? 'command'}
+        </DialogDescription>
 
-          {inlineCommand.commandName && (
-            <CommandOutputPanel
-              commandName={inlineCommand.commandName}
-              status={inlineCommand.status}
-              terminationReason={inlineCommand.terminationReason}
-              output={inlineCommand.output}
-              onStop={handleStop}
-              onRunAgain={handleRunAgain}
-              onClose={handleClose}
-              onLoadMore={inlineCommand.loadMore}
-              canLoadMore={inlineCommand.canLoadMore}
-              fullOutputPending={inlineCommand.fullOutputPending}
-            />
-          )}
-        </CommandDialogContent>
-      </DialogPortal>
+        {inlineCommand.commandName && (
+          <CommandOutputPanel
+            commandName={inlineCommand.commandName}
+            status={inlineCommand.status}
+            terminationReason={inlineCommand.terminationReason}
+            output={inlineCommand.output}
+            onStop={handleStop}
+            onRunAgain={handleRunAgain}
+            onClose={handleClose}
+            onLoadMore={inlineCommand.loadMore}
+            canLoadMore={inlineCommand.canLoadMore}
+            fullOutputPending={inlineCommand.fullOutputPending}
+          />
+        )}
+      </CommandDialogContent>
     </Dialog>
   );
 }

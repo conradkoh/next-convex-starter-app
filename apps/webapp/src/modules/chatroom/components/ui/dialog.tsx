@@ -24,7 +24,7 @@
 
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type * as React from 'react';
 
 import {
@@ -120,19 +120,27 @@ function DialogContent({
   children,
   floating,
   onEscapeKeyDown,
-  initialFocus,
+  onOpenAutoFocus,
   ...props
-}: Omit<DialogPrimitive.Popup.Props, 'className'> & {
+}: Omit<DialogPrimitive.Popup.Props, 'className' | 'onOpenAutoFocus'> & {
   className?: string;
   floating?: boolean;
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
-  initialFocus?: DialogPrimitive.Popup.Props['initialFocus'];
+  onOpenAutoFocus?: (event: { preventDefault: () => void }) => void;
 }) {
   useAllowTouchSelection();
   const portalContainer = useOverlayPortalContainer();
   const isFloating = floating ?? portalContainer != null;
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const safeClassName = stripOverflowFromClassName(className);
+
+  // Base UI handles focus internally on real browsers, but jsdom does not run
+  // its focus manager. Preserve Radix onOpenAutoFocus semantics so dialogs can
+  // focus an input on open. The Popup mounts only while open, so a mount effect
+  // runs with the child input refs already attached.
+  useEffect(() => {
+    if (onOpenAutoFocus) onOpenAutoFocus({ preventDefault: () => undefined });
+  }, [onOpenAutoFocus]);
 
   // Intercept Escape so consumers can clear search / defer close before Base
   // UI's document-level handler runs. preventDefault() signals "keep open".
@@ -159,7 +167,6 @@ function DialogContent({
           'overflow-visible'
         )}
         onKeyDown={handleKeyDown}
-        initialFocus={initialFocus}
         {...props}
       >
         <div
