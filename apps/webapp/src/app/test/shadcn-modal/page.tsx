@@ -119,9 +119,9 @@ export default function ShadcnModalTestPage() {
                 2. Base UI migration
               </h3>
               <p className="text-green-700 dark:text-green-300 mb-2">
-                Modal primitives now use <code>@base-ui/react</code> instead of Radix UI. The
-                previous <code>@radix-ui/react-dismissable-layer</code> pnpm override is no longer
-                required.
+                Modal primitives now use <code>@base-ui/react</code> instead of Radix UI. All{' '}
+                <code>@radix-ui/*</code> dependencies (including the former{' '}
+                <code>@radix-ui/react-dismissable-layer</code> pnpm override) have been removed.
               </p>
             </div>
 
