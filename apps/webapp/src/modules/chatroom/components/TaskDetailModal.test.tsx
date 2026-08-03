@@ -1,8 +1,8 @@
 /**
- * TaskDetailModal tests — structured handoff rendering
+ * TaskDetailModal tests — structured handoff rendering + click-to-edit
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -30,6 +30,22 @@ vi.mock('../attachments', () => ({
     add: vi.fn(),
     isAttached: () => false,
   }),
+}));
+
+vi.mock('./ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode; asChild?: boolean }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({
+    children,
+    onClick,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) => <button onClick={onClick}>{children}</button>,
+  DropdownMenuSeparator: () => <hr />,
 }));
 
 const ENVELOPE_TASK = {
@@ -103,5 +119,34 @@ describe('TaskDetailModal — structured handoff', () => {
     expect(screen.getByText('Just a plain markdown task.')).toBeInTheDocument();
     expect(screen.queryByTestId('handoff-envelope-view')).not.toBeInTheDocument();
     expect(screen.queryByTestId('handoff-report-view')).not.toBeInTheDocument();
+  });
+
+  it('opens in view mode for an editable task (no Save on open)', () => {
+    render(<TaskDetailModal isOpen task={PLAIN_TASK} {...defaultProps} />);
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+  });
+
+  it('clicking the content area enters edit mode', () => {
+    render(<TaskDetailModal isOpen task={PLAIN_TASK} {...defaultProps} />);
+
+    fireEvent.click(screen.getByText('Just a plain markdown task.'));
+
+    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+  });
+
+  it('does not show an Edit item in the Actions menu', () => {
+    render(<TaskDetailModal isOpen task={PLAIN_TASK} {...defaultProps} />);
+
+    fireEvent.click(screen.getByText('Actions'));
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('clicking the Raw toggle in HandoffEnvelopeView does NOT enter edit mode', () => {
+    render(<TaskDetailModal isOpen task={ENVELOPE_TASK} {...defaultProps} />);
+
+    fireEvent.click(screen.getByTestId('handoff-raw-toggle'));
+
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
   });
 });
