@@ -245,6 +245,23 @@ export default defineSchema({
    * Tracks the state of a connect attempt and links to sessions and users.
    * Separate from login requests to make flow types explicit and ensure proper validation.
    */
+  /**
+   * Invite codes for controlled signup via invite-only registration.
+   */
+  invites: defineTable({
+    code: v.string(),
+    inviteeName: v.string(),
+    inviteeEmail: v.string(),
+    createdBy: v.id('users'),
+    createdAt: v.number(),
+    expiresAt: v.optional(v.number()), // undefined = indefinite
+    disabled: v.boolean(),
+    usedAt: v.optional(v.number()),
+    usedByUserId: v.optional(v.id('users')),
+  })
+    .index('by_code', ['code'])
+    .index('by_createdBy', ['createdBy']),
+
   auth_connectRequests: defineTable({
     sessionId: v.string(), // Session initiating the connect
     status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')), // Status of the connect request
