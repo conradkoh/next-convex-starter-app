@@ -125,6 +125,16 @@ describe('BacklogItemDetailModal editor initialization', () => {
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
 
+  it('clicking empty area below short content enters edit mode', () => {
+    render(<BacklogItemDetailModal isOpen item={makeBacklogItem('backlog')} onClose={vi.fn()} />);
+
+    const viewBody = screen.getByTestId('backlog-detail-view-body');
+    // Click the container itself (below markdown text — simulates empty area)
+    fireEvent.click(viewBody);
+
+    expect(screen.getByTestId('backlog-rich-text-editor')).toBeInTheDocument();
+  });
+
   it('cancel resets the draft to the original content', () => {
     render(<BacklogItemDetailModal isOpen item={makeBacklogItem('backlog')} onClose={vi.fn()} />);
 

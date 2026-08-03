@@ -197,49 +197,53 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
           </div>
         </FixedModalHeader>
 
-        <FixedModalBody
-          className={isEditing ? 'flex flex-col min-h-0 p-0 overflow-hidden' : undefined}
-        >
-          {isEditing ? (
-            <RichTextEditor
-              value={editedContent}
-              onChange={setEditedContent}
-              placeholder="Write your markdown here..."
-              onCmdEnter={handleSave}
-              className="flex-1 flex flex-col min-h-0"
-            />
-          ) : (
-            // View mode — read-only markdown; click to edit for backlog status
-            <div
-              onClick={
-                item.status === 'backlog'
-                  ? (e) => {
-                      if (isInteractiveClickTarget(e.target)) return;
-                      setIsEditing(true);
-                    }
-                  : undefined
-              }
-              onKeyDown={
-                item.status === 'backlog'
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
+        <FixedModalBody className="flex flex-col min-h-0 p-0">
+          <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
+            {isEditing ? (
+              <RichTextEditor
+                value={editedContent}
+                onChange={setEditedContent}
+                placeholder="Write your markdown here..."
+                onCmdEnter={handleSave}
+                className="flex-1 flex flex-col min-h-0"
+              />
+            ) : (
+              // View mode — read-only markdown; click to edit for backlog status
+              <div
+                data-testid="backlog-detail-view-body"
+                onClick={
+                  item.status === 'backlog'
+                    ? (e) => {
+                        if (isInteractiveClickTarget(e.target)) return;
                         setIsEditing(true);
                       }
-                    }
-                  : undefined
-              }
-              role={item.status === 'backlog' ? 'button' : undefined}
-              tabIndex={item.status === 'backlog' ? 0 : undefined}
-              className={`p-4 min-w-0 overflow-x-hidden ${
-                item.status === 'backlog' ? 'cursor-pointer' : ''
-              } ${backlogRichTextEditorProseClassNames}`}
-            >
-              <Markdown remarkPlugins={chatroomRemarkPlugins} components={modalMarkdownComponents}>
-                {item.content}
-              </Markdown>
-            </div>
-          )}
+                    : undefined
+                }
+                onKeyDown={
+                  item.status === 'backlog'
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setIsEditing(true);
+                        }
+                      }
+                    : undefined
+                }
+                role={item.status === 'backlog' ? 'button' : undefined}
+                tabIndex={item.status === 'backlog' ? 0 : undefined}
+                className={`h-full overflow-y-auto overflow-x-hidden p-4 min-w-0 ${
+                  item.status === 'backlog' ? 'cursor-pointer' : ''
+                } ${backlogRichTextEditorProseClassNames}`}
+              >
+                <Markdown
+                  remarkPlugins={chatroomRemarkPlugins}
+                  components={modalMarkdownComponents}
+                >
+                  {item.content}
+                </Markdown>
+              </div>
+            )}
+          </div>
         </FixedModalBody>
 
         {/* Footer Actions */}
