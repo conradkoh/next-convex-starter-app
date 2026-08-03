@@ -1,11 +1,28 @@
 import type { SessionId } from 'convex-helpers/server/sessions';
-import { expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import { t } from '../../test.setup';
 import { api } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
 
+const mockAllowedSignupMethods = vi.hoisted(() => ({
+  value: ['self', 'invite'] as string[] | null,
+}));
+
+vi.mock('../../config/featureFlags', () => ({
+  featureFlags: {
+    disableLogin: false,
+    get allowedSignupMethods() {
+      return mockAllowedSignupMethods.value;
+    },
+  },
+}));
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+beforeEach(() => {
+  mockAllowedSignupMethods.value = ['self', 'invite'];
+});
 
 async function loginAsSystemAdmin(): Promise<{ sessionId: SessionId; userId: Id<'users'> }> {
   const sessionId = `admin-${Math.random().toString(36).slice(2)}` as SessionId;
@@ -248,6 +265,38 @@ test('createInvite requires invites:manage permission', async () => {
       message: 'Forbidden: missing permission invites:manage',
     },
   });
+});
+
+test('validateInviteCode writes pendingInviteId to session on success', async () => {
+  const { sessionId: adminSessionId } = await loginAsSystemAdmin();
+  const validationSessionId = `pending-${Math.random().toString(36).slice(2)}` as SessionId;
+
+  const invite = await t.mutation(api.system.invites.createInvite, {
+    sessionId: adminSessionId,
+    inviteeName: 'Jane Doe',
+    inviteeEmail: 'jane@example.com',
+  });
+
+  const result = await t.mutation(api.system.invites.validateInviteCode, {
+    sessionId: validationSessionId,
+    code: invite.code,
+  });
+
+  expect(result).toMatchObject({
+    valid: true,
+    inviteId: invite._id,
+    inviteeName: 'Jane Doe',
+  });
+
+  const session = await t.run(async (ctx) => {
+    return ctx.db
+      .query('sessions')
+      .withIndex('by_sessionId', (q) => q.eq('sessionId', validationSessionId))
+      .first();
+  });
+
+  expect(session?.pendingInviteId).toBe(invite._id);
+  expect(session?.userId).toBeUndefined();
 });
 
 test('validateInviteCode accepts dashed input when stored without dashes', async () => {

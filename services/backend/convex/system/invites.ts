@@ -3,6 +3,7 @@ import { SessionIdArg } from 'convex-helpers/server/sessions';
 import type { SessionId } from 'convex-helpers/server/sessions';
 
 import { INVITES_MANAGE_PERMISSION, requireAuthenticatedPermission } from '../../application/auth';
+import { isInviteSignupAllowed } from '../../config/signupMethods';
 import { generateLoginCode } from '../../modules/auth/codeUtils';
 import { getAuthUser } from '../../modules/auth/session';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -351,6 +352,50 @@ async function _validateInviteRecord(
   return _validateFoundInvite(ctx, args.sessionId, attemptRecord, invite, now);
 }
 
+/**
+ * Redeems a pending invite after Google signup. Exported for auth/google.ts only — not a public Convex API.
+ */
+// fallow-ignore-next-line complexity
+export async function redeemPendingInvite(
+  ctx: MutationCtx,
+  sessionId: SessionId,
+  userId: Id<'users'>,
+  userEmail: string
+): Promise<void> {
+  const session = await ctx.db
+    .query('sessions')
+    .withIndex('by_sessionId', (q) => q.eq('sessionId', sessionId))
+    .first();
+
+  if (!session?.pendingInviteId) {
+    throw new ConvexError({
+      code: 'SIGNUP_DISABLED',
+      message: 'Sign-up requires an invite code',
+    });
+  }
+
+  const now = Date.now();
+  const invite = await ctx.db.get('invites', session.pendingInviteId);
+  if (!invite || !_isInviteActive(invite, now) || invite.usedAt) {
+    await ctx.db.patch('sessions', session._id, { pendingInviteId: undefined });
+    throw new ConvexError({
+      code: 'INVITE_INVALID',
+      message: 'Invite code is no longer valid',
+    });
+  }
+
+  if (userEmail.toLowerCase() !== invite.inviteeEmail.toLowerCase()) {
+    throw new ConvexError({
+      code: 'INVITE_EMAIL_MISMATCH',
+      message: 'Google account email does not match the invited email address',
+    });
+  }
+
+  await ctx.db.patch('invites', invite._id, { usedAt: now, usedByUserId: userId });
+  await ctx.db.patch('users', userId, { invitedByInviteId: invite._id });
+  await ctx.db.patch('sessions', session._id, { pendingInviteId: undefined });
+}
+
 export const listInvites = query({
   args: {
     ...SessionIdArg,
@@ -448,5 +493,47 @@ export const validateInviteCode = mutation({
     ...SessionIdArg,
     code: v.string(),
   },
-  handler: async (ctx, args): Promise<ValidateInviteResult> => _validateInviteRecord(ctx, args),
+  // fallow-ignore-next-line complexity
+  handler: async (ctx, args): Promise<ValidateInviteResult> => {
+    if (!isInviteSignupAllowed()) {
+      return {
+        valid: false,
+        reason: 'invalid_code',
+        message: 'Invalid invite code',
+      };
+    }
+
+    const existingSession = await ctx.db
+      .query('sessions')
+      .withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
+      .first();
+
+    if (existingSession?.userId) {
+      return {
+        valid: false,
+        reason: 'invalid_code',
+        message: 'Invalid invite code',
+      };
+    }
+
+    const result = await _validateInviteRecord(ctx, args);
+    if (!result.valid) {
+      return result;
+    }
+
+    const now = Date.now();
+    if (existingSession) {
+      await ctx.db.patch('sessions', existingSession._id, {
+        pendingInviteId: result.inviteId,
+      });
+    } else {
+      await ctx.db.insert('sessions', {
+        sessionId: args.sessionId,
+        createdAt: now,
+        pendingInviteId: result.inviteId,
+      });
+    }
+
+    return result;
+  },
 });

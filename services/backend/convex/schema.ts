@@ -140,6 +140,7 @@ export default defineSchema({
             hd: v.optional(v.string()),
           })
         ),
+        invitedByInviteId: v.optional(v.id('invites')),
       }),
       v.object({
         type: v.literal('anonymous'),
@@ -161,7 +162,8 @@ export default defineSchema({
    */
   sessions: defineTable({
     sessionId: v.string(), //this is provided by the client
-    userId: v.id('users'), // null means session exists but not authenticated
+    userId: v.optional(v.id('users')), // undefined for pre-auth invite sessions
+    pendingInviteId: v.optional(v.id('invites')),
     createdAt: v.number(),
     authMethod: v.optional(
       v.union(
