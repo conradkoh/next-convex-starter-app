@@ -33,7 +33,10 @@ describe('TaskItem cancel enhancer', () => {
       />
     );
 
-    expect(screen.getByTestId('cancel-enhancer-task')).toBeInTheDocument();
+    const button = screen.getByTestId('cancel-enhancer-task');
+    expect(button).toBeInTheDocument();
+    // Sparkles icon (not XCircle) renders inside the cancel control.
+    expect(button.querySelector('svg')).not.toBeNull();
   });
 
   it('hides cancel button when showCancelEnhancer is false', () => {

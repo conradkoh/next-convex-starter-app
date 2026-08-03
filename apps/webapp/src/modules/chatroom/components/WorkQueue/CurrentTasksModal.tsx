@@ -1,6 +1,6 @@
 'use client';
 
-import { XCircle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import React from 'react';
 
 import type { Task } from './types';
@@ -87,7 +87,7 @@ export function CurrentTasksModalItem({
 
   return (
     <div
-      className="p-3 hover:bg-chatroom-bg-hover transition-colors cursor-pointer group border-b border-chatroom-border last:border-b-0"
+      className="flex items-center gap-2 px-3 py-2 hover:bg-chatroom-bg-hover transition-colors cursor-pointer border-b border-chatroom-border last:border-b-0"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -98,28 +98,49 @@ export function CurrentTasksModalItem({
         }
       }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex-1 min-w-0">
         {/* Status Badge */}
-        <span
-          className={`flex-shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${badge.classes}`}
-        >
-          {badge.label}
-        </span>
+        <div className="flex items-center gap-2 mb-1">
+          <span
+            className={`px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${badge.classes}`}
+          >
+            {badge.label}
+          </span>
+          {task.assignedTo && (
+            <span className="text-[9px] text-chatroom-text-muted">→ {task.assignedTo}</span>
+          )}
+        </div>
 
         {/* Content - plain text preview */}
-        <WorkQueuePreviewText content={task.content} className="flex-1 min-w-0" />
-
-        {/* Assigned To */}
-        {task.assignedTo && (
-          <span className="flex-shrink-0 text-[10px] text-chatroom-text-muted">
-            → {task.assignedTo}
-          </span>
-        )}
+        <WorkQueuePreviewText content={task.content} />
 
         {/* Relative Time */}
-        <span className="flex-shrink-0 text-[10px] text-chatroom-text-muted">{relativeTime}</span>
+        {relativeTime && (
+          <p className="text-[10px] text-chatroom-text-muted mt-0.5">{relativeTime}</p>
+        )}
 
-        {/* Cancel enhancer — inline trailing control (no separate actions row) */}
+        {/* Attachment chips */}
+        {taskHasAttachments && (
+          <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+            <MessageAttachmentChips
+              message={{
+                _id: task._id,
+                type: 'task',
+                senderRole: 'user',
+                content: task.content,
+                _creationTime: task.createdAt,
+                attachedTasks: task.attachedTasks,
+                attachedBacklogItems: task.attachedBacklogItems,
+                attachedMessages: task.attachedMessages,
+                attachedSnippets: task.attachedSnippets,
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Cancel enhancer — trailing action, end-aligned */}
+      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         {task.assignedTo === 'enhancer' && onCancelEnhancer && (
           <button
             type="button"
@@ -130,32 +151,12 @@ export function CurrentTasksModalItem({
               e.stopPropagation();
               onCancelEnhancer(task);
             }}
-            onKeyDown={(e) => e.stopPropagation()}
-            className="flex-shrink-0 p-1 text-chatroom-text-muted hover:text-chatroom-status-error transition-colors disabled:opacity-50"
+            className="p-1.5 rounded transition-colors disabled:opacity-50 text-blue-500 dark:text-blue-400 hover:bg-blue-500/10"
           >
-            <XCircle size={12} />
+            <Sparkles size={14} className="fill-current" />
           </button>
         )}
       </div>
-
-      {/* Attachment chips */}
-      {taskHasAttachments && (
-        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-          <MessageAttachmentChips
-            message={{
-              _id: task._id,
-              type: 'task',
-              senderRole: 'user',
-              content: task.content,
-              _creationTime: task.createdAt,
-              attachedTasks: task.attachedTasks,
-              attachedBacklogItems: task.attachedBacklogItems,
-              attachedMessages: task.attachedMessages,
-              attachedSnippets: task.attachedSnippets,
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }
