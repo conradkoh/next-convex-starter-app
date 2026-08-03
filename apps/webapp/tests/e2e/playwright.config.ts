@@ -12,7 +12,7 @@ console.log(`[e2e] Using port ${port} (baseURL: ${baseURL})`);
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: '.',
+  testDir: './specs',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
