@@ -14,6 +14,17 @@ const CANCELLED = `<planning-review-outcome status="cancelled">
 Body content
 </planning-review-outcome>`;
 
+const OUTCOME_WITH_HANDOFF_SECTIONS = `<planning-review-outcome status="cancelled">
+<handoff-overview>
+## Summary
+Assessment text
+</handoff-overview>
+<handoff-action>
+## Risks
+Edge case
+</handoff-action>
+</planning-review-outcome>`;
+
 describe('PlanningReviewOutcomeView', () => {
   it('renders the view with inner markdown and no raw XML', () => {
     render(<PlanningReviewOutcomeView content={CANCELLED} variant="timeline" />);
@@ -24,6 +35,14 @@ describe('PlanningReviewOutcomeView', () => {
     );
     expect(screen.getByTestId('outcome-markdown')).toHaveTextContent('Body content');
     expect(screen.queryByText(/<planning-review-outcome/)).not.toBeInTheDocument();
+  });
+
+  it('renders inner handoff report sections via HandoffReportView', () => {
+    render(<PlanningReviewOutcomeView content={OUTCOME_WITH_HANDOFF_SECTIONS} />);
+
+    expect(screen.getByTestId('handoff-report-view')).toBeInTheDocument();
+    expect(screen.getByTestId('handoff-section-overview')).toBeInTheDocument();
+    expect(screen.queryByText(/<handoff-overview/)).not.toBeInTheDocument();
   });
 
   it('shows a cancelled badge for cancelled status', () => {

@@ -2,12 +2,15 @@
 
 import { memo, useMemo } from 'react';
 
+import { HandoffReportView } from './HandoffReportView';
 import { TimelineMarkdownBody } from './TimelineMarkdownBody';
 import { BADGE_BASE } from './timelineRowStyles';
+import { hasHandoffReport } from '../../utils/parseHandoffReport';
 import {
   parsePlanningReviewOutcome,
   type PlanningReviewOutcomeStatus,
 } from '../../utils/parsePlanningReviewOutcome';
+import { stripHandoffXmlTags } from '../../utils/stripHandoffXmlTags';
 
 import { cn } from '@/lib/utils';
 
@@ -49,6 +52,7 @@ export const PlanningReviewOutcomeView = memo(function PlanningReviewOutcomeView
 }: PlanningReviewOutcomeViewProps) {
   const parsed = useMemo(() => parsePlanningReviewOutcome(content), [content]);
   const badge = badgeForStatus(parsed.status);
+  const bodyContent = parsed.body ?? content;
 
   return (
     <div
@@ -58,7 +62,11 @@ export const PlanningReviewOutcomeView = memo(function PlanningReviewOutcomeView
       <div className="flex flex-wrap items-center gap-2">
         <span className={badge.className}>{badge.label}</span>
       </div>
-      <TimelineMarkdownBody content={parsed.body ?? content} />
+      {hasHandoffReport(bodyContent) ? (
+        <HandoffReportView content={bodyContent} variant={variant} />
+      ) : (
+        <TimelineMarkdownBody content={stripHandoffXmlTags(bodyContent)} />
+      )}
     </div>
   );
 });
