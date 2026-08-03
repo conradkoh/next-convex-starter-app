@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getAllowedSignupMethods,
+  getSignupConfigLabel,
   isInviteSignupAllowed,
   isSelfSignupAllowed,
   isSignupAllowed,
@@ -68,5 +69,33 @@ describe('signup method helpers', () => {
     mockAllowedSignupMethods.value = ['invite'];
     expect(isInviteSignupAllowed()).toBe(true);
     expect(isSelfSignupAllowed()).toBe(false);
+  });
+});
+
+describe('getSignupConfigLabel', () => {
+  beforeEach(() => {
+    mockAllowedSignupMethods.value = ['self'];
+  });
+
+  it('returns Disabled when allowedSignupMethods is null or empty', () => {
+    mockAllowedSignupMethods.value = null;
+    expect(getSignupConfigLabel()).toBe('Disabled');
+    mockAllowedSignupMethods.value = [];
+    expect(getSignupConfigLabel()).toBe('Disabled');
+  });
+
+  it('returns Open (self) when only self is allowed', () => {
+    mockAllowedSignupMethods.value = ['self'];
+    expect(getSignupConfigLabel()).toBe('Open (self)');
+  });
+
+  it('returns Invite only when only invite is allowed', () => {
+    mockAllowedSignupMethods.value = ['invite'];
+    expect(getSignupConfigLabel()).toBe('Invite only');
+  });
+
+  it('returns Self + Invite when both are allowed', () => {
+    mockAllowedSignupMethods.value = ['self', 'invite'];
+    expect(getSignupConfigLabel()).toBe('Self + Invite');
   });
 });

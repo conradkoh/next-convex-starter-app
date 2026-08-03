@@ -160,7 +160,10 @@ test('Google new user succeeds with pending invite and matching email', async ()
   expect(redeemedInvite?.usedByUserId).toBe(login.userId);
 
   const user = await t.run((ctx) => ctx.db.get('users', login.userId));
-  expect(user?.invitedByInviteId).toBe(invite._id);
+  expect(user?.type).toBe('full');
+  if (user?.type === 'full') {
+    expect(user.invitedByInviteId).toBe(invite._id);
+  }
 });
 
 test('Google new user fails when email does not match invite', async () => {

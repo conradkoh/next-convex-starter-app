@@ -26,3 +26,11 @@ export function isSelfSignupAllowed(): boolean {
 export function isInviteSignupAllowed(): boolean {
   return getAllowedSignupMethods().includes(SignupMethod.Invite);
 }
+
+export function getSignupConfigLabel(): string {
+  const methods = getAllowedSignupMethods();
+  if (methods.length === 0) return 'Disabled';
+  if (methods.length === 2) return 'Self + Invite';
+  if (methods[0] === SignupMethod.Invite) return 'Invite only';
+  return 'Open (self)';
+}
