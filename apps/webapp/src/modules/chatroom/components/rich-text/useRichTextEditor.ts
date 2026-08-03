@@ -5,7 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from '@tiptap/markdown';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
 
 import { handleRichTextModEnter } from './handleRichTextModEnter';
 import { looksLikeMarkdown } from './pasteMarkdown';
@@ -19,6 +19,23 @@ export interface UseRichTextEditorOptions {
   onCmdEnter?: () => void;
 }
 
+type RichTextEditorInstance = NonNullable<ReturnType<typeof useEditor>>;
+
+function syncEditorFromExternalValue(
+  editor: RichTextEditorInstance,
+  content: string,
+  isInternalUpdateRef: MutableRefObject<boolean>
+): void {
+  if (isInternalUpdateRef.current) {
+    isInternalUpdateRef.current = false;
+    return;
+  }
+  const current = editor.getMarkdown();
+  if (content !== current) {
+    editor.commands.setContent(content, { contentType: 'markdown', emitUpdate: false });
+  }
+}
+
 export function useRichTextEditor({
   content,
   onUpdate,
@@ -27,6 +44,8 @@ export function useRichTextEditor({
   autoFocus,
   onCmdEnter,
 }: UseRichTextEditorOptions) {
+  const isInternalUpdateRef = useRef(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -62,6 +81,7 @@ export function useRichTextEditor({
     },
     onUpdate: ({ editor }) => {
       const md = editor.getMarkdown();
+      isInternalUpdateRef.current = true;
       onUpdate(md);
     },
   });
@@ -75,10 +95,7 @@ export function useRichTextEditor({
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    const current = editor.getMarkdown();
-    if (content !== current) {
-      editor.commands.setContent(content, { contentType: 'markdown', emitUpdate: false });
-    }
+    syncEditorFromExternalValue(editor, content, isInternalUpdateRef);
   }, [editor, content]);
 
   return { editor, setContent };
