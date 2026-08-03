@@ -108,11 +108,43 @@ function makeBacklogItem(status: BacklogItem['status']): BacklogItem {
 }
 
 describe('BacklogItemDetailModal editor initialization', () => {
-  it('opens in editor mode immediately for backlog status', () => {
+  it('opens in view mode for backlog status (no Save on open)', () => {
     render(<BacklogItemDetailModal isOpen item={makeBacklogItem('backlog')} onClose={vi.fn()} />);
+
+    expect(screen.queryByTestId('backlog-rich-text-editor')).not.toBeInTheDocument();
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+  });
+
+  it('clicking content enters edit mode for backlog status', () => {
+    render(<BacklogItemDetailModal isOpen item={makeBacklogItem('backlog')} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('Test backlog item'));
 
     expect(screen.getByTestId('backlog-rich-text-editor')).toBeInTheDocument();
     expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+  });
+
+  it('cancel resets the draft to the original content', () => {
+    render(<BacklogItemDetailModal isOpen item={makeBacklogItem('backlog')} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('Test backlog item'));
+    const editor = screen.getByTestId('backlog-rich-text-editor') as HTMLTextAreaElement;
+    fireEvent.change(editor, { target: { value: 'changed draft' } });
+    expect(editor.value).toBe('changed draft');
+
+    fireEvent.click(screen.getByText('Cancel'));
+
+    fireEvent.click(screen.getByText('Test backlog item'));
+    expect((screen.getByTestId('backlog-rich-text-editor') as HTMLTextAreaElement).value).toBe(
+      'Test backlog item'
+    );
+  });
+
+  it('does not show an Edit item in the Actions menu', () => {
+    render(<BacklogItemDetailModal isOpen item={makeBacklogItem('backlog')} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('Actions'));
     expect(screen.queryByText('Edit')).not.toBeInTheDocument();
   });
 

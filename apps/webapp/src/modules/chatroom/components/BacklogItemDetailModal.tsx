@@ -8,7 +8,6 @@ import {
   Paperclip,
   ListChecks,
   MoreHorizontal,
-  Pencil,
   Trash2,
   X,
 } from 'lucide-react';
@@ -20,7 +19,6 @@ import { type BacklogItem, getBacklogStatusBadge, getScoringBadge } from './back
 import { chatroomRemarkPlugins } from './chatroomRemarkPlugins';
 import { modalMarkdownComponents, backlogRichTextEditorProseClassNames } from './markdown-utils';
 import { useAttachments } from '../attachments';
-import { useOverlayDismissStack } from '../hooks/useOverlayDismissStack';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +49,11 @@ const RichTextEditor = dynamic(
   () => import('./rich-text').then((m) => ({ default: m.RichTextEditor })),
   { ssr: false }
 );
+
+/** True when a click originates from an interactive element — never enter edit mode. */
+function isInteractiveClickTarget(target: EventTarget | null): boolean {
+  return !!(target as HTMLElement)?.closest?.('button, a, input, textarea, select, label');
+}
 
 interface BacklogItemDetailModalProps {
   isOpen: boolean;
@@ -86,16 +89,28 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   useEffect(() => {
     if (isOpen && item && item._id !== initializedItemId) {
       setEditedContent(item.content);
-      // Backlog items open directly in the WYSIWYG editor; other statuses stay read-only.
-      setIsEditing(item.status === 'backlog');
+      // Backlog items open read-only; click the content to edit.
+      setIsEditing(false);
       setInitializedItemId(item._id);
     } else if (!isOpen) {
       setInitializedItemId(null);
     }
   }, [isOpen, item, initializedItemId]);
 
-  // Escape while editing cancels edit without closing the modal (stacked above FixedModal dismiss).
-  useOverlayDismissStack(isOpen && isEditing, () => setIsEditing(false));
+  /** Cancel an in-progress edit, restoring the source content. */
+  const cancelEdit = useCallback(() => {
+    if (item) setEditedContent(item.content);
+    setIsEditing(false);
+  }, [item]);
+
+  /** Close-from-chrome: exit edit first (with reset), then close. */
+  const dismissFromChrome = useCallback(() => {
+    if (isEditing) {
+      cancelEdit();
+    } else {
+      onClose();
+    }
+  }, [isEditing, cancelEdit, onClose]);
 
   const handleSave = useCallback(async () => {
     if (!item || !editedContent.trim()) return;
@@ -142,9 +157,14 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   };
 
   return (
-    <FixedModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-2xl">
+    <FixedModal
+      isOpen={isOpen}
+      onClose={dismissFromChrome}
+      maxWidth="max-w-2xl"
+      closeOnBackdrop={!isEditing}
+    >
       <FixedModalContent>
-        <FixedModalHeader onClose={onClose}>
+        <FixedModalHeader onClose={dismissFromChrome}>
           <div className="flex items-center gap-2">
             <ListChecks size={16} className="text-chatroom-text-muted" />
             <FixedModalTitle>Backlog Item</FixedModalTitle>
@@ -189,9 +209,31 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
               className="flex-1 flex flex-col min-h-0"
             />
           ) : (
-            // View mode — Read-only rendered markdown
+            // View mode — read-only markdown; click to edit for backlog status
             <div
-              className={`p-4 min-w-0 overflow-x-hidden ${backlogRichTextEditorProseClassNames}`}
+              onClick={
+                item.status === 'backlog'
+                  ? (e) => {
+                      if (isInteractiveClickTarget(e.target)) return;
+                      setIsEditing(true);
+                    }
+                  : undefined
+              }
+              onKeyDown={
+                item.status === 'backlog'
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setIsEditing(true);
+                      }
+                    }
+                  : undefined
+              }
+              role={item.status === 'backlog' ? 'button' : undefined}
+              tabIndex={item.status === 'backlog' ? 0 : undefined}
+              className={`p-4 min-w-0 overflow-x-hidden ${
+                item.status === 'backlog' ? 'cursor-pointer' : ''
+              } ${backlogRichTextEditorProseClassNames}`}
             >
               <Markdown remarkPlugins={chatroomRemarkPlugins} components={modalMarkdownComponents}>
                 {item.content}
@@ -216,7 +258,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
               </button>
               <button
                 type="button"
-                onClick={() => setIsEditing(false)}
+                onClick={cancelEdit}
                 disabled={isLoading}
                 className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -289,15 +331,6 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[160px]">
-                  {/* Edit — only available in backlog status (backend enforces this) */}
-                  <DropdownMenuItem
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Pencil size={14} />
-                    Edit
-                  </DropdownMenuItem>
-
                   {/* Mark for Review — only for backlog status */}
                   {item.status === 'backlog' && (
                     <DropdownMenuItem

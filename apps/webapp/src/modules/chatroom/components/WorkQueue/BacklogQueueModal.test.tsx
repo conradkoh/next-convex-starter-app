@@ -157,8 +157,11 @@ describe('BacklogQueueModal stacked escape', () => {
   });
 
   it('cancels edit mode on escape without closing either modal', () => {
-    // Backlog items open directly in edit mode — no Edit click needed.
     render(<StackedBacklogModals />);
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+
+    // Click the detail modal's markdown body (the second match — list row preview is first).
+    fireEvent.click(screen.getAllByText('Ship stacked modal escape fix')[1]);
     expect(screen.getByText('Save')).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: 'Escape' });
