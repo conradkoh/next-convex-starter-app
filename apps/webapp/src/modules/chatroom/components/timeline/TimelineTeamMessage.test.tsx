@@ -188,6 +188,38 @@ Edge case X
     expect(screen.getByTestId('handoff-section-action')).toBeInTheDocument();
   });
 
+  it('renders PlanningReviewOutcomeView for planning-review-outcome content', () => {
+    const msg: Message = {
+      ...BASE_MESSAGE,
+      type: 'handoff',
+      content:
+        '<planning-review-outcome status="cancelled">\n## Planning review cancelled\nBody\n</planning-review-outcome>',
+    };
+    render(<TimelineTeamMessage message={msg} chatroomId="room-1" />);
+    expect(screen.getByTestId('planning-review-outcome-view')).toBeInTheDocument();
+    expect(screen.queryByText(/<planning-review-outcome/)).not.toBeInTheDocument();
+  });
+
+  it('renders HandoffReportView when enhancer feedback mentions planning-review-outcome in prose', () => {
+    const msg: Message = {
+      ...BASE_MESSAGE,
+      type: 'handoff',
+      senderRole: 'enhancer',
+      targetRole: 'planner',
+      content: `<handoff-overview>
+## Summary
+Looks good
+</handoff-overview>
+<handoff-action>
+## Risks
+Prior round returned as \`<planning-review-outcome status="cancelled">\`
+</handoff-action>`,
+    };
+    render(<TimelineTeamMessage message={msg} chatroomId="room-1" />);
+    expect(screen.getByTestId('handoff-report-view')).toBeInTheDocument();
+    expect(screen.queryByTestId('planning-review-outcome-view')).not.toBeInTheDocument();
+  });
+
   it('uses true-center grid on header when headerNavigation provided', () => {
     render(
       <TimelineTeamMessage
