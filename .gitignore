@@ -18,3 +18,4 @@ test-results/
 # Misc
 .env*.local
 package-lock.json
+.chatroom/pi-sessions/
