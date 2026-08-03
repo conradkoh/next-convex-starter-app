@@ -21,6 +21,10 @@ cd apps/webapp && pnpm e2e
 - Playwright browsers installed (`npx playwright install` if needed)
 - **For admin specs:** `E2E_SEEDING_ENABLED` must be set on the Convex deployment (see [E2E Admin Seeding](#e2e-admin-seeding) below)
 
+### Port configuration
+
+`pnpm run setup` assigns a random `PORT` (49152–65535, IANA ephemeral range) to `apps/webapp/.env.local` on first run if not already set.
+
 ## Folder Structure
 
 ```
