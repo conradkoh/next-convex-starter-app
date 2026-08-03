@@ -67,6 +67,8 @@ Playwright e2e tests live in `apps/webapp/tests/e2e/`. See [apps/webapp/tests/e2
 
 ### Run E2E Tests
 
+E2e `baseURL` reads `PORT` from `process.env.PORT` (if set), then `apps/webapp/.env.local` (assigned during `pnpm run setup`), then defaults to `3000`. Do not assume `localhost:3000`.
+
 ```bash
 # From repo root
 pnpm e2e
