@@ -8,7 +8,7 @@ import {
   Paperclip,
   ListChecks,
   MoreHorizontal,
-  Pencil,
+  Trash2,
   X,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -19,7 +19,16 @@ import { type BacklogItem, getBacklogStatusBadge, getScoringBadge } from './back
 import { chatroomRemarkPlugins } from './chatroomRemarkPlugins';
 import { modalMarkdownComponents, backlogRichTextEditorProseClassNames } from './markdown-utils';
 import { useAttachments } from '../attachments';
-import { useOverlayDismissStack } from '../hooks/useOverlayDismissStack';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +50,11 @@ const RichTextEditor = dynamic(
   { ssr: false }
 );
 
+/** True when a click originates from an interactive element — never enter edit mode. */
+function isInteractiveClickTarget(target: EventTarget | null): boolean {
+  return !!(target as HTMLElement)?.closest?.('button, a, input, textarea, select, label');
+}
+
 interface BacklogItemDetailModalProps {
   isOpen: boolean;
   item: BacklogItem | null;
@@ -55,6 +69,11 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [initialClickCoords, setInitialClickCoords] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Track which item we've initialized for — prevents resetting during edits
   const [initializedItemId, setInitializedItemId] = useState<string | null>(null);
@@ -68,20 +87,37 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   const reopenItem = useSessionMutation(api.backlog.reopenBacklogItem);
   const closeItem = useSessionMutation(api.backlog.closeBacklogItem);
   const updateItem = useSessionMutation(api.backlog.updateBacklogItem);
+  const deleteItem = useSessionMutation(api.backlog.deleteBacklogItem);
 
   // Reset state when modal opens with a different item
   useEffect(() => {
     if (isOpen && item && item._id !== initializedItemId) {
       setEditedContent(item.content);
+      // Backlog items open read-only; click the content to edit.
       setIsEditing(false);
+      setInitialClickCoords(null);
       setInitializedItemId(item._id);
     } else if (!isOpen) {
       setInitializedItemId(null);
+      setInitialClickCoords(null);
     }
   }, [isOpen, item, initializedItemId]);
 
-  // Escape while editing cancels edit without closing the modal (stacked above FixedModal dismiss).
-  useOverlayDismissStack(isOpen && isEditing, () => setIsEditing(false));
+  /** Cancel an in-progress edit, restoring the source content. */
+  const cancelEdit = useCallback(() => {
+    if (item) setEditedContent(item.content);
+    setIsEditing(false);
+    setInitialClickCoords(null);
+  }, [item]);
+
+  /** Close-from-chrome: exit edit first (with reset), then close. */
+  const dismissFromChrome = useCallback(() => {
+    if (isEditing) {
+      cancelEdit();
+    } else {
+      onClose();
+    }
+  }, [isEditing, cancelEdit, onClose]);
 
   const handleSave = useCallback(async () => {
     if (!item || !editedContent.trim()) return;
@@ -93,6 +129,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
         content: editedContent.trim(),
       });
       setIsEditing(false);
+      setInitialClickCoords(null);
     } catch (error) {
       console.error('Failed to save backlog item:', error);
     } finally {
@@ -112,6 +149,12 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
     }
   };
 
+  const handleDelete = async () => {
+    if (!item) return;
+    setDeleteDialogOpen(false);
+    await handleMutation(() => deleteItem({ chatroomId: item.chatroomId, itemId: item._id }));
+  };
+
   if (!item) return null;
 
   const badge = getBacklogStatusBadge(item.status);
@@ -122,9 +165,14 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   };
 
   return (
-    <FixedModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-2xl">
+    <FixedModal
+      isOpen={isOpen}
+      onClose={dismissFromChrome}
+      maxWidth="max-w-2xl"
+      closeOnBackdrop={!isEditing}
+    >
       <FixedModalContent>
-        <FixedModalHeader onClose={onClose}>
+        <FixedModalHeader onClose={dismissFromChrome}>
           <div className="flex items-center gap-2">
             <ListChecks size={16} className="text-chatroom-text-muted" />
             <FixedModalTitle>Backlog Item</FixedModalTitle>
@@ -157,27 +205,56 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
           </div>
         </FixedModalHeader>
 
-        <FixedModalBody
-          className={isEditing ? 'flex flex-col min-h-0 p-0 overflow-hidden' : undefined}
-        >
-          {isEditing ? (
-            <RichTextEditor
-              value={editedContent}
-              onChange={setEditedContent}
-              placeholder="Write your markdown here..."
-              onCmdEnter={handleSave}
-              className="flex-1 flex flex-col min-h-0"
-            />
-          ) : (
-            // View mode — Read-only rendered markdown
-            <div
-              className={`p-4 min-w-0 overflow-x-hidden ${backlogRichTextEditorProseClassNames}`}
-            >
-              <Markdown remarkPlugins={chatroomRemarkPlugins} components={modalMarkdownComponents}>
-                {item.content}
-              </Markdown>
-            </div>
-          )}
+        <FixedModalBody className="flex flex-col min-h-0 p-0">
+          <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
+            {isEditing ? (
+              <RichTextEditor
+                value={editedContent}
+                onChange={setEditedContent}
+                placeholder="Write your markdown here..."
+                onCmdEnter={handleSave}
+                initialClickCoords={initialClickCoords}
+                className="flex-1 flex flex-col min-h-0"
+              />
+            ) : (
+              // View mode — read-only markdown; click to edit for backlog status
+              <div
+                data-testid="backlog-detail-view-body"
+                onClick={
+                  item.status === 'backlog'
+                    ? (e) => {
+                        if (isInteractiveClickTarget(e.target)) return;
+                        setInitialClickCoords({ left: e.clientX, top: e.clientY });
+                        setIsEditing(true);
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  item.status === 'backlog'
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setInitialClickCoords(null);
+                          setIsEditing(true);
+                        }
+                      }
+                    : undefined
+                }
+                role={item.status === 'backlog' ? 'button' : undefined}
+                tabIndex={item.status === 'backlog' ? 0 : undefined}
+                className={`h-full overflow-y-auto overflow-x-hidden p-4 min-w-0 ${
+                  item.status === 'backlog' ? 'cursor-pointer' : ''
+                } ${backlogRichTextEditorProseClassNames}`}
+              >
+                <Markdown
+                  remarkPlugins={chatroomRemarkPlugins}
+                  components={modalMarkdownComponents}
+                >
+                  {item.content}
+                </Markdown>
+              </div>
+            )}
+          </div>
         </FixedModalBody>
 
         {/* Footer Actions */}
@@ -196,7 +273,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
               </button>
               <button
                 type="button"
-                onClick={() => setIsEditing(false)}
+                onClick={cancelEdit}
                 disabled={isLoading}
                 className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -269,15 +346,6 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[160px]">
-                  {/* Edit — only available in backlog status (backend enforces this) */}
-                  <DropdownMenuItem
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Pencil size={14} />
-                    Edit
-                  </DropdownMenuItem>
-
                   {/* Mark for Review — only for backlog status */}
                   {item.status === 'backlog' && (
                     <DropdownMenuItem
@@ -354,12 +422,37 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
                       </DropdownMenuItem>
                     </>
                   )}
+
+                  {/* Permanently delete — available for all statuses */}
+                  {item.status === 'closed' && <DropdownMenuSeparator />}
+                  <DropdownMenuItem
+                    onClick={() => setDeleteDialogOpen(true)}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 cursor-pointer text-chatroom-status-error"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
           )}
         </div>
       </FixedModalContent>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete backlog item?</AlertDialogTitle>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </FixedModal>
   );
 }

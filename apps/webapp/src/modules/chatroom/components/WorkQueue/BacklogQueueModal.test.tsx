@@ -96,8 +96,13 @@ function makeBacklogItem(overrides: Partial<BacklogItem> = {}): BacklogItem {
 }
 
 /** Matches WorkQueue render order: queue modal first, detail modal second. */
-function StackedBacklogModals({ initialDetailOpen = true }: { initialDetailOpen?: boolean }) {
-  const item = makeBacklogItem();
+function StackedBacklogModals({
+  initialDetailOpen = true,
+  item = makeBacklogItem(),
+}: {
+  initialDetailOpen?: boolean;
+  item?: BacklogItem;
+}) {
   const [listOpen, setListOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(initialDetailOpen);
 
@@ -128,7 +133,8 @@ describe('BacklogQueueModal stacked escape', () => {
   });
 
   it('closes only the detail modal on escape when detail is open over the list', () => {
-    render(<StackedBacklogModals />);
+    // Non-backlog items open in view mode, so Escape closes the detail directly.
+    render(<StackedBacklogModals item={makeBacklogItem({ status: 'pending_user_review' })} />);
 
     expect(screen.getByText(/Backlog \(1 items\)/)).toBeInTheDocument();
     expect(screen.getByText('Backlog Item')).toBeInTheDocument();
@@ -152,8 +158,10 @@ describe('BacklogQueueModal stacked escape', () => {
 
   it('cancels edit mode on escape without closing either modal', () => {
     render(<StackedBacklogModals />);
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Edit'));
+    // Click the detail modal's markdown body (the second match — list row preview is first).
+    fireEvent.click(screen.getAllByText('Ship stacked modal escape fix')[1]);
     expect(screen.getByText('Save')).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: 'Escape' });
