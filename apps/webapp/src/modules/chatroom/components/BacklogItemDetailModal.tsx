@@ -69,6 +69,10 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [initialClickCoords, setInitialClickCoords] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Track which item we've initialized for — prevents resetting during edits
@@ -91,9 +95,11 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
       setEditedContent(item.content);
       // Backlog items open read-only; click the content to edit.
       setIsEditing(false);
+      setInitialClickCoords(null);
       setInitializedItemId(item._id);
     } else if (!isOpen) {
       setInitializedItemId(null);
+      setInitialClickCoords(null);
     }
   }, [isOpen, item, initializedItemId]);
 
@@ -101,6 +107,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
   const cancelEdit = useCallback(() => {
     if (item) setEditedContent(item.content);
     setIsEditing(false);
+    setInitialClickCoords(null);
   }, [item]);
 
   /** Close-from-chrome: exit edit first (with reset), then close. */
@@ -122,6 +129,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
         content: editedContent.trim(),
       });
       setIsEditing(false);
+      setInitialClickCoords(null);
     } catch (error) {
       console.error('Failed to save backlog item:', error);
     } finally {
@@ -205,6 +213,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
                 onChange={setEditedContent}
                 placeholder="Write your markdown here..."
                 onCmdEnter={handleSave}
+                initialClickCoords={initialClickCoords}
                 className="flex-1 flex flex-col min-h-0"
               />
             ) : (
@@ -215,6 +224,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
                   item.status === 'backlog'
                     ? (e) => {
                         if (isInteractiveClickTarget(e.target)) return;
+                        setInitialClickCoords({ left: e.clientX, top: e.clientY });
                         setIsEditing(true);
                       }
                     : undefined
@@ -224,6 +234,7 @@ export function BacklogItemDetailModal({ isOpen, item, onClose }: BacklogItemDet
                     ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
+                          setInitialClickCoords(null);
                           setIsEditing(true);
                         }
                       }

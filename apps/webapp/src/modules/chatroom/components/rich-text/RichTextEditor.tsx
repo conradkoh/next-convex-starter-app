@@ -16,6 +16,8 @@ export interface RichTextEditorProps {
   autoFocus?: boolean;
   onCmdEnter?: () => void;
   className?: string;
+  /** Viewport coords from click-to-edit; caret placed via posAtCoords on mount. */
+  initialClickCoords?: { left: number; top: number } | null;
 }
 
 export function RichTextEditor({
@@ -26,13 +28,15 @@ export function RichTextEditor({
   autoFocus,
   onCmdEnter,
   className,
+  initialClickCoords,
 }: RichTextEditorProps) {
   const { editor } = useRichTextEditor({
     content: value,
     onUpdate: onChange,
     placeholder,
-    autoFocus,
+    autoFocus: initialClickCoords ? false : autoFocus,
     onCmdEnter,
+    initialClickCoords,
   });
 
   return (

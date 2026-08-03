@@ -17,6 +17,8 @@ export interface UseRichTextEditorOptions {
   editable?: boolean;
   autoFocus?: boolean;
   onCmdEnter?: () => void;
+  /** Viewport coords from click-to-edit; caret placed via posAtCoords on mount. */
+  initialClickCoords?: { left: number; top: number } | null;
 }
 
 type RichTextEditorInstance = NonNullable<ReturnType<typeof useEditor>>;
@@ -43,8 +45,10 @@ export function useRichTextEditor({
   editable = true,
   autoFocus,
   onCmdEnter,
+  initialClickCoords,
 }: UseRichTextEditorOptions) {
   const isInternalUpdateRef = useRef(false);
+  const appliedInitialCoordsRef = useRef(false);
 
   const editor = useEditor({
     extensions: [
@@ -58,7 +62,9 @@ export function useRichTextEditor({
     content,
     contentType: 'markdown',
     editable,
-    autofocus: autoFocus ? true : false,
+    // When initialClickCoords is provided, do NOT autofocus — it conflicts
+    // with positioning the caret at the click location via posAtCoords.
+    autofocus: initialClickCoords ? false : autoFocus ? true : false,
     editorProps: {
       attributes: {
         class: 'outline-none focus:outline-none focus-visible:outline-none',
@@ -98,5 +104,36 @@ export function useRichTextEditor({
     syncEditorFromExternalValue(editor, content, isInternalUpdateRef);
   }, [editor, content]);
 
+  // Apply the click position once, after the ProseMirror DOM is laid out.
+  useEffect(() => {
+    if (!editor) return;
+    if (appliedInitialCoordsRef.current) return;
+    const coords = initialClickCoords;
+    if (!coords) return;
+    appliedInitialCoordsRef.current = true;
+
+    requestAnimationFrame(() => {
+      if (editor.isDestroyed) return;
+      applyInitialClickPosition(editor, coords);
+    });
+  }, [editor, initialClickCoords]);
+
+  // Reset the one-shot flag when a new edit session starts (coords cleared).
+  useEffect(() => {
+    if (!initialClickCoords) appliedInitialCoordsRef.current = false;
+  }, [initialClickCoords]);
+
   return { editor, setContent };
+}
+
+function applyInitialClickPosition(
+  editor: RichTextEditorInstance,
+  coords: { left: number; top: number }
+): void {
+  const result = editor.view.posAtCoords(coords);
+  if (result) {
+    editor.chain().setTextSelection(result.pos).focus().run();
+  } else {
+    editor.commands.focus('end');
+  }
 }
