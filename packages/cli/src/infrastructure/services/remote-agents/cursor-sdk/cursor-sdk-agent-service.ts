@@ -7,7 +7,7 @@
  * events through CursorSdkStreamAdapter, and uses a lightweight keeper child
  * process so PID-based lifecycle management in the daemon continues to work.
  *
- * NOTE: @cursor/sdk@1.0.23 imports `node:sqlite` at load time and dynamically
+ * NOTE: @cursor/sdk@1.0.26 imports `node:sqlite` at load time and dynamically
  * imports `@connectrpc/connect-node` for agent streams. The CLI bin wrapper
  * (`node-launch.js`) enables `--experimental-sqlite` before startup. SDK import
  * is deferred via loadSdk() so load failures hide the harness instead of
@@ -544,10 +544,18 @@ export class CursorSdkAgentService extends BaseCLIAgentService {
             const restoreStreamTap = tapProcessStreamWrites(notifyHarnessOutput);
 
             try {
+              // Reassigned after send() resolves; the onDelta closure reads it, and
+              // withTimeout does not abort the underlying promise, so a timed-out send
+              // must no-op via optional chaining rather than write through a live adapter.
+              // eslint-disable-next-line prefer-const -- closure-captured deferred assignment
+              let adapter: CursorSdkStreamAdapter | undefined;
               const run = await withTimeout(
                 agent.send(nextPrompt, {
                   local: { force: isFirstTurn },
                   idempotencyKey: randomUUID(),
+                  onDelta: ({ update }) => {
+                    adapter?.handleInteractionDelta(update);
+                  },
                 }),
                 SEND_TIMEOUT_MS,
                 'agent.send'
@@ -555,7 +563,7 @@ export class CursorSdkAgentService extends BaseCLIAgentService {
               session.run = run;
               isFirstTurn = false;
 
-              const adapter = new CursorSdkStreamAdapter(logPrefix, emitLogLine);
+              adapter = new CursorSdkStreamAdapter(logPrefix, emitLogLine);
               wireNativeStreamAdapter({
                 adapter,
                 assistantTextCallbacks,

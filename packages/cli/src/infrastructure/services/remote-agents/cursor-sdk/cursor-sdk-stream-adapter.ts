@@ -1,9 +1,10 @@
 /**
- * CursorSdkStreamAdapter — maps @cursor/sdk run.stream() SDKMessage events to
- * stdout log lines compatible with the existing cursor CLI harness pipeline.
+ * CursorSdkStreamAdapter — maps @cursor/sdk run.stream() SDKMessage events and
+ * SendOptions.onDelta InteractionUpdate deltas to stdout log lines compatible
+ * with the existing cursor CLI harness pipeline.
  */
 
-import type { SDKMessage } from '@cursor/sdk';
+import type { InteractionUpdate, SDKMessage } from '@cursor/sdk';
 
 import {
   BASH_TOOL_KIND,
@@ -12,6 +13,12 @@ import {
   formatBashRunningPayload,
 } from '../agent-log-format.js';
 import { NativeStreamAdapterBase } from '../native-stream-adapter-base.js';
+import {
+  logUnhandledInteractionDelta,
+  logUnhandledSdkMessage,
+} from './cursor-sdk-stream-fallback.js';
+
+type ToolCallStartedUpdate = Extract<InteractionUpdate, { type: 'tool-call-started' }>;
 
 export class CursorSdkStreamAdapter extends NativeStreamAdapterBase {
   private textBuffer = '';
@@ -78,15 +85,58 @@ export class CursorSdkStreamAdapter extends NativeStreamAdapterBase {
       case 'usage':
         // Per-turn token usage at turn end — informational only, not agent output.
         break;
-      default: {
-        const unknown = message as { type?: string };
-        if (unknown.type) {
-          this.writeLine(
-            formatAgentLogLine(this.logPrefix, 'stream', `unhandled type: ${unknown.type}`)
-          );
-        }
+      case 'user':
+      case 'request':
+        // Echo/internal protocol messages — informational, not agent output.
+        logUnhandledSdkMessage(this.logPrefix, message, (line) => this.writeLine(line));
         break;
-      }
+      default:
+        logUnhandledSdkMessage(this.logPrefix, message, (line) => this.writeLine(line));
+        break;
+    }
+  }
+
+  /**
+   * Handle an InteractionUpdate delta delivered via SendOptions.onDelta.
+   * Deltas are the primary stream for text/tool progress in SDK 1.0.24+;
+   * run.stream() SDKMessages remain for terminal status/tool_call records.
+   */
+  // fallow-ignore-next-line complexity
+  handleInteractionDelta(update: InteractionUpdate): void {
+    this.notifyOutput();
+    switch (update.type) {
+      case 'text-delta':
+        this.appendAssistantText(update.text);
+        break;
+      case 'thinking-delta':
+        this.writeLine(formatAgentLogLine(this.logPrefix, 'thinking', update.text));
+        break;
+      case 'tool-call-started':
+        this.flushText();
+        this.logToolCallStarted(update);
+        break;
+      case 'tool-call-completed':
+        this.flushText();
+        // informational — existing tool_call SDKMessage handles detailed status
+        break;
+      case 'tool-call-delta':
+        this.handleToolCallDelta(update);
+        break;
+      case 'turn-ended':
+      case 'thinking-completed':
+      case 'token-delta':
+      case 'summary-started':
+      case 'summary-completed':
+      case 'summary':
+      case 'user-message-appended':
+      case 'partial-tool-call':
+      case 'shell-output-delta':
+      case 'step-started':
+      case 'step-completed':
+        // intentionally silent — informational / handled elsewhere
+        break;
+      default:
+        logUnhandledInteractionDelta(this.logPrefix, update, (line) => this.writeLine(line));
     }
   }
 
@@ -104,13 +154,64 @@ export class CursorSdkStreamAdapter extends NativeStreamAdapterBase {
   private handleAssistant(message: Extract<SDKMessage, { type: 'assistant' }>): void {
     for (const block of message.message.content) {
       if (block.type === 'text') {
-        this.textBuffer += block.text;
-        this.assistantTextCapture.captureAssistantText(block.text);
-        if (this.textBuffer.includes('\n')) {
-          this.flushText();
-        }
+        this.appendAssistantText(block.text);
       }
     }
+  }
+
+  private appendAssistantText(text: string): void {
+    this.textBuffer += text;
+    this.assistantTextCapture.captureAssistantText(text);
+    if (this.textBuffer.includes('\n')) this.flushText();
+  }
+
+  // fallow-ignore-next-line complexity
+  private handleToolCallDelta(
+    update: Extract<InteractionUpdate, { type: 'tool-call-delta' }>
+  ): void {
+    const nested = update.taskUpdate;
+    switch (nested.type) {
+      case 'text-delta':
+        this.appendAssistantText(nested.text);
+        break;
+      case 'tool-call-started':
+        this.flushText();
+        this.logToolCallStarted(nested);
+        break;
+      case 'tool-call-completed':
+      case 'thinking-delta':
+      case 'thinking-completed':
+      case 'partial-tool-call':
+      case 'step-started':
+      case 'step-completed':
+        // informational — handled via top-level updates or elsewhere
+        break;
+      default:
+        logUnhandledInteractionDelta(
+          this.logPrefix,
+          nested as unknown as InteractionUpdate,
+          (line) => this.writeLine(line)
+        );
+    }
+  }
+
+  // fallow-ignore-next-line complexity
+  private logToolCallStarted(update: ToolCallStartedUpdate): void {
+    const toolCall = update.toolCall;
+    const command = toolCall.type === 'shell' ? toolCall.args?.command : undefined;
+    if (command) {
+      this.writeLine(
+        formatAgentLogLine(this.logPrefix, BASH_TOOL_KIND, formatBashRunningPayload(command))
+      );
+      return;
+    }
+    this.writeLine(
+      formatAgentLogLine(
+        this.logPrefix,
+        `tool: ${update.callId} ${toolCall.type}`,
+        JSON.stringify(toolCall.args ?? {})
+      )
+    );
   }
 
   private flushText(): void {

@@ -1,3 +1,4 @@
+import type { InteractionUpdate, SDKMessage } from '@cursor/sdk';
 import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
 import { CursorSdkStreamAdapter } from './cursor-sdk-stream-adapter.js';
@@ -49,15 +50,49 @@ function bashToolCallMessage() {
   };
 }
 
+function textDelta(text: string): InteractionUpdate {
+  return { type: 'text-delta', text };
+}
+
+function shellToolCallStarted(command: string): InteractionUpdate {
+  return {
+    type: 'tool-call-started',
+    callId: 'call-3',
+    modelCallId: 'model-call-3',
+    toolCall: { type: 'shell', args: { command } },
+  };
+}
+
+function nonShellToolCallStarted(): InteractionUpdate {
+  return {
+    type: 'tool-call-started',
+    callId: 'call-4',
+    modelCallId: 'model-call-4',
+    toolCall: { type: 'read', args: { path: 'README.md' } },
+  };
+}
+
+function toolCallDeltaWithNestedText(text: string): InteractionUpdate {
+  return {
+    type: 'tool-call-delta',
+    callId: 'call-5',
+    modelCallId: 'model-call-5',
+    taskUpdate: { type: 'text-delta', text },
+  };
+}
+
 describe('CursorSdkStreamAdapter', () => {
   let stdoutWriteSpy: MockInstance<typeof process.stdout.write>;
+  let warnSpy: MockInstance<typeof console.warn>;
 
   beforeEach(() => {
     stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     stdoutWriteSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   it('writes assistant text to stdout with log prefix', () => {
@@ -221,5 +256,102 @@ describe('CursorSdkStreamAdapter', () => {
     });
 
     expect(onLogLine).not.toHaveBeenCalled();
+  });
+
+  it('handles text-delta interaction updates as buffered stdout text', () => {
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX);
+    adapter.handleInteractionDelta(textDelta('Hello delta\n'));
+
+    expect(stdoutWriteSpy).toHaveBeenCalledWith(`${LOG_PREFIX} text] Hello delta\n`);
+  });
+
+  it('writes tool-call-started shell as a clean bash running line', () => {
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX);
+    adapter.handleInteractionDelta(shellToolCallStarted('pnpm test'));
+
+    expect(stdoutWriteSpy).toHaveBeenCalledWith(`${LOG_PREFIX} tool: bash] running: pnpm test\n`);
+  });
+
+  it('writes non-shell tool-call-started as a tool line with JSON args', () => {
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX);
+    adapter.handleInteractionDelta(nonShellToolCallStarted());
+
+    expect(stdoutWriteSpy).toHaveBeenCalledWith(
+      `${LOG_PREFIX} tool: call-4 read] {"path":"README.md"}\n`
+    );
+  });
+
+  it('handles tool-call-delta with a nested text-delta as buffered stdout text', () => {
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX);
+    adapter.handleInteractionDelta(toolCallDeltaWithNestedText('Nested delta\n'));
+
+    expect(stdoutWriteSpy).toHaveBeenCalledWith(`${LOG_PREFIX} text] Nested delta\n`);
+  });
+
+  it('logs unknown InteractionUpdate types as delta:unhandled without throwing', () => {
+    const onLogLine = vi.fn();
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX, onLogLine);
+    adapter.handleInteractionDelta({ type: 'mystery-delta' } as unknown as InteractionUpdate);
+
+    expect(onLogLine).toHaveBeenCalledWith(
+      `${LOG_PREFIX} delta:unhandled] mystery-delta: {"type":"mystery-delta"}`
+    );
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('logs user SDKMessages as stream:unhandled without throwing', () => {
+    const onLogLine = vi.fn();
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX, onLogLine);
+    adapter.handleMessage({
+      type: 'user',
+      agent_id: 'agent-1',
+      run_id: 'run-1',
+      message: { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+    });
+
+    expect(onLogLine).toHaveBeenCalledWith(
+      expect.stringContaining(`${LOG_PREFIX} stream:unhandled] user: {"type":"user"`)
+    );
+  });
+
+  it('logs request SDKMessages as stream:unhandled without throwing', () => {
+    const onLogLine = vi.fn();
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX, onLogLine);
+    adapter.handleMessage({
+      type: 'request',
+      agent_id: 'agent-1',
+      run_id: 'run-1',
+      request_id: 'req-1',
+    });
+
+    expect(onLogLine).toHaveBeenCalledWith(
+      expect.stringContaining(`${LOG_PREFIX} stream:unhandled] request: {"type":"request"`)
+    );
+  });
+
+  it('logs unknown SDKMessage types as stream:unhandled without throwing', () => {
+    const onLogLine = vi.fn();
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX, onLogLine);
+    adapter.handleMessage({ type: 'mystery-message' } as unknown as SDKMessage);
+
+    expect(onLogLine).toHaveBeenCalledWith(
+      `${LOG_PREFIX} stream:unhandled] mystery-message: {"type":"mystery-message"}`
+    );
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('logs unknown nested taskUpdate types inside tool-call-delta as unhandled', () => {
+    const onLogLine = vi.fn();
+    const adapter = new CursorSdkStreamAdapter(LOG_PREFIX, onLogLine);
+    adapter.handleInteractionDelta({
+      type: 'tool-call-delta',
+      callId: 'call-6',
+      taskUpdate: { type: 'mystery-nested' },
+    } as unknown as InteractionUpdate);
+
+    expect(onLogLine).toHaveBeenCalledWith(
+      `${LOG_PREFIX} delta:unhandled] mystery-nested: {"type":"mystery-nested"}`
+    );
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });
