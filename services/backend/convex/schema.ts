@@ -1691,21 +1691,23 @@ export default defineSchema({
         workingDir: v.string(),
         timestamp: v.number(),
       }),
-      // Request to run a command on a machine (dispatched from web UI)
+      // DEPRECATED: command.run/command.stop — command dispatch moved to dedicated
+      // chatroom_commandRunsV2 subscription channel. Variants retained so existing
+      // chatroom_eventStream documents (with v1 runIds) continue to validate until
+      // deleteDeprecatedCommandEventStreamEvents migration runs.
       v.object({
         type: v.literal('command.run'),
         machineId: v.string(),
         workingDir: v.string(),
         commandName: v.string(),
         script: v.string(),
-        runId: v.id('chatroom_commandRuns'),
+        runId: v.string(),
         timestamp: v.number(),
       }),
-      // Request to stop a running command on a machine
       v.object({
         type: v.literal('command.stop'),
         machineId: v.string(),
-        runId: v.id('chatroom_commandRuns'),
+        runId: v.string(),
         timestamp: v.number(),
       }),
       // Agent's native harness turn ended with in_progress work — awaiting handoff
@@ -2443,9 +2445,10 @@ export default defineSchema({
   }).index('by_machine_workingDir', ['machineId', 'workingDir']),
 
   /**
-   * Command execution runs. Tracks lifecycle of a spawned command process.
+   * V2 command execution runs — metadata only. Live tail in chatroom_commandRunTailsV2.
+   * Terminal output in chatroom_commandOutputV2 (gzip-only).
    */
-  chatroom_commandRuns: defineTable({
+  chatroom_commandRunsV2: defineTable({
     machineId: v.string(),
     workingDir: v.string(),
     commandName: v.string(),
@@ -2471,26 +2474,9 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
     exitCode: v.optional(v.number()),
     requestedBy: v.id('users'),
-    /**
-     * Rolling compressed tail of command output for live viewing while the run is active.
-     * Daemon overwrites this field on each flush (every ~3s) with the last ~32KB of output.
-     * When the run terminates, daemon flushes the full output as chatroom_commandOutput chunks
-     * and clears this field. This avoids N× reactive chunk fan-out during a run:
-     * only a single row update per flush instead of an insert per flush.
-     */
-    tailOutput: v.optional(
-      v.object({
-        compression: v.literal('gzip'),
-        content: v.string(), // base64-encoded gzipped UTF-8
-        byteLength: v.number(), // decompressed byte length of the tail window
-        totalBytesWritten: v.number(), // total bytes the daemon has streamed since run start (monotonic)
-        updatedAt: v.number(),
-        lineCount: v.optional(v.number()), // V2: lines included in tail (max 50)
-      })
-    ),
-    /** V2: refcount of UI surfaces watching live logs; daemon syncs tail only when > 0 */
+    /** Refcount of UI surfaces watching live logs; daemon syncs tail only when > 0 */
     logObserverCount: v.optional(v.number()),
-    /** V2: webapp requested one-shot full log flush from daemon temp file */
+    /** Webapp requested one-shot full log flush from daemon temp file */
     pendingFullOutputSync: v.optional(v.boolean()),
   })
     .index('by_machine_workingDir', ['machineId', 'workingDir'])
@@ -2501,17 +2487,27 @@ export default defineSchema({
     .index('by_status', ['status']),
 
   /**
-   * Buffered output chunks for command runs.
-   * While a run is active, output is streamed via the live tail (chatroom_commandRuns.tailOutput).
-   * On termination, daemon flushes the full output as compressed chunks here.
-   * content supports dual-encoding: legacy plaintext (v.string()) and gzip-compressed (v.object).
+   * V2 live tail for active command runs — isolated from run metadata.
+   * Deleted when run completes or via cleanup.
    */
-  chatroom_commandOutput: defineTable({
-    runId: v.id('chatroom_commandRuns'),
-    content: v.union(
-      v.string(), // Legacy: plain UTF-8 text
-      v.object({ compression: v.literal('gzip'), content: v.string() }) // base64-encoded gzip
-    ),
+  chatroom_commandRunTailsV2: defineTable({
+    runId: v.id('chatroom_commandRunsV2'),
+    machineId: v.string(),
+    compression: v.literal('gzip'),
+    content: v.string(),
+    byteLength: v.number(),
+    totalBytesWritten: v.number(),
+    updatedAt: v.number(),
+    lineCount: v.number(),
+  }).index('by_runId', ['runId']),
+
+  /**
+   * V2 buffered output chunks — gzip-only (base64). Written on termination / full sync.
+   */
+  chatroom_commandOutputV2: defineTable({
+    runId: v.id('chatroom_commandRunsV2'),
+    compression: v.literal('gzip'),
+    content: v.string(),
     chunkIndex: v.number(),
     timestamp: v.number(),
   }).index('by_runId_chunkIndex', ['runId', 'chunkIndex']),
