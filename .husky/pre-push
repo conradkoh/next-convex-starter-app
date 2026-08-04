@@ -2,6 +2,9 @@
 # Run tests before pushing
 pnpm run test
 
+# Run script unit tests (bun)
+bun run test:scripts
+
 # Run typecheck before pushing
 pnpm run typecheck
 

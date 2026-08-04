@@ -23,7 +23,7 @@ cd apps/webapp && pnpm e2e
 
 ### Port configuration
 
-`pnpm run setup` assigns a random `PORT` (3000–9999) to `apps/webapp/.env.local` on first run if not already set.
+`pnpm run setup` assigns a random `PORT` (49152–65535, IANA ephemeral range) to `apps/webapp/.env.local` on first run if not already set.
 E2e tests resolve port in order: `process.env.PORT` (if set) → `.env.local` `PORT` → `3000`.
 Do not assume `localhost:3000`.
 
