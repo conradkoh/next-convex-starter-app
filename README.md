@@ -24,6 +24,7 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
    - Initialize the Convex backend using `npx convex dev --once`
    - Extract the CONVEX_URL from the backend's .env.local file
    - Create/update the webapp's .env.local file with the NEXT_PUBLIC_CONVEX_URL
+   - Assign a random `PORT` (3000–9999) to `apps/webapp/.env.local` if not already configured
 
    The setup script is **idempotent** - you can run it multiple times safely. It will:
    - Show ✅ CONFIGURED for branding that's already customized
@@ -106,7 +107,7 @@ pnpm run dev
 
 This will start:
 
-- The webapp at http://localhost:3000
+- The webapp at http://localhost:<PORT> (see `PORT` in `apps/webapp/.env.local`, assigned during setup)
 - The Convex backend development server
 
 ## Documentation
