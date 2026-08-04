@@ -18,13 +18,14 @@ import { isAgentReadyForNativeDelivery } from './native-ready-invariant.js';
 import { resetRoleDeliveryState } from './native-task-delivery-coordinator.js';
 import { explainLedgerDeliveryBlock } from './native-task-injector-logic.js';
 import { runNativeInjectionEffect } from './native-task-injector.js';
-import type { AgentHarness } from './types.js';
-import { api } from '../../../api.js';
-import { getErrorMessage } from '../../../utils/convex-error.js';
 import {
   markRestartOrchestratorInFlight,
   clearRestartOrchestratorInFlight,
 } from './restart-orchestrator-in-flight.js';
+import type { AgentHarness } from './types.js';
+import { api } from '../../../api.js';
+import { isTeamAgentRole } from '../../../domain/execution-kind.js';
+import { getErrorMessage } from '../../../utils/convex-error.js';
 
 interface RestartOrchestratorEvent {
   chatroomId: string;
@@ -105,6 +106,7 @@ async function forceNativeWaiting(
   deps: RestartOrchestratorDeps,
   event: RestartOrchestratorEvent
 ): Promise<void> {
+  if (!isTeamAgentRole(event.role)) return;
   await deps.session.backend.mutation(api.participants.join, {
     sessionId: deps.session.sessionId,
     chatroomId: event.chatroomId,
