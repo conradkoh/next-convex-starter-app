@@ -47,11 +47,11 @@ export const proseClassNames =
   proseSelectableInlineCodeClassNames;
 
 /**
- * Backlog/task chip prose styling (uppercase headings, explicit text colors).
+ * Backlog/task chip prose styling (explicit text colors).
  * Used in: BacklogItemDetailModal, AttachedBacklogItemChip, AttachedTaskChip.
  *
  * Features:
- * - Bold uppercase headings with tracking
+ * - Bold headings (normal case, matching other markdown prose)
  * - Explicit text colors for all elements
  * - Styled code blocks with bg-tertiary
  * - No rounded corners on pre blocks
@@ -59,7 +59,7 @@ export const proseClassNames =
  * Note: Layout classes like `p-4` should be added in the component, not here.
  */
 export const backlogProseClassNames =
-  'text-chatroom-text-primary text-sm leading-relaxed break-words prose dark:prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wider prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-chatroom-text-primary prose-p:my-2 prose-p:text-chatroom-text-primary prose-table:border-collapse prose-th:bg-chatroom-bg-tertiary prose-th:border-2 prose-th:border-chatroom-border prose-th:px-3 prose-th:py-2 prose-td:border-2 prose-td:border-chatroom-border prose-td:px-3 prose-td:py-2 prose-blockquote:border-l-2 prose-blockquote:border-chatroom-status-info prose-blockquote:bg-chatroom-bg-tertiary prose-blockquote:text-chatroom-text-secondary prose-code:text-chatroom-text-primary prose-code:bg-chatroom-bg-tertiary prose-code:px-1 prose-li:text-chatroom-text-primary prose-pre:bg-chatroom-bg-tertiary prose-pre:border prose-pre:border-chatroom-border prose-pre:rounded-none break-words [overflow-wrap:anywhere] min-w-0 prose-code:break-words prose-code:whitespace-pre-wrap prose-pre:whitespace-pre-wrap prose-pre:break-words prose-pre:overflow-x-hidden ' +
+  'text-chatroom-text-primary text-sm leading-relaxed break-words prose dark:prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-chatroom-text-primary prose-p:my-2 prose-p:text-chatroom-text-primary prose-table:border-collapse prose-th:bg-chatroom-bg-tertiary prose-th:border-2 prose-th:border-chatroom-border prose-th:px-3 prose-th:py-2 prose-td:border-2 prose-td:border-chatroom-border prose-td:px-3 prose-td:py-2 prose-blockquote:border-l-2 prose-blockquote:border-chatroom-status-info prose-blockquote:bg-chatroom-bg-tertiary prose-blockquote:text-chatroom-text-secondary prose-code:text-chatroom-text-primary prose-code:bg-chatroom-bg-tertiary prose-code:px-1 prose-li:text-chatroom-text-primary prose-pre:bg-chatroom-bg-tertiary prose-pre:border prose-pre:border-chatroom-border prose-pre:rounded-none break-words [overflow-wrap:anywhere] min-w-0 prose-code:break-words prose-code:whitespace-pre-wrap prose-pre:whitespace-pre-wrap prose-pre:break-words prose-pre:overflow-x-hidden ' +
   proseSelectableInlineCodeClassNames;
 
 /**
@@ -340,23 +340,23 @@ export function CodeBlock({
     <div className="relative group not-prose mb-3">
       {/* Header bar */}
       <div className="flex items-center justify-between bg-chatroom-bg-secondary border-2 border-b-0 border-chatroom-border px-4 py-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-chatroom-text-muted">
+        <span className="text-[10px] font-bold tracking-wide text-chatroom-text-muted">
           {language || 'code'}
         </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-chatroom-text-muted hover:text-chatroom-text-primary transition-opacity opacity-80 hover:opacity-100"
+          className="flex items-center gap-2 text-[10px] font-bold tracking-wide text-chatroom-text-muted hover:text-chatroom-text-primary transition-opacity opacity-80 hover:opacity-100"
           title={copied ? 'Copied!' : 'Copy code'}
         >
           {copied ? (
             <>
               <Check size={12} className="text-chatroom-status-success" />
-              <span className="text-chatroom-status-success font-mono">COPIED</span>
+              <span className="text-chatroom-status-success font-mono">Copied</span>
             </>
           ) : (
             <>
               <Copy size={12} />
-              <span>COPY</span>
+              <span>Copy</span>
             </>
           )}
         </button>
