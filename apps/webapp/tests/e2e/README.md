@@ -24,6 +24,8 @@ cd apps/webapp && pnpm e2e
 ### Port configuration
 
 `pnpm run setup` assigns a random `PORT` (49152–65535, IANA ephemeral range) to `apps/webapp/.env.local` on first run if not already set.
+E2e tests resolve port in order: `process.env.PORT` (if set) → `.env.local` `PORT` → `3000`.
+Do not assume `localhost:3000`.
 
 ## Folder Structure
 
@@ -138,5 +140,6 @@ New UI features/changes should add matching e2e tests in the appropriate folder:
 
 ## Troubleshooting
 
+- **Port mismatch / connection refused:** Verify `PORT` in `apps/webapp/.env.local` matches the running dev server. Unset a conflicting shell `PORT` (`unset PORT`). Kill stale `next dev` processes before re-running e2e. Check Playwright startup log: `[e2e] Using port …`.
 - **Auth tests fail mysteriously with `reuseExistingServer: true`:** you may have `pnpm dev` running from `apps/webapp` only (Next.js without Convex). Kill it and either let Playwright start the server, or run `pnpm dev` from **repo root**.
 - **Cold start:** the turbo dev server may take up to 120s to start both webapp and Convex (the `webServer` timeout is set to 120_000ms).

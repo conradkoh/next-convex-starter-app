@@ -107,7 +107,7 @@ pnpm run dev
 
 This will start:
 
-- The webapp at http://localhost:3000
+- The webapp at http://localhost:<PORT> (see `PORT` in `apps/webapp/.env.local`, assigned during setup)
 - The Convex backend development server
 
 ## Documentation
