@@ -228,6 +228,23 @@ export const migrateEventReasonsToActorPrefixed = migrations.define({
 });
 
 /**
+ * Migration: Delete deprecated command.run and command.stop events from chatroom_eventStream.
+ * Command dispatch moved to dedicated chatroom_commandRunsV2 subscription — these events
+ * are no longer emitted. Legacy rows carry v1 chatroom_commandRuns runIds that block schema
+ * validation after the V2 table migration.
+ * Idempotent: only deletes events with type command.run or command.stop.
+ */
+export const deleteDeprecatedCommandEventStreamEvents = migrations.define({
+  table: 'chatroom_eventStream',
+  migrateOne: async (ctx, event) => {
+    const raw = event as Record<string, unknown>;
+    if (raw.type === 'command.run' || raw.type === 'command.stop') {
+      await ctx.db.delete('chatroom_eventStream', event._id);
+    }
+  },
+});
+
+/**
  * Migration: Deduplicate chatroom_teamAgentConfigs by teamRoleKey.
  * Keeps the most recently created row per teamRoleKey and deletes duplicates.
  * Note: This uses a full-table scan approach since dedup requires grouping.
@@ -338,10 +355,7 @@ export function inferLegacySavedCommandScope(row: { chatroomId?: string }): 'use
  * Migration: Backfill scope field for saved commands created before the scope feature.
  * Legacy rows have no scope field — chatroomId present → 'chatroom', otherwise → 'user'.
  *
- * Run via:
- *   cd services/backend && pnpm migrate:saved-command-scope
- *   # or: npx convex run migrations:run '{"fn":"migrations:backfillSavedCommandScope"}'
- *   # or: pnpm migrate  (included in migrations:runAll)
+ * Run via: pnpm migrate  (included in migrations:runAll)
  *
  * Idempotent: rows with scope already set are skipped.
  */
@@ -563,7 +577,7 @@ export const compactWorkspaceFileTreeDeltaOperations = migrations.define({
 
 /**
  * Run all migrations in order.
- * Usage: npx convex run migrations:runAll
+ * Usage: pnpm migrate  (from repo root; CI uses the same command with CONVEX_DEPLOY_KEY set)
  *
  * Migrations are run sequentially. Each migration tracks its own progress —
  * if interrupted, it will resume from where it left off on the next run.
@@ -581,6 +595,7 @@ export const runAll = migrations.runner([
   // Event Stream
   internal.migrations.migrateStopReasonToActorPrefixed,
   internal.migrations.migrateEventReasonsToActorPrefixed,
+  internal.migrations.deleteDeprecatedCommandEventStreamEvents,
   // Cleanup
   internal.migrations.deduplicateTeamAgentConfigs,
   internal.migrations.purgeWorkspaceCommitDetails,
