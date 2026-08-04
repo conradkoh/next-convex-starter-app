@@ -8,6 +8,17 @@ import { UserMenu } from './UserMenu';
 import { useAuthState } from '@/modules/auth/AuthProvider';
 
 vi.mock('@/modules/auth/AuthProvider', () => ({ useAuthState: vi.fn() }));
+vi.mock('@/modules/pwa-install', () => ({
+  usePwaInstall: vi.fn(() => ({
+    platform: 'unknown',
+    isInstalled: false,
+    canNativeInstall: false,
+    isReady: false,
+    dialogOpen: false,
+    setDialogOpen: vi.fn(),
+    promptInstall: vi.fn(),
+  })),
+}));
 vi.mock('@/application/auth', () => ({
   useHasPermission: vi.fn(() => false),
   SYSTEM_ADMIN_ACCESS_PERMISSION: 'system:admin',
@@ -28,6 +39,13 @@ vi.mock('next/link', () => ({
   ),
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/modules/pwa-install', () => ({
+  usePwaInstall: vi.fn(() => ({
+    isInstalled: false,
+    isReady: true,
+    setDialogOpen: vi.fn(),
+  })),
+}));
 
 describe('UserMenu', () => {
   it('renders nothing when unauthenticated', () => {
