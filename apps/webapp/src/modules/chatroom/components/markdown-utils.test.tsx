@@ -2,9 +2,22 @@ import { render, screen } from '@testing-library/react';
 import Markdown from 'react-markdown';
 import { describe, expect, it } from 'vitest';
 
-import { fullMarkdownComponents, messageFeedProseClassNames } from './markdown-utils';
+import {
+  backlogProseClassNames,
+  backlogRichTextEditorProseClassNames,
+  fullMarkdownComponents,
+  messageFeedProseClassNames,
+} from './markdown-utils';
 import { WorkspaceFileLinkProvider } from '../context/WorkspaceFileLinkContext';
 import { MarkdownRenderer } from '../workspace/file-renderers/MarkdownRenderer';
+
+describe('backlog prose heading case', () => {
+  it('does not force uppercase on markdown headings', () => {
+    expect(backlogProseClassNames).not.toContain('uppercase');
+    expect(backlogProseClassNames).not.toContain('tracking-wider');
+    expect(backlogRichTextEditorProseClassNames).not.toContain('uppercase');
+  });
+});
 
 describe('markdown inline code selection', () => {
   it('disables typography pseudo-element backticks on prose containers', () => {
