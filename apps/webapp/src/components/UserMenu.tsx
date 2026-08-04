@@ -19,15 +19,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { useAuthState } from '@/modules/auth/AuthProvider';
 import { usePwaInstall } from '@/modules/pwa-install';
 
@@ -157,36 +159,37 @@ function _renderUserDropdownMenu(
 ) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="relative flex items-center text-sm font-medium focus:outline-none text-muted-foreground hover:text-foreground"
-        >
-          {authState.user.name}
-        </Button>
+      <DropdownMenuTrigger
+        className={cn(
+          buttonVariants({ variant: 'ghost' }),
+          'relative flex items-center text-sm font-medium focus:outline-none text-muted-foreground hover:text-foreground'
+        )}
+      >
+        {authState.user.name}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <Link href="/app/profile">
-          <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-        </Link>
-        <Link href="/app">
-          <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
-        </Link>
-        {showSystemAdminLink && (
-          <Link href="/app/admin">
-            <DropdownMenuItem className="cursor-pointer">
-              <Settings className="h-4 w-4" />
-              System Admin
-            </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <Link href="/app/profile">
+            <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
           </Link>
-        )}
-        <InstallAppMenuItem
-          isReady={isReady}
-          isInstalled={isInstalled}
-          onOpen={openInstallDialog}
-        />
+          <Link href="/app">
+            <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
+          </Link>
+          {showSystemAdminLink && (
+            <Link href="/app/admin">
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="h-4 w-4" />
+                System Admin
+              </DropdownMenuItem>
+            </Link>
+          )}
+          <InstallAppMenuItem
+            isReady={isReady}
+            isInstalled={isInstalled}
+            onOpen={openInstallDialog}
+          />
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"

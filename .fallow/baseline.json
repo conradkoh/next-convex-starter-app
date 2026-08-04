@@ -19,7 +19,13 @@
     "services/backend/application/auth/resolve.ts:permissionGrantMatches",
     "services/backend/application/auth/resolve.ts:getPermissionsForUser",
     "services/backend/application/auth/roles.ts:systemAdminPermissions",
-    "services/backend/application/auth/roles.ts:roleDefinitions"
+    "services/backend/application/auth/roles.ts:roleDefinitions",
+    "services/backend/config/signupMethods.ts:SignupMethod",
+    "services/backend/config/signupMethods.ts:SIGNUP_METHODS",
+    "services/backend/config/signupMethods.ts:getAllowedSignupMethods",
+    "services/backend/config/signupMethods.ts:isSignupAllowed",
+    "services/backend/config/signupMethods.ts:isSelfSignupAllowed",
+    "services/backend/config/signupMethods.ts:isInviteSignupAllowed"
   ],
   "unused_types": [
     "apps/webapp/src/application/auth/index.ts:Permission",

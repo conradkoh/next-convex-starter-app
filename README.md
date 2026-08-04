@@ -24,6 +24,7 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
    - Initialize the Convex backend using `npx convex dev --once`
    - Extract the CONVEX_URL from the backend's .env.local file
    - Create/update the webapp's .env.local file with the NEXT_PUBLIC_CONVEX_URL
+   - Assign a random `PORT` in the IANA ephemeral range (49152–65535) to `apps/webapp/.env.local` if not already configured
 
    The setup script is **idempotent** - you can run it multiple times safely. It will:
    - Show ✅ CONFIGURED for branding that's already customized
@@ -106,8 +107,14 @@ pnpm run dev
 
 This will start:
 
-- The webapp at http://localhost:3000
+- The webapp at http://localhost:<PORT> (see `PORT` in `apps/webapp/.env.local`, assigned during setup)
 - The Convex backend development server
+
+## Documentation
+
+- **[Shadcn → Base UI Migration Guide](docs/developer/shadcn-base-ui-migration.md)** — upgrading UI components from Radix-based shadcn to Base UI (`base-vega`); includes a downstream migration playbook for forks built on this template.
+- [Testing Guide](guides/testing/testing.md)
+- [AGENTS.md](AGENTS.md) — development guidelines for agents and contributors
 
 ## Testing
 

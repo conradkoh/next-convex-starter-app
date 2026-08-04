@@ -8,6 +8,7 @@
     "pretest": "bash scripts/kill-stale-vitest.sh",
     "pretest:watch": "bash scripts/kill-stale-vitest.sh",
     "test": "turbo run test",
+    "test:scripts": "bun test scripts/",
     "test:watch": "turbo run test:watch",
     "test:kill-stale": "bash scripts/kill-stale-vitest.sh",
     "dev": "turbo run dev",
@@ -53,9 +54,6 @@
     "turbo": "^2.10.5",
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "@radix-ui/react-tooltip": "^1.2.12"
-  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "bun",
@@ -63,9 +61,6 @@
       "sharp",
       "turbo",
       "unrs-resolver"
-    ],
-    "overrides": {
-      "@radix-ui/react-dismissable-layer": "1.1.10"
-    }
+    ]
   }
 }
