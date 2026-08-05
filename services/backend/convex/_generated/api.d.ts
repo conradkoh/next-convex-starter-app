@@ -98,6 +98,7 @@ import type * as machineStatusCron from "../machineStatusCron.js";
 import type * as machines from "../machines.js";
 import type * as messageList from "../messageList.js";
 import type * as messages from "../messages.js";
+import type * as e2e from "../e2e.js";
 import type * as migrations from "../migrations.js";
 import type * as participants from "../participants.js";
 import type * as presentations from "../presentations.js";
@@ -141,6 +142,8 @@ import type * as web_enhancer_queries from "../web/enhancer/queries.js";
 import type * as workspaceFiles from "../workspaceFiles.js";
 import type * as workspacePathSecurity from "../workspacePathSecurity.js";
 import type * as workspaces from "../workspaces.js";
+import type * as system_invites from "../system/invites.js";
+import type * as system_users from "../system/users.js";
 
 import type {
   ApiFromModules,
@@ -239,6 +242,7 @@ declare const fullApi: ApiFromModules<{
   machines: typeof machines;
   messageList: typeof messageList;
   messages: typeof messages;
+  e2e: typeof e2e;
   migrations: typeof migrations;
   participants: typeof participants;
   presentations: typeof presentations;
@@ -282,6 +286,8 @@ declare const fullApi: ApiFromModules<{
   workspaceFiles: typeof workspaceFiles;
   workspacePathSecurity: typeof workspacePathSecurity;
   workspaces: typeof workspaces;
+  "system/invites": typeof system_invites;
+  "system/users": typeof system_users;
 }>;
 
 /**
