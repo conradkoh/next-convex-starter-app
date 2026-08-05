@@ -36,15 +36,15 @@ import {
 } from './native-delivery-session-registry.js';
 import { isAgentReadyForNativeDelivery } from './native-ready-invariant.js';
 import {
-  filterSnapshotsExcludingRestartInFlight,
-  isRestartOrchestratorInFlight,
-} from './restart-orchestrator-in-flight.js';
-import {
   getNativeTaskDeliveryCoordinator,
   resetRoleDeliveryState,
   type NativeTaskDeliverySessionDeps,
 } from './native-task-delivery-coordinator.js';
 import { isNativeHarness } from './native-task-injector-logic.js';
+import {
+  filterSnapshotsExcludingRestartInFlight,
+  isRestartOrchestratorInFlight,
+} from './restart-orchestrator-in-flight.js';
 import { getRoleDeliveryState } from './role-delivery-state.js';
 import {
   listTasksReadyForNudge,
@@ -56,6 +56,7 @@ import { createTaskMonitorSnapshot } from './task-monitor-snapshot.js';
 import type { AgentHarness } from './types.js';
 import { formatTimestamp } from './utils.js';
 import { api } from '../../../api.js';
+import { isTeamAgentRole } from '../../../domain/execution-kind.js';
 import { isProcessAlive } from '../../../infrastructure/deps/process.js';
 import {
   runDualChannelFeedLive,
@@ -307,6 +308,7 @@ async function nudgeStuckTasks(
     if (isNativeHarness(row.agentConfig.agentHarness)) {
       const { chatroomId, agentConfig } = row;
       const { role } = agentConfig;
+      if (!isTeamAgentRole(role)) continue;
       const deliveryState = getRoleDeliveryState();
       const failures = deliveryState.recordNativeNudgeFailure(chatroomId, role);
 
@@ -385,8 +387,8 @@ async function processTasksUpdate(
   machineId: string,
   _pass: TaskMonitorPass
 ): Promise<void> {
-  tasks = filterSnapshotsExcludingRestartInFlight(tasks);
-  if (tasks.length === 0) return;
+  const filteredTasks = filterSnapshotsExcludingRestartInFlight(tasks);
+  if (filteredTasks.length === 0) return;
 
   const now = Date.now();
   const localHealth = {
@@ -395,7 +397,7 @@ async function processTasksUpdate(
   };
 
   await reviveNativeTasks(
-    tasks,
+    filteredTasks,
     localHealth,
     now,
     cooldown,
@@ -405,8 +407,8 @@ async function processTasksUpdate(
     sessionDeps,
     machineId
   );
-  if (tasks.length > 0) {
-    const first = tasks[0];
+  if (filteredTasks.length > 0) {
+    const first = filteredTasks[0];
     logNativeDeliveryFallback(
       'signal-presence',
       first.agentConfig.role,
@@ -415,7 +417,7 @@ async function processTasksUpdate(
     );
   }
   getNativeTaskDeliveryCoordinator().reconcileAssignedTasks({
-    tasks,
+    tasks: filteredTasks,
     runtime,
     effectContext,
     agentMgr,
@@ -423,7 +425,7 @@ async function processTasksUpdate(
     machineId,
   });
   await nudgeStuckTasks(
-    tasks,
+    filteredTasks,
     now,
     cooldown,
     runtime,
