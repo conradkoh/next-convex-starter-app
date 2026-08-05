@@ -59,7 +59,8 @@ function LoginPageContent() {
     return _renderDisabledState();
   }
 
-  return _renderLoginForm(googleAuthAvailable, sessionId);
+  const returnTo = searchParams.get('returnTo');
+  return _renderLoginForm(googleAuthAvailable, sessionId, returnTo);
 }
 
 function _renderSignupDisabledBanner() {
@@ -161,7 +162,11 @@ function _renderDisabledState() {
 /**
  * Renders the main login form with authentication options.
  */
-function _renderLoginForm(googleAuthAvailable: boolean | null, sessionId: string | null) {
+function _renderLoginForm(
+  googleAuthAvailable: boolean | null,
+  sessionId: string | null,
+  returnTo: string | null
+) {
   const signupAllowed = isSignupAllowed();
   const selfSignupAllowed = isSelfSignupAllowed();
   const inviteSignupAllowed = isInviteSignupAllowed();
@@ -177,6 +182,7 @@ function _renderLoginForm(googleAuthAvailable: boolean | null, sessionId: string
           sessionId,
           selfSignupAllowed,
           inviteSignupAllowed,
+          returnTo,
         })}
         {inviteOnlyMode && _renderInviteOnlyHint()}
         {_renderFooter()}
@@ -206,14 +212,18 @@ function _renderLoginOptions(options: {
   sessionId: string | null;
   selfSignupAllowed: boolean;
   inviteSignupAllowed: boolean;
+  returnTo: string | null;
 }) {
-  const { googleAuthAvailable, sessionId, selfSignupAllowed, inviteSignupAllowed } = options;
+  const { googleAuthAvailable, sessionId, selfSignupAllowed, inviteSignupAllowed, returnTo } =
+    options;
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
       <div className="divide-y divide-border">
         {/* Google Login */}
-        {googleAuthAvailable && <GoogleLoginButton variant="ghost" showChevron={true} />}
+        {googleAuthAvailable && (
+          <GoogleLoginButton variant="ghost" showChevron={true} returnTo={returnTo} />
+        )}
 
         {/* Login with Code */}
         {_renderCodeLoginOption()}
