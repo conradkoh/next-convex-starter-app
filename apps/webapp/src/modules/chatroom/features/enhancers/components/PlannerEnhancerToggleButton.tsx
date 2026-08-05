@@ -63,33 +63,35 @@ export function PlannerEnhancerToggleButton({
   };
 
   return (
-    <ContextMenu modal={false}>
-      <ContextMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            barClass(isActive, isEnhancing),
-            (isUnsupported || isLoading) && 'opacity-50 cursor-default'
-          )}
-          title={
-            isUnsupported
-              ? UNSUPPORTED_TITLE
-              : isActive
-                ? 'Enhancement enabled — click to disable for the next message. Use ✕ on the enhancer task to cancel the active review.'
-                : 'Enhancement disabled — click to turn on'
-          }
-          aria-label={label}
-          aria-pressed={isLoading ? undefined : isActive}
-          aria-busy={isLoading || undefined}
-          aria-disabled={isUnsupported || undefined}
-          disabled={isDisabling && !isUnsupported}
-          data-testid="planner-enhancer-toggle"
-          onClick={handleClick}
-        >
-          <Sparkles size={14} />
-          <span className="hidden sm:inline">{label}</span>
-        </button>
-      </ContextMenuTrigger>
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <button
+            type="button"
+            className={cn(
+              barClass(isActive, isEnhancing),
+              (isUnsupported || isLoading) && 'opacity-50 cursor-default'
+            )}
+            title={
+              isUnsupported
+                ? UNSUPPORTED_TITLE
+                : isActive
+                  ? 'Enhancement enabled — click to disable for the next message. Use ✕ on the enhancer task to cancel the active review.'
+                  : 'Enhancement disabled — click to turn on'
+            }
+            aria-label={label}
+            aria-pressed={isLoading ? undefined : isActive}
+            aria-busy={isLoading || undefined}
+            aria-disabled={isUnsupported || undefined}
+            disabled={isDisabling && !isUnsupported}
+            data-testid="planner-enhancer-toggle"
+            onClick={handleClick}
+          >
+            <Sparkles size={14} />
+            <span className="hidden sm:inline">{label}</span>
+          </button>
+        }
+      />
       {teamSupportState === 'supported' && (
         <ContextMenuContent className="min-w-[160px] rounded-none">
           <ContextMenuItem

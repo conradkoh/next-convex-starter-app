@@ -471,7 +471,13 @@
     "services/backend/src/domain/usecase/machine/assigned-tasks-types.ts:SESSION_AUGMENTATION_MODES",
     "services/backend/src/domain/usecase/task/complete-active-tasks.ts:completeActiveTasksForRole",
     "services/backend/src/domain/usecase/task/task-counts.ts:activeTaskCountsDrifted",
-    "services/backend/src/output-encoding.ts:decodeOutput"
+    "services/backend/src/output-encoding.ts:decodeOutput",
+    "services/backend/config/signupMethods.ts:SignupMethod",
+    "services/backend/config/signupMethods.ts:SIGNUP_METHODS",
+    "services/backend/config/signupMethods.ts:getAllowedSignupMethods",
+    "services/backend/config/signupMethods.ts:isSignupAllowed",
+    "services/backend/config/signupMethods.ts:isSelfSignupAllowed",
+    "services/backend/config/signupMethods.ts:isInviteSignupAllowed"
   ],
   "unused_types": [
     "apps/webapp/src/application/auth/index.ts:Permission",

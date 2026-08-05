@@ -52,9 +52,7 @@ describe('DropdownMenuContent', () => {
   it('renders with opaque chatroom primary background', () => {
     render(
       <DropdownMenu open onOpenChange={vi.fn()} modal={false}>
-        <DropdownMenuTrigger asChild>
-          <button type="button">open</button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger type="button">open</DropdownMenuTrigger>
         <DropdownMenuContent data-testid="dropdown-content">item</DropdownMenuContent>
       </DropdownMenu>
     );
@@ -68,9 +66,7 @@ describe('DropdownMenuContent inside FixedModal', () => {
     render(
       <FixedModal isOpen onClose={() => undefined}>
         <DropdownMenu open onOpenChange={vi.fn()} modal={false}>
-          <DropdownMenuTrigger asChild>
-            <button type="button">open</button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger render={<button type="button">open</button>} />
           <DropdownMenuContent data-testid="dropdown-content">item</DropdownMenuContent>
         </DropdownMenu>
       </FixedModal>
@@ -87,9 +83,7 @@ describe('DropdownMenuContent inside FixedModal', () => {
       <FixedModal isOpen onClose={() => undefined}>
         <FixedModal isOpen onClose={() => undefined}>
           <DropdownMenu open onOpenChange={vi.fn()} modal={false}>
-            <DropdownMenuTrigger asChild>
-              <button type="button">open</button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger render={<button type="button">open</button>} />
             <DropdownMenuContent data-testid="dropdown-content">item</DropdownMenuContent>
           </DropdownMenu>
         </FixedModal>
@@ -109,9 +103,7 @@ describe('DropdownMenuContent inside FixedModal', () => {
     const view = render(
       <FixedModal isOpen onClose={onModalClose}>
         <DropdownMenu open onOpenChange={onDropdownOpenChange}>
-          <DropdownMenuTrigger asChild>
-            <button type="button">open</button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger render={<button type="button">open</button>} />
           <DropdownMenuContent data-testid="dropdown-content">item</DropdownMenuContent>
         </DropdownMenu>
       </FixedModal>
@@ -123,9 +115,7 @@ describe('DropdownMenuContent inside FixedModal', () => {
     view.rerender(
       <FixedModal isOpen onClose={onModalClose}>
         <DropdownMenu open={false} onOpenChange={onDropdownOpenChange}>
-          <DropdownMenuTrigger asChild>
-            <button type="button">open</button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger render={<button type="button">open</button>} />
           <DropdownMenuContent data-testid="dropdown-content">item</DropdownMenuContent>
         </DropdownMenu>
       </FixedModal>
@@ -157,9 +147,7 @@ describe('PopoverContent', () => {
   it('renders with opaque chatroom primary background', () => {
     render(
       <Popover open onOpenChange={vi.fn()}>
-        <PopoverTrigger asChild>
-          <button type="button">open</button>
-        </PopoverTrigger>
+        <PopoverTrigger type="button">open</PopoverTrigger>
         <PopoverContent data-testid="popover-content">panel</PopoverContent>
       </Popover>
     );
@@ -171,9 +159,7 @@ describe('PopoverContent', () => {
     render(
       <FixedModal isOpen onClose={() => undefined}>
         <Popover open onOpenChange={vi.fn()}>
-          <PopoverTrigger asChild>
-            <button type="button">open</button>
-          </PopoverTrigger>
+          <PopoverTrigger type="button">open</PopoverTrigger>
           <PopoverContent data-testid="popover-content">panel</PopoverContent>
         </Popover>
       </FixedModal>
@@ -195,9 +181,7 @@ describe('PopoverContent', () => {
     const view = render(
       <FixedModal isOpen onClose={onModalClose}>
         <Popover open onOpenChange={onPopoverOpenChange}>
-          <PopoverTrigger asChild>
-            <button type="button">open</button>
-          </PopoverTrigger>
+          <PopoverTrigger type="button">open</PopoverTrigger>
           <PopoverContent data-testid="popover-content">panel</PopoverContent>
         </Popover>
       </FixedModal>
@@ -209,9 +193,7 @@ describe('PopoverContent', () => {
     view.rerender(
       <FixedModal isOpen onClose={onModalClose}>
         <Popover open={false} onOpenChange={onPopoverOpenChange}>
-          <PopoverTrigger asChild>
-            <button type="button">open</button>
-          </PopoverTrigger>
+          <PopoverTrigger type="button">open</PopoverTrigger>
           <PopoverContent data-testid="popover-content">panel</PopoverContent>
         </Popover>
       </FixedModal>

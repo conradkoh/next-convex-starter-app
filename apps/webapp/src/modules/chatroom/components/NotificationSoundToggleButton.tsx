@@ -3,19 +3,19 @@
 import { Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { NotificationSoundSettingsDialog } from './NotificationSoundSettingsDialog';
+import {
+  getNotificationSoundSettings,
+  setNotificationSoundSettings,
+} from '../utils/notificationSoundSettings';
+import { playNotificationSound } from '../utils/playNotificationSound';
+
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-
-import {
-  getNotificationSoundSettings,
-  setNotificationSoundSettings,
-} from '../utils/notificationSoundSettings';
-import { playNotificationSound } from '../utils/playNotificationSound';
-import { NotificationSoundSettingsDialog } from './NotificationSoundSettingsDialog';
 
 const headerIconButtonClassName =
   'bg-transparent text-chatroom-text-secondary w-8 h-8 flex items-center justify-center cursor-pointer transition-all duration-100 hover:bg-chatroom-bg-hover hover:text-chatroom-text-primary outline-none focus:outline-none focus-visible:outline-none';
@@ -38,19 +38,21 @@ export function NotificationSoundToggleButton() {
 
   return (
     <>
-      <ContextMenu modal={false}>
-        <ContextMenuTrigger asChild>
-          <button
-            type="button"
-            className={headerIconButtonClassName}
-            title={muted ? 'Unmute notification sound' : 'Mute notification sound'}
-            aria-label={muted ? 'Unmute notification sound' : 'Mute notification sound'}
-            aria-pressed={muted}
-            onClick={toggle}
-            data-testid="notification-sound-toggle"
-          >
-            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
+      <ContextMenu>
+        <ContextMenuTrigger
+          render={
+            <button
+              type="button"
+              className={headerIconButtonClassName}
+              title={muted ? 'Unmute notification sound' : 'Mute notification sound'}
+              aria-label={muted ? 'Unmute notification sound' : 'Mute notification sound'}
+              aria-pressed={muted}
+              onClick={toggle}
+              data-testid="notification-sound-toggle"
+            />
+          }
+        >
+          {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </ContextMenuTrigger>
         <ContextMenuContent className="min-w-[160px] rounded-none">
           <ContextMenuItem

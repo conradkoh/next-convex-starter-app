@@ -219,7 +219,7 @@ describe('ResponsivePickerShell', () => {
       </ResponsivePickerShell>
     );
     await userEvent.click(screen.getByRole('button', { name: 'Open' }));
-    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(onOpenChange.mock.calls[0]?.[0]).toBe(true);
   });
 
   it('calls onOpenChange(true) when trigger clicked on mobile', async () => {

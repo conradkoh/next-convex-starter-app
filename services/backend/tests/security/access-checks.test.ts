@@ -156,6 +156,8 @@ const ALLOWED_WITHOUT_ACCESS_CHECK: Record<string, string[]> = {
   'workspaceFiles.ts': ['syncFileTree', 'fulfillFileContent'],
   // skills.ts: getDefaultSkillContent reads only static registry data — no DB access, no sensitive data
   'skills.ts': ['getDefaultSkillContent'],
+  // e2e.ts: dev-only seeding mutation gated by E2E_SEEDING_ENABLED env var
+  'e2e.ts': ['promoteSessionToSystemAdmin'],
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

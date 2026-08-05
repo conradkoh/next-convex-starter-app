@@ -215,16 +215,14 @@ const ReviewDetail = memo(function ReviewDetail({
         <div className="flex-1" />
 
         <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              disabled={isLoading}
-              className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="More actions"
-            >
-              <MoreHorizontal size={14} />
-              Actions
-            </button>
+          <DropdownMenuTrigger
+            type="button"
+            disabled={isLoading}
+            className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="More actions"
+          >
+            <MoreHorizontal size={14} />
+            Actions
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[160px]">
             <DropdownMenuItem

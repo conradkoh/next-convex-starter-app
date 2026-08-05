@@ -1,8 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { cn } from '@/lib/utils';
-
 import {
   Dialog,
   DialogContent,
@@ -10,12 +8,14 @@ import {
   DialogTrigger,
   stripOverflowFromClassName,
 } from './dialog';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import {
   chatroomIndustrialFloatingModalContentClassName,
   chatroomIndustrialModalContentClassName,
 } from '../shared/industrialDialogStyles';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { OverlayPortalContainerProvider } from '../shared/overlayPortalContainer';
+
+import { cn } from '@/lib/utils';
 
 function tokens(className: string) {
   return className.split(/\s+/).filter(Boolean);
@@ -85,9 +85,7 @@ describe('DialogContent z-index', () => {
         <DialogContent>
           <DialogScrollBody>
             <Popover open onOpenChange={vi.fn()}>
-              <PopoverTrigger asChild>
-                <button type="button">open</button>
-              </PopoverTrigger>
+              <PopoverTrigger type="button">open</PopoverTrigger>
               <PopoverContent data-testid="popover-content">panel</PopoverContent>
             </Popover>
           </DialogScrollBody>
