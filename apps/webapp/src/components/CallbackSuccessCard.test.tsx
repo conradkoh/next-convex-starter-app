@@ -6,15 +6,13 @@ import { CallbackSuccessCard } from './CallbackSuccessCard';
 describe('CallbackSuccessCard', () => {
   it('renders login success message', () => {
     render(<CallbackSuccessCard flowType="login" userName="Alice" autoCloseDelay={10} />);
-    expect(screen.getByText('Sign In Successful!')).toBeInTheDocument();
     expect(screen.getByText(/Welcome back, Alice/)).toBeInTheDocument();
+    expect(screen.getByText(/Closing in 10s/)).toBeInTheDocument();
   });
 
-  it('calls onClose when Close Now clicked', async () => {
+  it('calls onClose when countdown completes', async () => {
     const onClose = vi.fn();
-    const user = (await import('@testing-library/user-event')).default.setup();
-    render(<CallbackSuccessCard onClose={onClose} autoCloseDelay={10} />);
-    await user.click(screen.getByRole('button', { name: /close now/i }));
-    expect(onClose).toHaveBeenCalled();
+    render(<CallbackSuccessCard onClose={onClose} autoCloseDelay={0} />);
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled(), { timeout: 2000 });
   });
 });
