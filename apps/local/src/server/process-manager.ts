@@ -48,7 +48,7 @@ export class ProcessManager extends EventEmitter<ManagerEvents> {
           id === 'convex'
             ? 'Convex (local)'
             : id === 'webapp'
-              ? 'Webapp (dev server)'
+              ? 'Webapp (production build)'
               : 'Chatroom Daemon',
         status: 'stopped',
         pid: null,
@@ -134,7 +134,7 @@ export class ProcessManager extends EventEmitter<ManagerEvents> {
         if (def.id === 'webapp') {
           this.updateState('webapp', {
             health: 'checking',
-            healthDetail: 'Starting dev server',
+            healthDetail: 'Building production bundle',
           });
         }
         if (def.id === 'daemon') {
@@ -206,7 +206,7 @@ export class ProcessManager extends EventEmitter<ManagerEvents> {
       onWaiting: () =>
         this.updateState('webapp', {
           health: 'checking',
-          healthDetail: 'Starting dev server',
+          healthDetail: 'Building and starting server',
         }),
     }).then(async (result) => {
       if (!result.ok) {
