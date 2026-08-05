@@ -7,7 +7,7 @@ Local dev process manager for the Chatroom monorepo. Manages Convex (optional), 
 1. **Non-interference** — configurable ports and backend mode so multiple dev setups can coexist.
 2. **Easy switching** — toggle between local Convex backend and hosted Convex dev deployment without editing `.env.local` files manually.
 3. **UI-first startup** — `pnpm local` opens the manager UI only; user configures and explicitly starts the stack.
-4. **Predictable builds** — child processes use `pnpm turbo run build --filter=...` from repo root; restarting `pnpm local` rebuilds.
+4. **Predictable builds** — the webapp runs a `next dev` server for fast local iteration; the daemon CLI still uses `pnpm turbo run build --filter=...` from repo root for reproducible production builds.
 
 ## Lifecycle
 
@@ -121,22 +121,22 @@ flowchart TD
 
 ### Process commands (repo root `cwd`)
 
-| Process             | Command                                                                                                                                                           |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Convex (local)      | `pnpm exec convex dev --env-file services/backend/.convex/local-dev.env`                                                                                          |
-| Convex (hosted dev) | `pnpm --filter @workspace/backend dev`                                                                                                                            |
-| Webapp              | `pnpm turbo run build --filter=@workspace/webapp --cache=local:r,remote:r && PORT={port} pnpm --filter @workspace/webapp exec dotenv -e .env.local -- pnpm start` |
-| Daemon              | `pnpm turbo run build --filter=chatroom-cli --cache=local:r,remote:r && pnpm exec chatroom machine daemon start`                                                  |
+| Process             | Command                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Convex (local)      | `pnpm exec convex dev --env-file services/backend/.convex/local-dev.env`                                                    |
+| Convex (hosted dev) | `pnpm --filter @workspace/backend dev`                                                                                      |
+| Webapp              | `PORT={port} NEXT_PUBLIC_CONVEX_URL={url} NEXT_PUBLIC_LOCAL_MANAGER_PORT={managerPort} pnpm --filter @workspace/webapp dev` |
+| Daemon              | `pnpm turbo run build --filter=chatroom-cli --cache=local:r,remote:r && pnpm exec chatroom machine daemon start`            |
 
 Env injected per child:
 
-| Var                      | Source                      |
-| ------------------------ | --------------------------- |
-| `NEXT_PUBLIC_CONVEX_URL` | `resolveConvexUrl(config)`  |
-| `CHATROOM_CONVEX_URL`    | `resolveConvexUrl(config)`  |
-| `CHATROOM_WEB_URL`       | `webappUrl`                 |
-| `PORT`                   | `config.webappPort`         |
-| `NODE_ENV`               | `production` (webapp build) |
+| Var                      | Source                            |
+| ------------------------ | --------------------------------- |
+| `NEXT_PUBLIC_CONVEX_URL` | `resolveConvexUrl(config)`        |
+| `CHATROOM_CONVEX_URL`    | `resolveConvexUrl(config)`        |
+| `CHATROOM_WEB_URL`       | `webappUrl`                       |
+| `PORT`                   | `config.webappPort`               |
+| `NODE_ENV`               | `development` (webapp dev server) |
 
 ## WebSocket protocol
 

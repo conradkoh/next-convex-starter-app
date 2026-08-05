@@ -83,15 +83,16 @@ function buildWebappDefinition(
   const managerPortEnv = `NEXT_PUBLIC_LOCAL_MANAGER_PORT=${managerPort}`;
   return {
     id: 'webapp' as const,
-    name: 'Webapp (production build)',
+    name: 'Webapp (dev server)',
     cwd: repoRoot,
     command: 'sh',
     args: [
       '-c',
-      `NEXT_PUBLIC_CONVEX_URL=${convexUrl} ${managerPortEnv} pnpm turbo run build --filter=@workspace/webapp --cache=local:r,remote:r && echo "Starting Next.js production server on http://localhost:${port} ..." && PORT=${port} NEXT_PUBLIC_CONVEX_URL=${convexUrl} ${managerPortEnv} pnpm --filter @workspace/webapp exec dotenv -e .env.local -- pnpm start`,
+      `PORT=${port} NEXT_PUBLIC_CONVEX_URL=${convexUrl} ${managerPortEnv} pnpm --filter @workspace/webapp dev`,
     ],
     env: {
-      NODE_ENV: 'production',
+      NODE_ENV: 'development',
+      PORT: String(port),
       NEXT_PUBLIC_CONVEX_URL: convexUrl,
       NEXT_PUBLIC_LOCAL_MANAGER_PORT: String(managerPort),
     },

@@ -37,14 +37,15 @@ describe('buildProcessDefinitions', () => {
     ]);
 
     const webapp = defs.find((def) => def.id === 'webapp');
-    expect(webapp?.args[1]).toContain(
-      'turbo run build --filter=@workspace/webapp --cache=local:r,remote:r'
-    );
-    expect(webapp?.args[1]).toContain(
-      'Starting Next.js production server on http://localhost:3000'
-    );
-    expect(webapp?.args[1]).toContain('dotenv -e .env.local -- pnpm start');
+    expect(webapp?.name).toBe('Webapp (dev server)');
+    expect(webapp?.args[1]).toContain('pnpm --filter @workspace/webapp dev');
+    expect(webapp?.args[1]).toContain('PORT=3000');
+    expect(webapp?.args[1]).toContain('NEXT_PUBLIC_CONVEX_URL=');
     expect(webapp?.args[1]).toContain('NEXT_PUBLIC_LOCAL_MANAGER_PORT=');
+    expect(webapp?.args[1]).not.toContain('turbo run build');
+    expect(webapp?.args[1]).not.toContain('pnpm start');
+    expect(webapp?.env.NODE_ENV).toBe('development');
+    expect(webapp?.env.PORT).toBe('3000');
     expect(webapp?.env.NEXT_PUBLIC_LOCAL_MANAGER_PORT).toBe('3847');
 
     const envFile = join(repoRoot, 'services/backend/.convex/local-dev.env');

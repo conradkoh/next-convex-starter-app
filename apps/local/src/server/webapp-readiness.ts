@@ -11,8 +11,7 @@ function stripAnsi(text: string): string {
 
 function isWebappReadyLogLine(text: string): boolean {
   const plain = stripAnsi(text);
-  // Only match lines emitted once the server is actually listening — not the pre-start echo
-  // from process-definitions ("Starting Next.js production server on ...").
+  // Only match lines emitted once the dev server is actually listening.
   return plain.includes('Ready in') || /\bLocal:\s+http:\/\/localhost:\d+/i.test(plain);
 }
 
