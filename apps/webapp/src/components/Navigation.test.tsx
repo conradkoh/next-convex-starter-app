@@ -37,6 +37,16 @@ vi.mock('@workspace/backend/config/featureFlags', () => ({
   },
 }));
 
+vi.mock('@/modules/header/HeaderPortalProvider', () => ({
+  useHeaderPortal: vi.fn(() => ({
+    left: null,
+    center: null,
+    right: null,
+    hideAppTitle: false,
+    hideUserMenu: false,
+  })),
+}));
+
 describe('Navigation', () => {
   it('renders login button when user is not authenticated', () => {
     vi.mocked(useAuthState).mockReturnValue({
@@ -79,13 +89,13 @@ describe('Navigation', () => {
     expect(screen.queryByTestId('user-menu')).not.toBeInTheDocument();
   });
 
-  it('renders brand as non-link while auth state is loading', () => {
+  it('links brand to / while auth state is loading', () => {
     vi.mocked(useAuthState).mockReturnValue(undefined);
 
     render(<Navigation />);
 
-    expect(screen.getByText('Next Convex')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /next convex/i })).not.toBeInTheDocument();
+    const brandLink = screen.getByRole('link', { name: /chatroom/i });
+    expect(brandLink).toHaveAttribute('href', '/');
   });
 
   it('links brand to / when user is unauthenticated', () => {
@@ -97,7 +107,7 @@ describe('Navigation', () => {
 
     render(<Navigation />);
 
-    const brandLink = screen.getByRole('link', { name: /next convex/i });
+    const brandLink = screen.getByRole('link', { name: /chatroom/i });
     expect(brandLink).toHaveAttribute('href', '/');
   });
 
@@ -117,7 +127,7 @@ describe('Navigation', () => {
 
     render(<Navigation />);
 
-    const brandLink = screen.getByRole('link', { name: /next convex/i });
+    const brandLink = screen.getByRole('link', { name: /chatroom/i });
     expect(brandLink).toHaveAttribute('href', '/app');
   });
 });

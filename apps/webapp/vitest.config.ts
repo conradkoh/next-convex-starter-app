@@ -13,6 +13,7 @@ export default defineConfig({
     maxWorkers: 4,
     testTimeout: 15_000,
     exclude: [
+      'tests/e2e/**',
       'tests/e2e/specs/**',
       'tests/e2e/fixtures/**',
       'tests/e2e/pages/**',
