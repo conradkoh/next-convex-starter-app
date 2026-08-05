@@ -1,6 +1,6 @@
 'use client';
 
-import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { X } from 'lucide-react';
 import React, { useCallback, useEffect, useLayoutEffect, memo, useRef, useState } from 'react';
 
@@ -271,26 +271,39 @@ const FixedModal = memo(function FixedModal({
     return () => popOverlayDismiss(dismissHandler);
   }, [isOpen, dismissHandler]);
 
+  // Intercept Escape so the dismiss stack can defer close when a portaled menu
+  // is open above this modal (preventDefault + stopPropagation keeps it open).
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    if (!isTopOverlayDismiss(dismissHandler)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
   if (typeof document === 'undefined') return null;
 
   return (
     <DialogPrimitive.Root
       open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) onCloseRef.current();
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onCloseRef.current();
       }}
+      // trap-focus keeps Base UI's focus trapping without its native scroll
+      // lock — the reference-counted lock below remains the sole scroll manager.
+      modal="trap-focus"
+      disablePointerDismissal={!closeOnBackdrop}
     >
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
+        <DialogPrimitive.Backdrop
           className={cn(
             modalZ,
             'fixed inset-0 flex items-center justify-center bg-black/50 p-0 sm:p-4',
-            'data-[state=open]:animate-in data-[state=closed]:animate-out',
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0'
+            'data-open:animate-in data-closed:animate-out',
+            'data-closed:fade-out-0 data-open:fade-in-0'
           )}
-          onClick={closeOnBackdrop ? undefined : (e) => e.preventDefault()}
         />
-        <DialogPrimitive.Content
+        <DialogPrimitive.Popup
           className={cn(
             'chatroom-root',
             modalZ,
@@ -301,17 +314,7 @@ const FixedModal = memo(function FixedModal({
             maxWidth,
             className
           )}
-          onPointerDownOutside={(e) => {
-            if (!closeOnBackdrop) e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            if (!closeOnBackdrop) e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            if (!isTopOverlayDismiss(dismissHandler)) {
-              e.preventDefault();
-            }
-          }}
+          onKeyDown={handleKeyDown}
         >
           <div
             ref={setPortalHost}
@@ -321,7 +324,7 @@ const FixedModal = memo(function FixedModal({
           <OverlayPortalContainerProvider container={portalHost}>
             {children}
           </OverlayPortalContainerProvider>
-        </DialogPrimitive.Content>
+        </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );

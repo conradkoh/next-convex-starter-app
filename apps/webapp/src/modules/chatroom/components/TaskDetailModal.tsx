@@ -309,16 +309,14 @@ export function TaskDetailModal({
                 <div className="flex-1" />
 
                 <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      disabled={isLoading}
-                      className="flex items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-colors disabled:opacity-50"
-                      title="More actions"
-                    >
-                      <MoreHorizontal size={14} />
-                      Actions
-                    </button>
+                  <DropdownMenuTrigger
+                    type="button"
+                    disabled={isLoading}
+                    className="flex items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wide border-2 border-chatroom-border text-chatroom-text-secondary hover:bg-chatroom-bg-hover hover:border-chatroom-border-strong hover:text-chatroom-text-primary transition-colors disabled:opacity-50"
+                    title="More actions"
+                  >
+                    <MoreHorizontal size={14} />
+                    Actions
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[160px]">
                     <DropdownMenuItem

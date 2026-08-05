@@ -1,6 +1,5 @@
 'use client';
 
-import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Star } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
@@ -15,7 +14,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { Dialog, DialogPortal } from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useTwoFingerTap } from '@/hooks/useTwoFingerTap';
 import { fuzzyFilter } from '@/lib/fuzzyMatch';
 import { useChatroomListing } from '@/modules/chatroom/context/ChatroomListingContext';
@@ -128,49 +127,42 @@ export function ChatroomSwitcher() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen} modal={false}>
-      <DialogPortal>
-        {/* No overlay — cmd+k is a quick-picker, not a blocking modal. Avoids backdrop fade lag. */}
-        <CommandDialogContent open={open} onEscapeKeyDown={onEscapeKeyDown}>
-          {/* Accessible title and description (sr-only) */}
-          <DialogPrimitive.Title className="sr-only">Switch Chatroom</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="sr-only">
-            Search and navigate to a chatroom
-          </DialogPrimitive.Description>
+      {/* No overlay — cmd+k is a quick-picker, not a blocking modal. Avoids backdrop fade lag. */}
+      <CommandDialogContent open={open} onEscapeKeyDown={onEscapeKeyDown}>
+        {/* Accessible title and description (sr-only) */}
+        <DialogTitle className="sr-only">Switch Chatroom</DialogTitle>
+        <DialogDescription className="sr-only">Search and navigate to a chatroom</DialogDescription>
 
-          <Command
-            filter={fuzzyFilter}
-            className="bg-chatroom-bg-primary text-chatroom-text-primary"
-          >
-            <CommandInput
-              placeholder="Search chatrooms..."
-              className="text-chatroom-text-primary placeholder:text-chatroom-text-muted bg-transparent"
-              value={searchValue}
-              onValueChange={setSearchValue}
-            />
-            <div ref={listRef} className="overflow-y-auto min-h-[244px] h-[244px]">
-              <CommandList className="min-h-full max-h-none overflow-hidden p-0">
-                <CommandEmpty className="text-chatroom-text-muted text-xs font-bold uppercase tracking-wider px-4">
-                  No chatrooms found.
-                </CommandEmpty>
-                {switcherChatrooms && switcherChatrooms.length > 0 && (
-                  <CommandGroup
-                    heading="Chatrooms"
-                    className="[&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-chatroom-text-muted"
-                  >
-                    {switcherChatrooms.map((chatroom) => (
-                      <ChatroomSwitcherItem
-                        key={chatroom._id}
-                        chatroom={chatroom}
-                        onSelect={handleSelect}
-                      />
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </div>
-          </Command>
-        </CommandDialogContent>
-      </DialogPortal>
+        <Command filter={fuzzyFilter} className="bg-chatroom-bg-primary text-chatroom-text-primary">
+          <CommandInput
+            placeholder="Search chatrooms..."
+            className="text-chatroom-text-primary placeholder:text-chatroom-text-muted bg-transparent"
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <div ref={listRef} className="overflow-y-auto min-h-[244px] h-[244px]">
+            <CommandList className="min-h-full max-h-none overflow-hidden p-0">
+              <CommandEmpty className="text-chatroom-text-muted text-xs font-bold uppercase tracking-wider px-4">
+                No chatrooms found.
+              </CommandEmpty>
+              {switcherChatrooms && switcherChatrooms.length > 0 && (
+                <CommandGroup
+                  heading="Chatrooms"
+                  className="[&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:text-chatroom-text-muted"
+                >
+                  {switcherChatrooms.map((chatroom) => (
+                    <ChatroomSwitcherItem
+                      key={chatroom._id}
+                      chatroom={chatroom}
+                      onSelect={handleSelect}
+                    />
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </div>
+        </Command>
+      </CommandDialogContent>
     </Dialog>
   );
 }

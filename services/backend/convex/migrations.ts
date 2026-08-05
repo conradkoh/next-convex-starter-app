@@ -571,6 +571,22 @@ export const compactWorkspaceFileTreeDeltaOperations = migrations.define({
   },
 });
 
+/**
+ * Migration: Backfill roleNames from legacy accessLevel.
+ * system_admin → ['system_admin'], all others → ['user'].
+ */
+export const backfillUserRoleNames = migrations.define({
+  table: 'users',
+  migrateOne: async (_ctx, user) => {
+    if (user.roleNames !== undefined) {
+      return;
+    }
+    const roleNames =
+      user.accessLevel === 'system_admin' ? (['system_admin'] as const) : (['user'] as const);
+    return { roleNames: [...roleNames] };
+  },
+});
+
 // ========================================
 // Batch Runners
 // ========================================
@@ -615,4 +631,6 @@ export const runAll = migrations.runner([
   internal.migrations.seedStandingInstructionHistory,
   // Standing Instructions Title
   internal.migrations.migrateStandingInstructionsNameToTitle,
+  // RBAC
+  internal.migrations.backfillUserRoleNames,
 ]);

@@ -7,7 +7,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { ScheduledPromptDetailDialog } from './ScheduledPromptDetailDialog';
 import { useOverlayPortalContainer } from '../../../components/shared/overlayPortalContainer';
 import { ChatroomDestructiveTextButton } from '../../../components/ui/ChatroomDestructiveTextButton';
-import { Popover, PopoverAnchor, PopoverContent } from '../../../components/ui/popover';
+import { Popover, PopoverContent } from '../../../components/ui/popover';
 import { useOverlayDismissStack } from '../../../hooks/useOverlayDismissStack';
 import { formatSchedule, formatTime } from '../utils/scheduledPromptFormat';
 
@@ -251,12 +251,11 @@ export function ScheduledPromptCard({
 
       {isDesktop ? (
         <Popover open={actionsOpen} onOpenChange={setActionsOpen}>
-          <PopoverAnchor virtualRef={cardRef as any} />
           <PopoverContent
             side="bottom"
             align="end"
             className="w-56 p-2 rounded-none border-chatroom-border bg-chatroom-bg-secondary"
-            onOpenAutoFocus={(e: Event) => e.preventDefault()}
+            anchor={cardRef as React.RefObject<HTMLElement | null>}
           >
             <div className="space-y-2">{menuContent}</div>
           </PopoverContent>

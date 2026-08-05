@@ -29,9 +29,9 @@ import {
   inlineEditableTitleInputClassName,
 } from '@/components/inline-editable-title/inline-editable-title-styles';
 import { InlineEditableTitleEditing } from '@/components/inline-editable-title/InlineEditableTitleEditing';
-import { cn } from '@/lib/utils';
 import { getLocalManagerUrl } from '@/lib/environment';
 import { openExternalUrl } from '@/lib/navigation';
+import { cn } from '@/lib/utils';
 import {
   getChatStatusDescription,
   getChatStatusIndicatorClasses,
@@ -125,21 +125,19 @@ export const ChatroomTitleEditor = memo(function ChatroomTitleEditor({
   return (
     <div className="flex items-center min-w-0">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 min-w-0 cursor-pointer bg-transparent border-0 p-0 hover:text-chatroom-text-secondary transition-colors duration-100 text-chatroom-text-primary outline-none focus:outline-none focus-visible:outline-none"
-            title={displayName}
-            aria-label={`Chatroom: ${displayName}. Open menu`}
-          >
-            <span
-              className={getChatStatusIndicatorClasses(chatStatus)}
-              title={getChatStatusDescription(chatStatus)}
-              aria-label={getChatStatusDescription(chatStatus)}
-            />
-            <span className={chatroomTitleDisplayClassName}>{displayName}</span>
-            <ChevronDown size={14} className="shrink-0 text-chatroom-text-muted" aria-hidden />
-          </button>
+        <DropdownMenuTrigger
+          type="button"
+          className="flex items-center gap-1.5 min-w-0 cursor-pointer bg-transparent border-0 p-0 hover:text-chatroom-text-secondary transition-colors duration-100 text-chatroom-text-primary outline-none focus:outline-none focus-visible:outline-none"
+          title={displayName}
+          aria-label={`Chatroom: ${displayName}. Open menu`}
+        >
+          <span
+            className={getChatStatusIndicatorClasses(chatStatus)}
+            title={getChatStatusDescription(chatStatus)}
+            aria-label={getChatStatusDescription(chatStatus)}
+          />
+          <span className={chatroomTitleDisplayClassName}>{displayName}</span>
+          <ChevronDown size={14} className="shrink-0 text-chatroom-text-muted" aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center" className="min-w-[160px]">
           <DropdownMenuItem
@@ -201,15 +199,19 @@ export const ChatroomTitleEditor = memo(function ChatroomTitleEditor({
             </DropdownMenuItem>
           )}
 
-          {getLocalManagerUrl() && (
-            <DropdownMenuItem
-              onClick={() => openExternalUrl(getLocalManagerUrl()!)}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <Monitor size={14} />
-              Chatroom Local Manager
-            </DropdownMenuItem>
-          )}
+          {(() => {
+            const localManagerUrl = getLocalManagerUrl();
+            if (!localManagerUrl) return null;
+            return (
+              <DropdownMenuItem
+                onClick={() => openExternalUrl(localManagerUrl)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Monitor size={14} />
+                Chatroom Local Manager
+              </DropdownMenuItem>
+            );
+          })()}
         </DropdownMenuContent>
       </DropdownMenu>
       {showFocusModeToggle && (

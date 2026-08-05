@@ -284,16 +284,14 @@ const RemotePopover = memo(function RemotePopover({ remotes }: { remotes: GitRem
   // Multiple remotes — popover
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-[11px] text-chatroom-text-secondary hover:text-chatroom-text-primary transition-colors font-mono uppercase tracking-wider"
-          title="View remotes"
-        >
-          <PrimaryIcon size={11} className="shrink-0" />
-          {primaryRemote.name}
-          <ChevronDown size={9} className="text-chatroom-text-muted" />
-        </button>
+      <PopoverTrigger
+        type="button"
+        className="inline-flex items-center gap-1 text-[11px] text-chatroom-text-secondary hover:text-chatroom-text-primary transition-colors font-mono uppercase tracking-wider"
+        title="View remotes"
+      >
+        <PrimaryIcon size={11} className="shrink-0" />
+        {primaryRemote.name}
+        <ChevronDown size={9} className="text-chatroom-text-muted" />
       </PopoverTrigger>
       <PopoverContent align="end" side="top" className="w-auto min-w-[180px] p-1">
         {remotes.map((remote) => {
@@ -392,25 +390,23 @@ const WorkspaceStatusContent = memo(function WorkspaceStatusContent({
           <div className="inline-flex items-center gap-0.5 shrink-0">
             {hasPopoverContent ? (
               <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      'inline-flex items-center gap-1 text-[11px] font-mono shrink-0 px-1.5 py-0.5 rounded-none transition-colors',
-                      hasPR
-                        ? 'text-chatroom-text-secondary hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover/50'
-                        : 'text-chatroom-text-secondary hover:bg-chatroom-bg-hover/50'
-                    )}
-                    title={hasPR ? openPullRequests[0]!.title : branchDisplay}
-                  >
-                    {hasPR ? (
-                      <GitPullRequestIcon size={11} className="shrink-0" />
-                    ) : (
-                      <GitBranch size={11} className="shrink-0" />
-                    )}
-                    <span className="uppercase tracking-wider">{branchDisplay}</span>
-                    {hasPR && <span>(#{openPullRequests[0]!.prNumber})</span>}
-                  </button>
+                <PopoverTrigger
+                  type="button"
+                  className={cn(
+                    'inline-flex items-center gap-1 text-[11px] font-mono shrink-0 px-1.5 py-0.5 rounded-none transition-colors',
+                    hasPR
+                      ? 'text-chatroom-text-secondary hover:text-chatroom-text-primary hover:bg-chatroom-bg-hover/50'
+                      : 'text-chatroom-text-secondary hover:bg-chatroom-bg-hover/50'
+                  )}
+                  title={hasPR ? openPullRequests[0]!.title : branchDisplay}
+                >
+                  {hasPR ? (
+                    <GitPullRequestIcon size={11} className="shrink-0" />
+                  ) : (
+                    <GitBranch size={11} className="shrink-0" />
+                  )}
+                  <span className="uppercase tracking-wider">{branchDisplay}</span>
+                  {hasPR && <span>(#{openPullRequests[0]!.prNumber})</span>}
                 </PopoverTrigger>
                 <PopoverContent align="end" side="top" className="w-auto min-w-[200px] p-1">
                   {isLocal && (
@@ -1115,21 +1111,19 @@ export const WorkspaceBottomBar = memo(function WorkspaceBottomBar({
           <>
             {/* Workspace selector — click to switch workspaces, sub-menu for actions */}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 px-3 h-full hover:bg-chatroom-bg-hover/50 transition-colors border-r border-chatroom-border-strong min-w-0"
-                  title={activeWorkspace?.workingDir ?? ''}
-                >
-                  <FolderOpen size={12} className="text-chatroom-text-muted shrink-0" />
-                  <span className="text-[11px] font-bold text-chatroom-text-primary uppercase tracking-wider truncate max-w-[340px]">
-                    {workspaceTriggerLabel}
-                  </span>
-                  <span className="text-[10px] text-chatroom-text-muted uppercase tracking-wider truncate max-w-[200px]">
-                    {workspaceMachineLabel}
-                  </span>
-                  <ChevronDown size={10} className="text-chatroom-text-muted shrink-0" />
-                </button>
+              <DropdownMenuTrigger
+                type="button"
+                className="flex items-center gap-2 px-3 h-full hover:bg-chatroom-bg-hover/50 transition-colors border-r border-chatroom-border-strong min-w-0"
+                title={activeWorkspace?.workingDir ?? ''}
+              >
+                <FolderOpen size={12} className="text-chatroom-text-muted shrink-0" />
+                <span className="text-[11px] font-bold text-chatroom-text-primary uppercase tracking-wider truncate max-w-[340px]">
+                  {workspaceTriggerLabel}
+                </span>
+                <span className="text-[10px] text-chatroom-text-muted uppercase tracking-wider truncate max-w-[200px]">
+                  {workspaceMachineLabel}
+                </span>
+                <ChevronDown size={10} className="text-chatroom-text-muted shrink-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="min-w-[280px]">
                 {validWorkspaces.map((ws) => {

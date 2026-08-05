@@ -339,13 +339,12 @@ export function WorkQueue({ chatroomId, lifecycle, onRegisterActions }: WorkQueu
             <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-chatroom-text-muted bg-chatroom-bg-tertiary flex items-center justify-between">
               <span>Current ({categorizedTasks.current.length})</span>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="text-chatroom-text-muted hover:text-chatroom-text-primary transition-colors p-1"
-                    title="Actions"
-                  >
-                    <MoreHorizontal size={14} />
-                  </button>
+                <DropdownMenuTrigger
+                  type="button"
+                  className="text-chatroom-text-muted hover:text-chatroom-text-primary transition-colors p-1"
+                  title="Actions"
+                >
+                  <MoreHorizontal size={14} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[160px]">
                   <DropdownMenuItem

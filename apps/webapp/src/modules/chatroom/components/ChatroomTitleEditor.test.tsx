@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatroomTitleEditor } from './ChatroomTitleEditor';
 
+import { getLocalManagerUrl } from '@/lib/environment';
+
 vi.mock('@/lib/environment', () => ({
   getLocalManagerUrl: vi.fn(),
 }));
-
-import { getLocalManagerUrl } from '@/lib/environment';
 
 const mockedGetLocalManagerUrl = vi.mocked(getLocalManagerUrl);
 
@@ -27,6 +27,8 @@ vi.mock('./useChatroomTitleEditor', () => ({
 async function openMenu() {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: /Chatroom:.*Open menu/i }));
+  // Base UI mounts the menu portal asynchronously after the trigger click.
+  await waitFor(() => expect(screen.getByText('Switch Chatrooms')).toBeInTheDocument());
   return user;
 }
 
