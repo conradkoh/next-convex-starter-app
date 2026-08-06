@@ -38,13 +38,13 @@ import { useAuthState } from '@/modules/auth/AuthProvider';
 import { usePwaInstall } from '@/modules/pwa-install';
 
 /**
- * User menu dropdown component with profile links and logout functionality.
- * Shows user information and navigation options, including a system-admin portal link when allowed.
+ * User menu dropdown with profile links and logout.
+ * Shows Admin and/or System Admin portal links when the user has the matching permissions.
  */
 export function UserMenu() {
   const authState = useAuthState();
   const showSystemAdminLink = useHasPermission(SYSTEM_ADMIN_ACCESS_PERMISSION);
-  const showAdminLink = useHasPermission(ADMIN_ACCESS_PERMISSION) && !showSystemAdminLink;
+  const showAdminLink = useHasPermission(ADMIN_ACCESS_PERMISSION);
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
