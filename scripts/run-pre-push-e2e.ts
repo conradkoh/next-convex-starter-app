@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 // fallow-ignore-file unused-file
-// fallow-ignore-file unused-export
 
 import { fileURLToPath } from 'node:url';
 

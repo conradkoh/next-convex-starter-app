@@ -7,11 +7,15 @@ Playwright end-to-end tests for the Next.js + Convex starter app.
 Suite root: `apps/webapp/tests/e2e/`
 
 ```bash
-# From repo root
+# From repo root (full unfiltered suite)
 pnpm e2e
 
 # Single spec
 cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts specs/upstream/markdown-editor.spec.ts
+
+# Tagged subsets (same filters pre-push uses)
+cd apps/webapp && pnpm e2e:upstream
+cd apps/webapp && pnpm e2e:downstream
 ```
 
 ## Folder conventions
@@ -25,16 +29,23 @@ cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config
 
 Filter by tag: `--grep @upstream`, `--grep @markdown`, etc.
 
-## Pre-push remote gating
+## Pre-push suite selection
 
-`.husky/pre-push` runs the template e2e suite **only** when the git push **destination URL** is the canonical template repository (`conradkoh/next-convex-starter-app` on `github.com`). The decision is made by `scripts/should-run-e2e.ts` from the destination URL git passes as `$2` — fail-closed for non-template, malformed, or unknown URLs.
+`.husky/pre-push` **always** runs e2e via `scripts/run-pre-push-e2e.ts` — there is no skip branch.
 
-Downstream forks pushing to their own remotes are never forced to run template e2e in pre-push. Pushes to non-template destinations skip it. `pnpm e2e` remains available for explicit local and CI runs on any checkout.
+- Template push destination → `@upstream` suite
+- Fork or non-template destination → `@downstream` suite
+
+The destination URL git passes as `$2` is resolved by `scripts/resolve-e2e-suite.ts` using `isTemplateRemote` from `scripts/template-repo.ts`. Tag constants are imported from `apps/webapp/tests/e2e/support/tags.ts`.
+
+If Playwright finds zero matching tests (e.g. a fork with no `@downstream` specs yet), the push **fails** — add at least one downstream spec in `specs/downstream/` before your first push to a fork remote.
+
+`pnpm e2e` runs the full unfiltered suite for manual and CI runs on any checkout.
 
 ## Reusability
 
-This suite is designed to be reusable across downstream projects: upstream specs define the template regression baseline, downstream specs hold fork-specific flows, and destination gating keeps fork pre-push hooks lightweight.
+This suite is designed to be reusable across downstream projects: upstream specs define the template regression baseline, downstream specs hold fork-specific flows, and destination-based suite selection keeps fork pre-push focused on their own tests.
 
 ## Full detail
 
-See [apps/webapp/tests/e2e/README.md](../apps/webapp/tests/e2e/README.md) for prerequisites, admin seeding, page-object patterns, and troubleshooting.
+See [apps/webapp/tests/e2e/README.md](../../apps/webapp/tests/e2e/README.md) for prerequisites, admin seeding, page-object patterns, and troubleshooting.
