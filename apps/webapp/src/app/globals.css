@@ -246,6 +246,27 @@ input,
   }
 }
 
+@layer components {
+  /* iOS WebKit: datetime-local intrinsic width exceeds container unless internals are constrained */
+  [data-native-date-input] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  [data-native-date-input]::-webkit-datetime-edit,
+  [data-native-date-input]::-webkit-datetime-edit-fields-wrapper {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  [data-native-date-input]::-webkit-calendar-picker-indicator {
+    flex-shrink: 0;
+  }
+}
+
 /* Mobile-first utility classes for compact design */
 @layer utilities {
   /* Responsive spacing utilities */
