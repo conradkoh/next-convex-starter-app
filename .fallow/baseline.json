@@ -12,7 +12,6 @@
     "services/backend/application/auth/index.ts:getPermissionsForRole",
     "services/backend/application/auth/index.ts:roleDefinitions",
     "services/backend/application/auth/index.ts:getResolvedPermissionsForUser",
-    "services/backend/application/auth/index.ts:AUTH_PROVIDER_MANAGE_PERMISSION",
     "services/backend/application/auth/requirePermission.ts:requirePermission",
     "services/backend/application/auth/requirePermission.ts:requirePermissionForUser",
     "services/backend/application/auth/resolve.ts:getRolesForUser",

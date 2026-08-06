@@ -11,7 +11,6 @@ const permissions = {
   'users:write': { description: 'Create or update users' },
   'settings:read': { description: 'View application settings' },
   'settings:write': { description: 'Update application settings' },
-  'auth:provider:manage': { description: 'Configure authentication providers' },
   'invites:manage': { description: 'Create and manage invite codes' },
   'admin:access': { description: 'Access business administration UI' },
   'attendance:read': { description: 'View attendance records' },

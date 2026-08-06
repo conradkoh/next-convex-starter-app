@@ -96,7 +96,6 @@ describe('hasPermission', () => {
     for (const permission of systemAdminPermissions) {
       expect(hasPermission(user, permission)).toBe(true);
     }
-    expect(hasPermission(user, 'auth:provider:manage')).toBe(true);
     expect(hasPermission(user, 'system_admin:access')).toBe(true);
   });
 });
@@ -150,9 +149,8 @@ describe('admin role', () => {
     expect(hasPermission(adminUser, 'invites:manage')).toBe(true);
   });
 
-  it('lacks system_admin:access and auth:provider:manage', () => {
+  it('lacks system_admin:access', () => {
     expect(hasPermission(adminUser, 'system_admin:access')).toBe(false);
-    expect(hasPermission(adminUser, 'auth:provider:manage')).toBe(false);
   });
 
   it('resolves roleNames admin via getRolesForUser', () => {

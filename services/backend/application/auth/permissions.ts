@@ -12,7 +12,6 @@ const permissions = {
   'users:write': { description: 'Create or update users' },
   'settings:read': { description: 'View application settings' },
   'settings:write': { description: 'Update application settings' },
-  'auth:provider:manage': { description: 'Configure authentication providers' },
   'invites:manage': { description: 'Create and manage invite codes' },
   'admin:access': { description: 'Access business administration UI' },
   'attendance:read': { description: 'View attendance records' },
@@ -23,10 +22,6 @@ const permissions = {
 export type Permission = keyof typeof permissions;
 
 export const allPermissions = Object.keys(permissions) as Permission[];
-
-/** Configure authentication providers — use instead of checking roles in handlers. */
-// fallow-ignore-next-line unused-export
-export const AUTH_PROVIDER_MANAGE_PERMISSION = 'auth:provider:manage' as const satisfies Permission;
 
 /** Platform system administration — gate for system-admin-only endpoints. */
 export const SYSTEM_ADMIN_ACCESS_PERMISSION = 'system_admin:access' as const satisfies Permission;
