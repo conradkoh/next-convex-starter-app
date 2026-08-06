@@ -2,7 +2,7 @@
 
 import { api } from '@workspace/backend/convex/_generated/api';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
-import type { InviteSummary } from '@workspace/backend/convex/system/invites';
+import type { InviteSummary } from '@workspace/backend/convex/admin/invites';
 import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
@@ -13,11 +13,11 @@ import { DeleteInviteDialog } from '@/app/app/admin/invites/DeleteInviteDialog';
 import { InviteListCard } from '@/app/app/admin/invites/InviteListCard';
 
 export default function InvitesPage() {
-  const invites = useSessionQuery(api.system.invites.listInvites);
-  const createInvite = useSessionMutation(api.system.invites.createInvite);
-  const disableInvite = useSessionMutation(api.system.invites.disableInvite);
-  const enableInvite = useSessionMutation(api.system.invites.enableInvite);
-  const deleteInvite = useSessionMutation(api.system.invites.deleteInvite);
+  const invites = useSessionQuery(api.admin.invites.listInvites);
+  const createInvite = useSessionMutation(api.admin.invites.createInvite);
+  const disableInvite = useSessionMutation(api.admin.invites.disableInvite);
+  const enableInvite = useSessionMutation(api.admin.invites.enableInvite);
+  const deleteInvite = useSessionMutation(api.admin.invites.deleteInvite);
 
   const [actioningInviteId, setActioningInviteId] = useState<Id<'invites'> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InviteSummary | null>(null);
