@@ -12,7 +12,13 @@ pnpm e2e
 cd apps/webapp && pnpm e2e
 ```
 
-`pnpm e2e` is also wired into the git **pre-push** hook (alongside `test` and `typecheck`), so admin specs require the Convex env setup below before pushing.
+`pnpm e2e` is also wired into the git **pre-push** hook (alongside `test` and `typecheck`), but it runs only when the push destination is the template repository — see [Pre-Push Remote Gating](#pre-push-remote-gating). Admin specs require the Convex env setup below before pushing.
+
+## Pre-Push Remote Gating
+
+The pre-push hook runs e2e only when Git's push destination URL is the canonical template repository. Pushes to fork-owned or otherwise non-template destinations skip this step. This does not disable the suite: `pnpm e2e` remains available for explicit local and CI runs on every checkout.
+
+The decision is made by `scripts/should-run-e2e.ts` using the destination URL passed by git (`$2`) and the canonical identity in `scripts/template-repo.ts` (`conradkoh/next-convex-starter-app`). Behavior is locked by `scripts/should-run-e2e.spec.ts` and `scripts/template-repo.spec.ts`.
 
 ## Prerequisites
 

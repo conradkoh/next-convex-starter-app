@@ -8,5 +8,10 @@ bun run test:scripts
 # Run typecheck before pushing
 pnpm run typecheck
 
-# Run e2e before pushing
-pnpm run e2e
+# Run e2e before pushing — only when the push destination is the template repo.
+# Downstream forks pushing to their own remotes skip the template e2e suite.
+if bun scripts/should-run-e2e.ts "$1" "$2"; then
+  pnpm run e2e
+else
+  echo "Skipping e2e: push target is not the template repo."
+fi
