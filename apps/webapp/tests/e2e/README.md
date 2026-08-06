@@ -38,7 +38,7 @@ tests/e2e/
     auth.fixture.ts        # authenticatedPage fixture (anonymous login)
     admin.fixture.ts       # systemAdminPage fixture (anonymous login + promote + verify)
   support/
-    tags.ts                # TAG_UPSTREAM / TAG_DOWNSTREAM / TAG_AUTH / TAG_NAV / TAG_ADMIN
+    tags.ts                # TAG_UPSTREAM / TAG_DOWNSTREAM / TAG_AUTH / TAG_NAV / TAG_ADMIN / TAG_MARKDOWN
     upstream-flows.ts      # registry of upstream-owned routes (regression baseline)
     env.ts                 # shared .env.local reader
     convex-client.ts       # ConvexHttpClient wrapper (promoteSessionToSystemAdmin)
@@ -52,8 +52,10 @@ tests/e2e/
     admin-dashboard.page.ts      # /app/system-admin
     admin-users.page.ts          # /app/admin/users
     admin-google-auth.page.ts    # /app/system-admin/google-auth
+    markdown-editor.page.ts      # /test/markdown-editor
   specs/
     upstream/              # template-owned flows (tagged @upstream)
+      markdown-editor.spec.ts    # /test/markdown-editor
     downstream/            # fork-specific flows (tagged @downstream)
 ```
 
@@ -78,7 +80,10 @@ Filter with `--grep`:
 cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @upstream
 cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @downstream
 cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @admin
+cd apps/webapp && pnpm exec playwright test --config=tests/e2e/playwright.config.ts --grep @markdown
 ```
+
+`TAG_MARKDOWN` (`@markdown`) — markdown editor/viewer demo flows.
 
 ## `support/upstream-flows.ts` Registry
 
@@ -129,7 +134,7 @@ test('shows the admin dashboard', async ({ systemAdminPage }) => {
 
 ## Excluded Pages
 
-`/test/*` demo pages are explicitly **excluded** from e2e coverage by policy. Login code (`/login/code`) and account recovery (`/recover`) flows are also excluded for now (phased for later slices).
+`/test/markdown-editor` is covered by e2e (it demos a template-owned reusable component). Other `/test/*` demo pages remain explicitly **excluded** from e2e coverage by policy. Login code (`/login/code`) and account recovery (`/recover`) flows are also excluded for now (phased for later slices).
 
 ## Standing Policy
 
