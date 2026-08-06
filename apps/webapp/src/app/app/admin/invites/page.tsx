@@ -74,14 +74,15 @@ export default function InvitesPage() {
 
   return (
     <div className="pt-6 space-y-4 md:space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl md:text-3xl font-bold">Invites</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Manage invite codes for controlled sign-ups
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-2xl md:text-3xl font-bold">Invites</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Manage invite codes for controlled sign-ups
+          </p>
+        </div>
+        <CreateInviteCard onCreate={handleCreate} />
       </div>
-
-      <CreateInviteCard onCreate={handleCreate} />
 
       <InviteListCard
         invites={invites}
