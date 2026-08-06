@@ -45,7 +45,6 @@ function parseOAuthStateFlowType(encodedState: string): OAuthFlowType | undefine
   }
 }
 
-// fallow-ignore-next-line unused-export
 export function getOAuthCallbackReturnTo(
   encodedState: string | undefined,
   flowType: OAuthFlowType = 'login'

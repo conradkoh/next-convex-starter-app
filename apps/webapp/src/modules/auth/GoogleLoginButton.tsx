@@ -16,7 +16,7 @@ export interface GoogleLoginButtonProps {
 
 /**
  * Google login button component with OAuth integration.
- * Uses inline popup OAuth flow with backend-driven login requests.
+ * Uses popup OAuth on desktop Chrome/Firefox/Edge; Safari and iOS use full-page redirect.
  */
 export const GoogleLoginButton = ({
   className = 'w-full',
