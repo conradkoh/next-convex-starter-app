@@ -5,8 +5,8 @@ import { useEffect, useRef } from 'react';
 
 const STORAGE_PREFIX = 'scroll-pos:';
 
-function getStorageKey(pathname: string): string {
-  return `${STORAGE_PREFIX}${pathname}`;
+function getStorageKey(pathname: string, regionId: string): string {
+  return `${STORAGE_PREFIX}${pathname}:${regionId}`;
 }
 
 function restoreScrollPosition(container: HTMLElement, storageKey: string): void {
@@ -29,7 +29,10 @@ function saveScrollPosition(container: HTMLElement, storageKey: string): void {
  * Preserves scroll position for a custom scroll container across back/forward navigation.
  * Forward navigations reset scroll to top; back/forward restores the saved offset.
  */
-export function useScrollRestoration(containerRef: React.RefObject<HTMLElement | null>): void {
+export function useScrollRestoration(
+  containerRef: React.RefObject<HTMLElement | null>,
+  regionId = 'main'
+): void {
   const pathname = usePathname();
   const isBackNavigationRef = useRef(false);
 
@@ -46,7 +49,7 @@ export function useScrollRestoration(containerRef: React.RefObject<HTMLElement |
     const container = containerRef.current;
     if (!container) return;
 
-    const storageKey = getStorageKey(pathname);
+    const storageKey = getStorageKey(pathname, regionId);
 
     if (isBackNavigationRef.current) {
       restoreScrollPosition(container, storageKey);
@@ -56,5 +59,5 @@ export function useScrollRestoration(containerRef: React.RefObject<HTMLElement |
     }
 
     return () => saveScrollPosition(container, storageKey);
-  }, [pathname, containerRef]);
+  }, [pathname, regionId, containerRef]);
 }

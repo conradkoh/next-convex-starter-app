@@ -179,7 +179,10 @@ function _renderDesktopSidebar(pathname: string) {
 
 function _renderMainContent(children: React.ReactNode) {
   return (
-    <ScrollableRegion className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+    <ScrollableRegion
+      regionId="content"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+    >
       <div className="p-4 lg:p-6">{children}</div>
     </ScrollableRegion>
   );

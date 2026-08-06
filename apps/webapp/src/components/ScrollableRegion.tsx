@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 
 type ScrollableRegionProps = React.ComponentPropsWithoutRef<'div'> & {
   as?: 'div' | 'main';
+  regionId?: string;
 };
 
 /**
@@ -14,12 +15,13 @@ type ScrollableRegionProps = React.ComponentPropsWithoutRef<'div'> & {
  */
 export function ScrollableRegion({
   as: Component = 'div',
+  regionId = 'main',
   className,
   children,
   ...props
 }: ScrollableRegionProps) {
   const ref = useRef<HTMLElement>(null);
-  useScrollRestoration(ref);
+  useScrollRestoration(ref, regionId);
 
   const commonProps = {
     className: cn(className),

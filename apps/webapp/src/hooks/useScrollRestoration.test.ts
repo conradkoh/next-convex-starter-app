@@ -42,7 +42,7 @@ describe('useScrollRestoration', () => {
     container.scrollTop = 250;
     const ref = { current: container };
 
-    const { rerender } = renderHook(() => useScrollRestoration(ref));
+    const { rerender } = renderHook(() => useScrollRestoration(ref, 'main'));
     container.scrollTop = 250;
 
     usePathname.mockReturnValue('/app/admin/invites');
@@ -52,10 +52,10 @@ describe('useScrollRestoration', () => {
   });
 
   it('restores scrollTop from sessionStorage after popstate', () => {
-    sessionStorage.setItem('scroll-pos:/app/admin/invites', '420');
+    sessionStorage.setItem('scroll-pos:/app/admin/invites:main', '420');
     const ref = { current: container };
 
-    const { rerender } = renderHook(() => useScrollRestoration(ref));
+    const { rerender } = renderHook(() => useScrollRestoration(ref, 'main'));
 
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'));
@@ -74,12 +74,39 @@ describe('useScrollRestoration', () => {
   it('saves scrollTop to sessionStorage on pathname change cleanup', () => {
     const ref = { current: container };
 
-    const { rerender } = renderHook(() => useScrollRestoration(ref));
+    const { rerender } = renderHook(() => useScrollRestoration(ref, 'main'));
     container.scrollTop = 180;
 
     usePathname.mockReturnValue('/app/profile');
     rerender();
 
-    expect(sessionStorage.getItem('scroll-pos:/app')).toBe('180');
+    expect(sessionStorage.getItem('scroll-pos:/app:main')).toBe('180');
+  });
+
+  it('saves independently per regionId on the same pathname', () => {
+    const rootContainer = document.createElement('div');
+    const contentContainer = document.createElement('div');
+    Object.defineProperty(rootContainer, 'scrollTop', { writable: true, value: 0 });
+    Object.defineProperty(contentContainer, 'scrollTop', { writable: true, value: 0 });
+    document.body.appendChild(rootContainer);
+    document.body.appendChild(contentContainer);
+
+    const rootRef = { current: rootContainer };
+    const contentRef = { current: contentContainer };
+
+    const { rerender: rerenderRoot } = renderHook(() => useScrollRestoration(rootRef, 'root'));
+    const { rerender: rerenderContent } = renderHook(() =>
+      useScrollRestoration(contentRef, 'content')
+    );
+
+    rootContainer.scrollTop = 0;
+    contentContainer.scrollTop = 420;
+
+    usePathname.mockReturnValue('/app/admin/invites');
+    rerenderRoot();
+    rerenderContent();
+
+    expect(sessionStorage.getItem('scroll-pos:/app:root')).toBe('0');
+    expect(sessionStorage.getItem('scroll-pos:/app:content')).toBe('420');
   });
 });
