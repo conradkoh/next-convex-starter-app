@@ -72,6 +72,8 @@
       "services/backend/application/auth/resolve.ts",
       "services/backend/convex/auth.ts",
       "services/backend/convex/auth/**",
+      // Markdown viewer mirrors mdx-components.tsx styling intentionally (not shared to avoid MDX hook coupling)
+      "apps/webapp/src/modules/markdown-editor/markdown-components.tsx",
     ],
   },
   "health": {
