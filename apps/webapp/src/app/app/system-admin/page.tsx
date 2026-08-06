@@ -98,9 +98,9 @@ export default function AdminDashboard() {
 function _renderHeader() {
   return (
     <div className="space-y-2">
-      <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
+      <h1 className="text-2xl md:text-3xl font-bold">System Admin</h1>
       <p className="text-sm md:text-base text-muted-foreground">
-        System administration and configuration panel
+        Platform system administration and configuration
       </p>
     </div>
   );

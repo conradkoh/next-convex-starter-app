@@ -4,8 +4,6 @@ import {
   ArrowLeft,
   ChevronDown,
   Loader2,
-  Settings,
-  Shield,
   ShieldX,
   Ticket,
   Users,
@@ -15,7 +13,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { ADMIN_ACCESS_PERMISSION, RequirePermission, useHasPermission } from '@/application/auth';
+import { ADMIN_ACCESS_PERMISSION, RequirePermission } from '@/application/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -36,10 +34,8 @@ interface AdminModule {
 }
 
 const ADMIN_MODULES: AdminModule[] = [
-  { href: '/app/admin', label: 'Dashboard', icon: Settings },
   { href: '/app/admin/users', label: 'User Roles', icon: Users },
   { href: '/app/admin/invites', label: 'Invites', icon: Ticket },
-  { href: '/app/admin/google-auth', label: 'Google Auth Config', icon: Shield },
 ];
 
 function getActiveAdminModule(pathname: string, modules: AdminModule[]): AdminModule {
@@ -54,15 +50,11 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-/** Layout for `/app/admin` — business and platform administration portal. */
+/** Layout for `/app/admin` — business administration portal. */
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const authState = useAuthState();
   const router = useRouter();
   const pathname = usePathname();
-  const canManageAuthProviders = useHasPermission('auth:provider:manage');
-  const visibleModules = canManageAuthProviders
-    ? ADMIN_MODULES
-    : ADMIN_MODULES.filter((m) => m.href !== '/app/admin/google-auth');
 
   useEffect(() => {
     if (authState?.state === 'unauthenticated') {
@@ -81,9 +73,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <RequirePermission permission={ADMIN_ACCESS_PERMISSION} fallback={_renderAdminAccessDenied()}>
       <div className="flex min-h-0 flex-1">
-        {_renderDesktopSidebar(pathname, visibleModules)}
+        {_renderDesktopSidebar(pathname, ADMIN_MODULES)}
         <div className="flex min-h-0 flex-1 flex-col">
-          {_renderMobileHeader(pathname, visibleModules)}
+          {_renderMobileHeader(pathname, ADMIN_MODULES)}
           {_renderMainContent(children)}
         </div>
       </div>

@@ -19,10 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-type EffectiveRole = 'standard_user' | 'system_admin';
+type EffectiveRole = 'standard_user' | 'admin' | 'system_admin';
 
 const ROLE_LABELS: Record<EffectiveRole, string> = {
   standard_user: 'Standard User',
+  admin: 'Admin',
   system_admin: 'System Administrator',
 };
 
