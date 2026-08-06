@@ -72,6 +72,9 @@
       "services/backend/application/auth/resolve.ts",
       "services/backend/convex/auth.ts",
       "services/backend/convex/auth/**",
+      // Transitional: /app/system-admin is an intentional copy of /app/admin
+      // while the route migration is in progress. Remove when /app/admin is deleted.
+      "apps/webapp/src/app/app/system-admin/**",
     ],
   },
   "health": {
@@ -83,6 +86,8 @@
       "**/tests/**",
       "services/backend/convex/auth.ts",
       "services/backend/convex/auth/**",
+      // Transitional: mirror of /app/admin during route migration
+      "apps/webapp/src/app/app/system-admin/**",
     ],
   },
   "audit": {
