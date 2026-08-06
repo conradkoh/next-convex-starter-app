@@ -50,6 +50,6 @@ export class AdminLayoutPage extends BasePage {
     ).toBeVisible();
 
     await this.dashboardNavLink.click();
-    await expect(this.page.getByRole('heading', { name: 'Admin' })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'Admin', level: 1 })).toBeVisible();
   }
 }
