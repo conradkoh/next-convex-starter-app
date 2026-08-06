@@ -19,8 +19,8 @@ export const test = base.extend<AdminFixtures>({
 
     await promoteSessionToSystemAdmin(sessionId as SessionId);
     await page.reload();
-    await page.goto('/app/admin');
-    await expect(page.getByRole('heading', { name: 'Admin', level: 1 })).toBeVisible();
+    await page.goto('/app/system-admin');
+    await expect(page.getByRole('heading', { name: 'Admin Dashboard' })).toBeVisible();
     // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture `use` is not a React hook
     await use(page);
   },

@@ -192,7 +192,7 @@ function _renderUserDropdownMenu(
             </Link>
           )}
           {showSystemAdminLink && (
-            <Link href="/app/admin">
+            <Link href="/app/system-admin">
               <DropdownMenuItem className="cursor-pointer">
                 <Settings className="h-4 w-4" />
                 System Admin

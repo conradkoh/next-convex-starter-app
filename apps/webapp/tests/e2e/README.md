@@ -49,9 +49,9 @@ tests/e2e/
     login.page.ts          # /login
     app-dashboard.page.ts  # /app
     profile.page.ts        # /app/profile
-    admin-dashboard.page.ts      # /app/admin
-    admin-users.page.ts          # /app/admin/users
-    admin-google-auth.page.ts    # /app/admin/google-auth
+    admin-dashboard.page.ts      # /app/system-admin
+    admin-users.page.ts          # /app/system-admin/users
+    admin-google-auth.page.ts    # /app/system-admin/google-auth
   specs/
     upstream/              # template-owned flows (tagged @upstream)
     downstream/            # fork-specific flows (tagged @downstream)
@@ -117,7 +117,7 @@ test('shows dashboard when authenticated', async ({ authenticatedPage }) => {
 });
 ```
 
-`fixtures/admin.fixture.ts` provides `systemAdminPage` — anonymous login, promotion to `system_admin` (via the seeding mutation), a page reload, and a verification that `/app/admin` shows the `Admin Dashboard` heading before the test body runs:
+`fixtures/admin.fixture.ts` provides `systemAdminPage` — anonymous login, promotion to `system_admin` (via the seeding mutation), a page reload, and a verification that `/app/system-admin` shows the `Admin Dashboard` heading before the test body runs:
 
 ```typescript
 import { test } from '../../fixtures/admin.fixture';

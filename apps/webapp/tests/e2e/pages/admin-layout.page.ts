@@ -4,7 +4,7 @@ import { BasePage } from './base.page';
 
 /**
  * Page object for the shared system-admin layout (sidebar + header).
- * The layout wraps every /app/admin page, so nav/back-link assertions live here.
+ * The layout wraps every /app/system-admin page, so nav/back-link assertions live here.
  */
 export class AdminLayoutPage extends BasePage {
   constructor(page: Page) {
