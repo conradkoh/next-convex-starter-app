@@ -137,6 +137,9 @@ importers:
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.17)(react@19.2.7)
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
       sonner:
         specifier: ^2.0.2
         version: 2.0.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -201,9 +204,6 @@ importers:
       png-to-ico:
         specifier: ^2.1.8
         version: 2.1.8
-      remark-gfm:
-        specifier: ^4.0.1
-        version: 4.0.1
       sharp:
         specifier: ^0.34.1
         version: 0.34.3
