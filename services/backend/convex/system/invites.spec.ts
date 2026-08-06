@@ -46,6 +46,31 @@ async function loginAsStandardUser(): Promise<{ sessionId: SessionId; userId: Id
   return { sessionId, userId };
 }
 
+async function loginAsBusinessAdmin(): Promise<{ sessionId: SessionId; userId: Id<'users'> }> {
+  const sessionId = `biz-admin-${Math.random().toString(36).slice(2)}` as SessionId;
+  const login = await t.mutation(api.auth.loginAnon, { sessionId });
+  expect(login.success).toBe(true);
+  const userId = login.userId as Id<'users'>;
+  await t.run(async (ctx) => {
+    await ctx.db.patch('users', userId, { accessLevel: 'user', roleNames: ['admin'] });
+  });
+  return { sessionId, userId };
+}
+
+test('business admin with invites:manage can create and list invites', async () => {
+  const { sessionId } = await loginAsBusinessAdmin();
+
+  const invite = await t.mutation(api.system.invites.createInvite, {
+    sessionId,
+    inviteeName: 'Biz Admin Invite',
+    inviteeEmail: 'bizadmin-invite@example.com',
+  });
+  expect(invite.inviteeEmail).toBe('bizadmin-invite@example.com');
+
+  const invites = await t.query(api.system.invites.listInvites, { sessionId });
+  expect(invites.some((i) => i._id === invite._id)).toBe(true);
+});
+
 test('createInvite applies 30-day default expiry', async () => {
   const { sessionId } = await loginAsSystemAdmin();
 

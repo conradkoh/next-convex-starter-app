@@ -25,7 +25,11 @@ export type Permission = keyof typeof permissions;
 export const allPermissions = Object.keys(permissions) as Permission[];
 
 /** Configure authentication providers — use instead of checking roles in handlers. */
+// fallow-ignore-next-line unused-export
 export const AUTH_PROVIDER_MANAGE_PERMISSION = 'auth:provider:manage' as const satisfies Permission;
+
+/** Platform system administration — gate for system-admin-only endpoints. */
+export const SYSTEM_ADMIN_ACCESS_PERMISSION = 'system_admin:access' as const satisfies Permission;
 
 export const INVITES_MANAGE_PERMISSION = 'invites:manage' as const satisfies Permission;
 
