@@ -42,7 +42,7 @@ test('updateUserRoles throws FORBIDDEN when demoting the only system admin', asy
   const { sessionId, userId } = await loginAsSystemAdmin();
 
   await expect(
-    t.mutation(api.system.users.updateUserRoles, {
+    t.mutation(api.admin.users.updateUserRoles, {
       sessionId,
       userId,
       effectiveRole: 'standard_user',
@@ -59,7 +59,7 @@ test('updateUserRoles allows demoting a system admin when another admin exists',
   const admin1 = await loginAsSystemAdmin();
   const admin2 = await loginAsSystemAdmin();
 
-  await t.mutation(api.system.users.updateUserRoles, {
+  await t.mutation(api.admin.users.updateUserRoles, {
     sessionId: admin1.sessionId,
     userId: admin1.userId,
     effectiveRole: 'standard_user',
@@ -85,7 +85,7 @@ test('listUsers maps legacy manager roleNames to standard_user effectiveRole', a
     });
   });
 
-  const users = await t.query(api.system.users.listUsers, { sessionId });
+  const users = await t.query(api.admin.users.listUsers, { sessionId });
   const target = users.find((u) => u._id === targetUserId);
   expect(target?.effectiveRole).toBe('standard_user');
 });
@@ -94,7 +94,7 @@ test('listUsers excludes system_admin users for business admin actor', async () 
   const systemAdmin = await loginAsSystemAdmin();
   const businessAdmin = await loginAsBusinessAdmin();
 
-  const users = await t.query(api.system.users.listUsers, { sessionId: businessAdmin.sessionId });
+  const users = await t.query(api.admin.users.listUsers, { sessionId: businessAdmin.sessionId });
   const systemAdminEntry = users.find((u) => u._id === systemAdmin.userId);
   expect(systemAdminEntry).toBeUndefined();
 });
@@ -104,7 +104,7 @@ test('updateUserRoles blocks business admin from promoting to system_admin', asy
   const target = await createStandardUser();
 
   await expect(
-    t.mutation(api.system.users.updateUserRoles, {
+    t.mutation(api.admin.users.updateUserRoles, {
       sessionId: businessAdmin.sessionId,
       userId: target.userId,
       effectiveRole: 'system_admin',
@@ -122,7 +122,7 @@ test('updateUserRoles blocks business admin from demoting system_admin target', 
   const systemAdmin = await loginAsSystemAdmin();
 
   await expect(
-    t.mutation(api.system.users.updateUserRoles, {
+    t.mutation(api.admin.users.updateUserRoles, {
       sessionId: businessAdmin.sessionId,
       userId: systemAdmin.userId,
       effectiveRole: 'standard_user',
@@ -140,7 +140,7 @@ test('updateUserRoles blocks business admin from changing system_admin target to
   const systemAdmin = await loginAsSystemAdmin();
 
   await expect(
-    t.mutation(api.system.users.updateUserRoles, {
+    t.mutation(api.admin.users.updateUserRoles, {
       sessionId: businessAdmin.sessionId,
       userId: systemAdmin.userId,
       effectiveRole: 'admin',
@@ -157,7 +157,7 @@ test('updateUserRoles allows business admin to assign admin and standard_user pr
   const businessAdmin = await loginAsBusinessAdmin();
   const target = await createStandardUser();
 
-  await t.mutation(api.system.users.updateUserRoles, {
+  await t.mutation(api.admin.users.updateUserRoles, {
     sessionId: businessAdmin.sessionId,
     userId: target.userId,
     effectiveRole: 'admin',
@@ -167,7 +167,7 @@ test('updateUserRoles allows business admin to assign admin and standard_user pr
   expect(asAdmin?.accessLevel).toBe('user');
   expect(asAdmin?.roleNames).toEqual(['admin']);
 
-  await t.mutation(api.system.users.updateUserRoles, {
+  await t.mutation(api.admin.users.updateUserRoles, {
     sessionId: businessAdmin.sessionId,
     userId: target.userId,
     effectiveRole: 'standard_user',
@@ -182,10 +182,10 @@ test('system admin listUsers includes system_admin users and can assign system_a
   const systemAdmin = await loginAsSystemAdmin();
   const target = await createStandardUser();
 
-  const users = await t.query(api.system.users.listUsers, { sessionId: systemAdmin.sessionId });
+  const users = await t.query(api.admin.users.listUsers, { sessionId: systemAdmin.sessionId });
   expect(users.some((u) => u._id === systemAdmin.userId)).toBe(true);
 
-  await t.mutation(api.system.users.updateUserRoles, {
+  await t.mutation(api.admin.users.updateUserRoles, {
     sessionId: systemAdmin.sessionId,
     userId: target.userId,
     effectiveRole: 'system_admin',

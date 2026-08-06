@@ -34,8 +34,8 @@ const TYPE_LABELS: Record<'full' | 'anonymous', string> = {
 };
 
 export default function UserRolesPage() {
-  const users = useSessionQuery(api.system.users.listUsers);
-  const updateRoles = useSessionMutation(api.system.users.updateUserRoles);
+  const users = useSessionQuery(api.admin.users.listUsers);
+  const updateRoles = useSessionMutation(api.admin.users.updateUserRoles);
   const [savingUserId, setSavingUserId] = useState<Id<'users'> | null>(null);
   const canManageSystemAdmins = useHasPermission(SYSTEM_ADMIN_ACCESS_PERMISSION);
   const assignableRoles = (Object.keys(ROLE_LABELS) as EffectiveRole[]).filter(
