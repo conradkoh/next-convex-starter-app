@@ -76,7 +76,7 @@
       // while the route migration is in progress. Remove when /app/admin is deleted.
       "apps/webapp/src/app/app/system-admin/**",
       // Markdown viewer mirrors mdx-components.tsx styling intentionally (not shared to avoid MDX hook coupling)
-      "apps/webapp/src/modules/markdown-editor/markdown-components.tsx",
+      "apps/webapp/src/components/markdown-editor/markdown-components.tsx",
     ],
   },
   "health": {

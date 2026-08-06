@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { MarkdownEditor, MarkdownViewer } from '@/modules/markdown-editor';
+import { MarkdownEditor, MarkdownViewer } from '@/components/markdown-editor';
 
 const SAMPLE_MARKDOWN = `# Markdown WYSIWYG Demo
 
