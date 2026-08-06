@@ -37,27 +37,27 @@ export const UPSTREAM_FLOWS = {
     specFile: 'specs/upstream/profile.spec.ts',
   },
   adminDashboard: {
-    path: '/app/admin',
+    path: '/app/system-admin',
     description: 'System admin dashboard',
     specFile: 'specs/upstream/admin-dashboard.spec.ts',
   },
   adminUsers: {
     path: '/app/admin/users',
-    description: 'System admin user role management',
+    description: 'Business admin user role management',
     specFile: 'specs/upstream/admin-users.spec.ts',
   },
   adminGoogleAuth: {
-    path: '/app/admin/google-auth',
+    path: '/app/system-admin/google-auth',
     description: 'System admin Google OAuth configuration',
     specFile: 'specs/upstream/admin-google-auth.spec.ts',
   },
   adminInteractions: {
-    path: '/app/admin',
+    path: '/app/system-admin',
     description: 'Read-only verification of all admin UI controls (no mutations)',
     specFile: 'specs/upstream/admin-interactions.spec.ts',
   },
   adminUnauthorized: {
-    path: '/app/admin',
+    path: '/app/system-admin',
     description: 'Non-admin visit shows Access Denied',
     specFile: 'specs/upstream/admin-unauthorized.spec.ts',
   },
