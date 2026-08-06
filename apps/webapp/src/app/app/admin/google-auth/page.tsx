@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { RequirePermission } from '@/application/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,8 @@ import { useAppInfo } from '@/modules/app/useAppInfo';
 /**
  * Displays Google Authentication configuration page with OAuth setup, testing, and management capabilities.
  */
-export default function GoogleAuthConfigPage() {
+// fallow-ignore-next-line complexity
+function GoogleAuthConfigContent() {
   const { isLoading: appInfoLoading } = useAppInfo();
 
   // State for form inputs
@@ -641,6 +643,14 @@ export default function GoogleAuthConfigPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function GoogleAuthConfigPage() {
+  return (
+    <RequirePermission permission="auth:provider:manage">
+      <GoogleAuthConfigContent />
+    </RequirePermission>
   );
 }
 

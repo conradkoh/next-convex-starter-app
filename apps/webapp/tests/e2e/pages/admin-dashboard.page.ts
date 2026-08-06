@@ -8,7 +8,7 @@ export class AdminDashboardPage extends BasePage {
   }
 
   get heading(): Locator {
-    return this.page.getByRole('heading', { name: 'Admin Dashboard' });
+    return this.page.getByRole('heading', { name: 'Admin' });
   }
 
   get systemInformationHeading(): Locator {

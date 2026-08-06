@@ -22,6 +22,7 @@ vi.mock('@/modules/pwa-install', () => ({
 vi.mock('@/application/auth', () => ({
   useHasPermission: vi.fn(() => false),
   SYSTEM_ADMIN_ACCESS_PERMISSION: 'system:admin',
+  ADMIN_ACCESS_PERMISSION: 'admin:access',
 }));
 vi.mock('convex-helpers/react/sessions', () => ({
   useSessionMutation: vi.fn(() => vi.fn()),

@@ -2,13 +2,17 @@
 
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
-import { Download, Settings } from 'lucide-react';
+import { Download, Settings, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-import { SYSTEM_ADMIN_ACCESS_PERMISSION, useHasPermission } from '@/application/auth';
+import {
+  ADMIN_ACCESS_PERMISSION,
+  SYSTEM_ADMIN_ACCESS_PERMISSION,
+  useHasPermission,
+} from '@/application/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +44,7 @@ import { usePwaInstall } from '@/modules/pwa-install';
 export function UserMenu() {
   const authState = useAuthState();
   const showSystemAdminLink = useHasPermission(SYSTEM_ADMIN_ACCESS_PERMISSION);
+  const showAdminLink = useHasPermission(ADMIN_ACCESS_PERMISSION) && !showSystemAdminLink;
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -81,6 +86,7 @@ export function UserMenu() {
         showLogoutConfirmation,
         isLoggingOut,
         showSystemAdminLink,
+        showAdminLink,
         isInstalled,
         isReady,
         () => setDialogOpen(true)
@@ -153,6 +159,7 @@ function _renderUserDropdownMenu(
   showLogoutConfirmation: () => void,
   isLoggingOut: boolean,
   showSystemAdminLink: boolean,
+  showAdminLink: boolean,
   isInstalled: boolean,
   isReady: boolean,
   openInstallDialog: () => void
@@ -176,6 +183,14 @@ function _renderUserDropdownMenu(
           <Link href="/app">
             <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
           </Link>
+          {showAdminLink && (
+            <Link href="/app/admin">
+              <DropdownMenuItem className="cursor-pointer">
+                <UserCog className="h-4 w-4" />
+                Admin
+              </DropdownMenuItem>
+            </Link>
+          )}
           {showSystemAdminLink && (
             <Link href="/app/admin">
               <DropdownMenuItem className="cursor-pointer">

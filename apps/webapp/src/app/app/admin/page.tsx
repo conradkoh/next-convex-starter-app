@@ -4,7 +4,11 @@ import { getSignupConfigLabel } from '@workspace/backend/config/signupMethods';
 import { Settings, Shield, Ticket, Users } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { SYSTEM_ADMIN_ACCESS_PERMISSION, useHasPermission } from '@/application/auth';
+import {
+  ADMIN_ACCESS_PERMISSION,
+  SYSTEM_ADMIN_ACCESS_PERMISSION,
+  useHasPermission,
+} from '@/application/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppInfo } from '@/modules/app/useAppInfo';
 import { useAuthState } from '@/modules/auth/AuthProvider';
@@ -16,6 +20,67 @@ interface _StatusCardData {
   icon: React.ReactNode;
 }
 
+function _buildGoogleAuthStatusCard(
+  appInfo: ReturnType<typeof useAppInfo>['appInfo'],
+  isLoading: boolean
+): _StatusCardData {
+  let value = 'Disabled';
+  let description = 'Configuration required';
+
+  if (isLoading) {
+    value = '...';
+    description = 'Loading...';
+  } else if (appInfo?.googleAuthAvailable) {
+    value = 'Enabled';
+    description = 'Ready for user login';
+  }
+
+  return {
+    title: 'Google Auth',
+    value,
+    description,
+    icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+  };
+}
+
+// fallow-ignore-next-line complexity
+function _buildStatusCards(
+  appInfo: ReturnType<typeof useAppInfo>['appInfo'],
+  isLoading: boolean,
+  canManageAuthProviders: boolean,
+  yourAccessLabel: string
+): _StatusCardData[] {
+  const cards: _StatusCardData[] = [
+    {
+      title: 'App Version',
+      value: isLoading ? '...' : appInfo?.version || 'Unknown',
+      description: 'Current version',
+      icon: <Settings className="h-4 w-4 text-muted-foreground" />,
+    },
+  ];
+
+  if (canManageAuthProviders) {
+    cards.push(_buildGoogleAuthStatusCard(appInfo, isLoading));
+  }
+
+  cards.push(
+    {
+      title: 'Sign-up Mode',
+      value: getSignupConfigLabel(),
+      description: 'Edit featureFlags.ts and redeploy to change',
+      icon: <Ticket className="h-4 w-4 text-muted-foreground" />,
+    },
+    {
+      title: 'Your Access',
+      value: yourAccessLabel,
+      description: 'Effective permissions (not role name)',
+      icon: <Users className="h-4 w-4 text-muted-foreground" />,
+    }
+  );
+
+  return cards;
+}
+
 /**
  * Admin dashboard page displaying system status and configuration overview.
  * Shows app version, Google authentication status, and user access level.
@@ -23,48 +88,22 @@ interface _StatusCardData {
 export default function AdminDashboard() {
   const authState = useAuthState();
   const hasSystemAdminAccess = useHasPermission(SYSTEM_ADMIN_ACCESS_PERMISSION);
+  const hasAdminAccess = useHasPermission(ADMIN_ACCESS_PERMISSION);
+  const canManageAuthProviders = useHasPermission('auth:provider:manage');
   const { appInfo, isLoading } = useAppInfo();
 
-  /**
-   * Memoized status cards data to prevent unnecessary recalculations.
-   */
-  const statusCards = useMemo((): _StatusCardData[] => {
-    return [
-      {
-        title: 'App Version',
-        value: isLoading ? '...' : appInfo?.version || 'Unknown',
-        description: 'Current version',
-        icon: <Settings className="h-4 w-4 text-muted-foreground" />,
-      },
-      {
-        title: 'Google Auth',
-        value: isLoading ? '...' : appInfo?.googleAuthAvailable ? 'Enabled' : 'Disabled',
-        description: isLoading
-          ? 'Loading...'
-          : appInfo?.googleAuthAvailable
-            ? 'Ready for user login'
-            : 'Configuration required',
-        icon: <Shield className="h-4 w-4 text-muted-foreground" />,
-      },
-      {
-        title: 'Sign-up Mode',
-        value: getSignupConfigLabel(),
-        description: 'Edit featureFlags.ts and redeploy to change',
-        icon: <Ticket className="h-4 w-4 text-muted-foreground" />,
-      },
-      {
-        title: 'Your Access',
-        value:
-          authState?.state === 'authenticated'
-            ? hasSystemAdminAccess
-              ? 'System Administrator'
-              : 'Standard User'
-            : '...',
-        description: 'Effective permissions (not role name)',
-        icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      },
-    ];
-  }, [authState, appInfo, hasSystemAdminAccess, isLoading]);
+  // fallow-ignore-next-line complexity
+  const yourAccessLabel = useMemo(() => {
+    if (authState?.state !== 'authenticated') return '...';
+    if (hasSystemAdminAccess) return 'System Administrator';
+    if (hasAdminAccess) return 'Admin';
+    return 'Standard User';
+  }, [authState, hasAdminAccess, hasSystemAdminAccess]);
+
+  const statusCards = useMemo(
+    () => _buildStatusCards(appInfo, isLoading, canManageAuthProviders, yourAccessLabel),
+    [appInfo, canManageAuthProviders, isLoading, yourAccessLabel]
+  );
 
   /**
    * Memoized Google auth status for system information section.
@@ -87,7 +126,7 @@ export default function AdminDashboard() {
     <div className="pt-6 space-y-4 md:space-y-6">
       {_renderHeader()}
       {_renderStatusOverview(statusCards)}
-      {_renderSystemInformation(googleAuthStatus)}
+      {canManageAuthProviders && _renderSystemInformation(googleAuthStatus)}
     </div>
   );
 }
@@ -98,10 +137,8 @@ export default function AdminDashboard() {
 function _renderHeader() {
   return (
     <div className="space-y-2">
-      <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
-      <p className="text-sm md:text-base text-muted-foreground">
-        System administration and configuration panel
-      </p>
+      <h1 className="text-2xl md:text-3xl font-bold">Admin</h1>
+      <p className="text-sm md:text-base text-muted-foreground">Application administration</p>
     </div>
   );
 }

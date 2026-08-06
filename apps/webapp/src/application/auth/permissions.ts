@@ -26,6 +26,5 @@ export const allPermissions = Object.keys(permissions) as Permission[];
 /** Platform system administration UI — use for authorization checks, not the `system_admin` role name. */
 export const SYSTEM_ADMIN_ACCESS_PERMISSION = 'system_admin:access' as const satisfies Permission;
 
-/** Business administration UI — slice 2 frontend portal. */
-// fallow-ignore-next-line unused-export
+/** Business administration UI. */
 export const ADMIN_ACCESS_PERMISSION = 'admin:access' as const satisfies Permission;
