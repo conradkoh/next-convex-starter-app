@@ -7,8 +7,6 @@ import {
   Settings,
   Shield,
   ShieldX,
-  Ticket,
-  Users,
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -37,8 +35,6 @@ interface SystemAdminModule {
 
 const SYSTEM_ADMIN_MODULES: SystemAdminModule[] = [
   { href: '/app/system-admin', label: 'Dashboard', icon: Settings },
-  { href: '/app/system-admin/users', label: 'User Roles', icon: Users },
-  { href: '/app/system-admin/invites', label: 'Invites', icon: Ticket },
   { href: '/app/system-admin/google-auth', label: 'Google Auth Config', icon: Shield },
 ];
 

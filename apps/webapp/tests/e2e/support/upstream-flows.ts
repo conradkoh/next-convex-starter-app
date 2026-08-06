@@ -42,8 +42,8 @@ export const UPSTREAM_FLOWS = {
     specFile: 'specs/upstream/admin-dashboard.spec.ts',
   },
   adminUsers: {
-    path: '/app/system-admin/users',
-    description: 'System admin user role management',
+    path: '/app/admin/users',
+    description: 'Business admin user role management',
     specFile: 'specs/upstream/admin-users.spec.ts',
   },
   adminGoogleAuth: {

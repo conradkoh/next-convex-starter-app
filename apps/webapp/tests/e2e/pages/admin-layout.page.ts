@@ -38,11 +38,8 @@ export class AdminLayoutPage extends BasePage {
 
   async verifySidebarNavigation(): Promise<void> {
     await expect(this.dashboardNavLink).toBeVisible();
-    await expect(this.userRolesNavLink).toBeVisible();
     await expect(this.googleAuthNavLink).toBeVisible();
-
-    await this.userRolesNavLink.click();
-    await expect(this.page.getByRole('heading', { name: 'User Roles' })).toBeVisible();
+    await expect(this.userRolesNavLink).toBeHidden();
 
     await this.googleAuthNavLink.click();
     await expect(
