@@ -1,74 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { createOAuthState, getOAuthCallbackReturnTo, launchGoogleOAuth } from './google-oauth';
+import { createOAuthState, getOAuthCallbackReturnTo, redirectToGoogleOAuth } from './google-oauth';
 
-describe('shouldUseGoogleOAuthRedirect', () => {
-  const originalNavigator = global.navigator;
-  const assign = vi.fn();
+describe('redirectToGoogleOAuth', () => {
+  it('assigns window.location to auth URL', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', { value: { assign }, writable: true });
 
-  beforeEach(() => {
-    assign.mockClear();
-    Object.defineProperty(window, 'location', {
-      value: { assign },
-      writable: true,
-    });
-    vi.spyOn(window, 'open').mockReturnValue(null);
-  });
-
-  afterEach(() => {
-    Object.defineProperty(global, 'navigator', {
-      value: originalNavigator,
-      writable: true,
-    });
-    vi.restoreAllMocks();
-  });
-
-  function mockUserAgent(userAgent: string) {
-    Object.defineProperty(global, 'navigator', {
-      value: { userAgent },
-      writable: true,
-    });
-  }
-
-  it('uses redirect for iOS Safari', () => {
-    mockUserAgent(
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
-    );
-    expect(launchGoogleOAuth({ authUrl: 'https://example.com/oauth', popupName: 'test' })).toBe(
-      'redirect'
-    );
-    expect(assign).toHaveBeenCalledWith('https://example.com/oauth');
-  });
-
-  it('uses redirect for iOS Chrome (WebKit)', () => {
-    mockUserAgent(
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1'
-    );
-    expect(launchGoogleOAuth({ authUrl: 'https://example.com/oauth', popupName: 'test' })).toBe(
-      'redirect'
-    );
-  });
-
-  it('uses redirect for desktop Safari', () => {
-    mockUserAgent(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
-    );
-    expect(launchGoogleOAuth({ authUrl: 'https://example.com/oauth', popupName: 'test' })).toBe(
-      'redirect'
-    );
-  });
-
-  it('uses popup for desktop Chrome when window.open succeeds', () => {
-    mockUserAgent(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    );
-    const popup = { closed: false, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
-
-    expect(launchGoogleOAuth({ authUrl: 'https://example.com/oauth', popupName: 'test' })).toBe(
-      'popup'
-    );
-    expect(assign).not.toHaveBeenCalled();
+    redirectToGoogleOAuth('https://accounts.google.com/o/oauth2/auth?...');
+    expect(assign).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/auth?...');
   });
 });
 
@@ -111,7 +51,7 @@ describe('getOAuthCallbackReturnTo', () => {
     expect(getOAuthCallbackReturnTo(state)).toBe('/app/profile');
   });
 
-  it('returns undefined for invalid state', () => {
+  it('returns /login for invalid state', () => {
     expect(getOAuthCallbackReturnTo('not-valid-json')).toBe('/login');
   });
 });

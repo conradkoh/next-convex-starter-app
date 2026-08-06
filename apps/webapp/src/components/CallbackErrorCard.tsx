@@ -14,9 +14,8 @@ export interface CallbackErrorCardProps {
 }
 
 /**
- * Displays OAuth callback errors with user-friendly messaging and close button.
+ * Displays OAuth callback errors with user-friendly messaging and go-back button.
  */
-// fallow-ignore-next-line complexity
 export function CallbackErrorCard({
   error,
   flowType = 'login',
@@ -25,16 +24,13 @@ export function CallbackErrorCard({
 }: CallbackErrorCardProps) {
   const userFriendlyError = getGoogleOAuthUserFriendlyError(error, flowType);
   const title = flowType === 'connect' ? 'Connection Failed' : 'Sign In Failed';
-  const isRedirectMode = typeof window !== 'undefined' && !!redirectTo && !window.opener;
+  const destination = redirectTo ?? '/login';
 
-  // fallow-ignore-next-line complexity
   const handleClose = () => {
     if (onClose) {
       onClose();
-    } else if (redirectTo && typeof window !== 'undefined' && !window.opener) {
-      window.location.assign(redirectTo);
     } else {
-      window.close();
+      window.location.assign(destination);
     }
   };
 
@@ -45,7 +41,7 @@ export function CallbackErrorCard({
         <p className="text-sm font-medium text-destructive">{title}</p>
         <p className="text-sm text-muted-foreground">{userFriendlyError}</p>
         <Button variant="outline" onClick={handleClose} className="w-full">
-          {isRedirectMode ? 'Go Back' : 'Close Window'}
+          Go Back
         </Button>
       </div>
     </div>

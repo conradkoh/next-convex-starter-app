@@ -1,7 +1,6 @@
 'use client';
 
 import { api } from '@workspace/backend/convex/_generated/api';
-import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
 import { ChevronDown, X } from 'lucide-react';
@@ -30,7 +29,7 @@ import { ConnectButton } from '@/modules/auth/ConnectButton';
 import {
   buildGoogleOAuthUrl,
   createOAuthState,
-  launchGoogleOAuth,
+  redirectToGoogleOAuth,
 } from '@/modules/auth/google-oauth';
 import { GoogleIcon } from '@/modules/auth/GoogleIcon';
 
@@ -63,6 +62,7 @@ interface _GoogleAccountContext {
  * Name edit form component allowing users to update their display name.
  * Supports different user types (Google, anonymous, full account) with appropriate messaging.
  */
+// fallow-ignore-next-line complexity
 export function NameEditForm() {
   const currentUser = useCurrentUser();
   const authState = useAuthState();
@@ -80,7 +80,6 @@ export function NameEditForm() {
 
   // State for Google connection
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
-  const [connectLoginRequestId, setConnectLoginRequestId] = useState<string | null>(null);
 
   // State for disconnect confirmation dialog
   const [disconnectDialog, setDisconnectDialog] = useState<_DisconnectDialogState>({
@@ -94,32 +93,6 @@ export function NameEditForm() {
   const updateUserName = useSessionMutation(api.auth.updateUserName);
   const disconnectGoogle = useSessionMutation(api.auth.google.disconnectGoogle);
   const createConnectRequest = useSessionMutation(api.auth.google.createConnectRequest);
-
-  // Query to poll connect request status for connect flow
-  const connectRequest = useQuery(
-    api.auth.google.getConnectRequest,
-    connectLoginRequestId
-      ? { connectRequestId: connectLoginRequestId as Id<'auth_connectRequests'> }
-      : 'skip'
-  );
-
-  const prevConnectRequestRef = useRef(connectRequest);
-  if (prevConnectRequestRef.current !== connectRequest) {
-    prevConnectRequestRef.current = connectRequest;
-    if (connectRequest && isConnectingGoogle) {
-      if (connectRequest.status === 'completed') {
-        queueMicrotask(() => toast.success('Google account connected successfully!'));
-        setIsConnectingGoogle(false);
-        setConnectLoginRequestId(null);
-      } else if (connectRequest.status === 'failed') {
-        queueMicrotask(() =>
-          toast.error(connectRequest.error || 'Failed to connect Google account')
-        );
-        setIsConnectingGoogle(false);
-        setConnectLoginRequestId(null);
-      }
-    }
-  }
 
   const prevUserNameRef = useRef(currentUser?.name);
   if (prevUserNameRef.current !== currentUser?.name) {
@@ -186,10 +159,6 @@ export function NameEditForm() {
       // Create a connect request in the backend for connect flow
       const result = await createConnectRequest({ redirectUri });
 
-      // Set the connect request ID for polling
-      setConnectLoginRequestId(result.connectId);
-
-      // Generate the Google OAuth URL using the structured state parameter
       const state = createOAuthState('connect', result.connectId, '/app/profile');
       const authUrl = buildGoogleOAuthUrl({
         clientId: googleAuthAvailable?.clientId || '',
@@ -197,21 +166,10 @@ export function NameEditForm() {
         state,
       });
 
-      const mode = launchGoogleOAuth({
-        authUrl,
-        popupName: 'google-oauth-connect',
-        onPopupTimeout: () => {
-          toast.error('Connection timeout. Please try again.');
-          setIsConnectingGoogle(false);
-          setConnectLoginRequestId(null);
-        },
-      });
-
-      if (mode === 'redirect') return;
+      redirectToGoogleOAuth(authUrl);
     } catch (_error) {
       toast.error('Failed to connect Google account');
       setIsConnectingGoogle(false);
-      setConnectLoginRequestId(null);
     }
   }, [googleAuthAvailable?.clientId, createConnectRequest]);
 

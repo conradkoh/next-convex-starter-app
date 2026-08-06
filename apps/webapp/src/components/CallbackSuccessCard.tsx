@@ -12,7 +12,7 @@ export interface CallbackSuccessCardProps {
 }
 
 /**
- * Displays OAuth callback success with automatic window closure and countdown timer.
+ * Displays OAuth callback success with automatic redirect and countdown timer.
  */
 export function CallbackSuccessCard({
   flowType = 'login',
@@ -22,18 +22,15 @@ export function CallbackSuccessCard({
   userName,
 }: CallbackSuccessCardProps) {
   const [countdown, setCountdown] = useState(autoCloseDelay);
-  const isRedirectMode = typeof window !== 'undefined' && !!redirectTo && !window.opener;
+  const destination = redirectTo ?? '/login';
 
   useEffect(() => {
     if (countdown <= 0) {
-      // fallow-ignore-next-line complexity
       const timer = setTimeout(() => {
         if (onClose) {
           onClose();
-        } else if (redirectTo && typeof window !== 'undefined' && !window.opener) {
-          window.location.assign(redirectTo);
         } else {
-          window.close();
+          window.location.assign(destination);
         }
       }, 500);
 
@@ -45,19 +42,16 @@ export function CallbackSuccessCard({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [countdown, onClose, redirectTo]);
+  }, [countdown, onClose, destination]);
 
   const successMessage = _getSuccessMessage(flowType, userName);
-  const countdownLabel = isRedirectMode ? 'Redirecting' : 'Closing';
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="text-center space-y-3">
         <CheckCircle className="mx-auto h-10 w-10 text-green-600" />
         <p className="text-sm font-medium">{successMessage}</p>
-        <p className="text-xs text-muted-foreground">
-          {countdownLabel} in {countdown}s…
-        </p>
+        <p className="text-xs text-muted-foreground">Redirecting in {countdown}s…</p>
       </div>
     </div>
   );
