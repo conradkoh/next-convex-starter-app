@@ -19,7 +19,7 @@ test.describe('Admin Interactions (read-only)', { tag: [TAG_UPSTREAM, TAG_ADMIN]
     const users = new AdminUsersPage(systemAdminPage);
     const googleAuth = new AdminGoogleAuthPage(systemAdminPage);
 
-    // Fixture lands on /app/admin
+    // Fixture lands on /app/system-admin
     await dashboard.verifyReadOnlyInteractions();
     await layout.verifyBackToAppLink();
     await layout.verifySidebarNavigation();

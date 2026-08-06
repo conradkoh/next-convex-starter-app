@@ -23,7 +23,7 @@ export class AdminUsersPage extends BasePage {
     return this.page.locator('.rounded-lg.border.p-3');
   }
 
-  override async navigate(path = '/app/admin/users'): Promise<void> {
+  override async navigate(path = '/app/system-admin/users'): Promise<void> {
     await this.page.goto(path);
     await expect(this.heading).toBeVisible();
     await expect(this.allUsersCard).toBeVisible();

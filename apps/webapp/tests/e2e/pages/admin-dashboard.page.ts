@@ -15,7 +15,7 @@ export class AdminDashboardPage extends BasePage {
     return this.page.getByRole('heading', { name: 'System Information' });
   }
 
-  override async navigate(path = '/app/admin'): Promise<void> {
+  override async navigate(path = '/app/system-admin'): Promise<void> {
     await this.page.goto(path);
     await expect(this.heading).toBeVisible();
   }
