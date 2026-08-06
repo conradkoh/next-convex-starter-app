@@ -140,3 +140,22 @@ describe('getPermissionsForUser', () => {
     );
   });
 });
+
+describe('admin role', () => {
+  const adminUser = { accessLevel: 'user' as const, roleNames: ['admin'] };
+
+  it('has admin:access, users:list, and invites:manage', () => {
+    expect(hasPermission(adminUser, 'admin:access')).toBe(true);
+    expect(hasPermission(adminUser, 'users:list')).toBe(true);
+    expect(hasPermission(adminUser, 'invites:manage')).toBe(true);
+  });
+
+  it('lacks system_admin:access and auth:provider:manage', () => {
+    expect(hasPermission(adminUser, 'system_admin:access')).toBe(false);
+    expect(hasPermission(adminUser, 'auth:provider:manage')).toBe(false);
+  });
+
+  it('resolves roleNames admin via getRolesForUser', () => {
+    expect(getRolesForUser({ accessLevel: 'user', roleNames: ['admin'] })).toEqual(['admin']);
+  });
+});

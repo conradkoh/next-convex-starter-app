@@ -14,6 +14,7 @@ const permissions = {
   'settings:write': { description: 'Update application settings' },
   'auth:provider:manage': { description: 'Configure authentication providers' },
   'invites:manage': { description: 'Create and manage invite codes' },
+  'admin:access': { description: 'Access business administration UI' },
   'attendance:read': { description: 'View attendance records' },
   'attendance:manage': { description: 'Manage attendance records' },
   'presentation:read': { description: 'View presentations' },
@@ -27,3 +28,7 @@ export const allPermissions = Object.keys(permissions) as Permission[];
 export const AUTH_PROVIDER_MANAGE_PERMISSION = 'auth:provider:manage' as const satisfies Permission;
 
 export const INVITES_MANAGE_PERMISSION = 'invites:manage' as const satisfies Permission;
+
+/** Business administration UI — slice 2 frontend portal. */
+// fallow-ignore-next-line unused-export
+export const ADMIN_ACCESS_PERMISSION = 'admin:access' as const satisfies Permission;
