@@ -12,6 +12,10 @@ import {
   linkPlugin,
   tablePlugin,
   codeBlockPlugin,
+  codeMirrorPlugin,
+  CodeMirrorEditor,
+  ChangeCodeMirrorLanguage,
+  ConditionalContents,
   toolbarPlugin,
   UndoRedo,
   BoldItalicUnderlineToggles,
@@ -48,19 +52,49 @@ export default function InitializedMDXEditor({
         markdownShortcutPlugin(),
         linkPlugin(),
         tablePlugin(),
-        codeBlockPlugin({ defaultCodeBlockLanguage: 'txt' }),
+        codeBlockPlugin({
+          defaultCodeBlockLanguage: 'txt',
+          codeBlockEditorDescriptors: [
+            { priority: -10, match: () => true, Editor: CodeMirrorEditor },
+          ],
+        }),
+        codeMirrorPlugin({
+          codeBlockLanguages: {
+            '': 'Plain Text',
+            txt: 'Plain Text',
+            js: 'JavaScript',
+            ts: 'TypeScript',
+            typescript: 'TypeScript',
+            tsx: 'TypeScript (React)',
+            jsx: 'JavaScript (React)',
+            css: 'CSS',
+            markdown: 'Markdown',
+          },
+        }),
         toolbarPlugin({
           toolbarContents: () => (
-            <>
-              <UndoRedo />
-              <BoldItalicUnderlineToggles />
-              <ListsToggle />
-              <BlockTypeSelect />
-              <CreateLink />
-              <InsertCodeBlock />
-              <InsertTable />
-              <InsertThematicBreak />
-            </>
+            <ConditionalContents
+              options={[
+                {
+                  when: (editor) => editor?.editorType === 'codeblock',
+                  contents: () => <ChangeCodeMirrorLanguage />,
+                },
+                {
+                  fallback: () => (
+                    <>
+                      <UndoRedo />
+                      <BoldItalicUnderlineToggles />
+                      <ListsToggle />
+                      <BlockTypeSelect />
+                      <CreateLink />
+                      <InsertCodeBlock />
+                      <InsertTable />
+                      <InsertThematicBreak />
+                    </>
+                  ),
+                },
+              ]}
+            />
           ),
         }),
       ]}
