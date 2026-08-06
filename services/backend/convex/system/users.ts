@@ -2,6 +2,7 @@ import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { requireAuthenticatedPermission } from '../../application/auth';
+import { hasPermission } from '../../application/auth/resolve';
 import { getAuthUser } from '../../modules/auth/session';
 import type { Doc, Id } from '../_generated/dataModel';
 import { mutation, query, type MutationCtx } from '../_generated/server';
@@ -13,15 +14,16 @@ import { mutation, query, type MutationCtx } from '../_generated/server';
  * - `listUsers`       requires `users:list`  (system admins hold this via systemAdminPermissions).
  * - `updateUserRoles` requires `users:write` (system admins hold this).
  *
- * Starter ships two built-in roles only (user, system_admin). Forks extend
+ * Starter ships three built-in roles (user, admin, system_admin). Forks extend
  * roleDefinitions and this UI separately for custom roles.
  */
 
 const USERS_LIST = 'users:list' as const;
 const USERS_WRITE = 'users:write' as const;
+const SYSTEM_ADMIN_ACCESS = 'system_admin:access' as const;
 
-/** Effective role preset — maps to the two built-in starter roles only */
-export type EffectiveRole = 'standard_user' | 'system_admin';
+/** Effective role preset — maps to built-in starter roles */
+export type EffectiveRole = 'standard_user' | 'admin' | 'system_admin';
 
 export interface UserSummary {
   _id: Id<'users'>;
@@ -33,8 +35,12 @@ export interface UserSummary {
   effectiveRole: EffectiveRole;
 }
 
-function toEffectiveRole(user: { accessLevel?: 'user' | 'system_admin' }): EffectiveRole {
+function toEffectiveRole(user: {
+  accessLevel?: 'user' | 'system_admin';
+  roleNames?: string[];
+}): EffectiveRole {
   if (user.accessLevel === 'system_admin') return 'system_admin';
+  if (user.roleNames?.includes('admin')) return 'admin';
   return 'standard_user';
 }
 
@@ -45,6 +51,8 @@ function presetToStorage(effectiveRole: EffectiveRole): {
   switch (effectiveRole) {
     case 'system_admin':
       return { accessLevel: 'system_admin', roleNames: undefined };
+    case 'admin':
+      return { accessLevel: 'user', roleNames: ['admin'] };
     case 'standard_user':
       return { accessLevel: 'user', roleNames: ['user'] };
   }
@@ -86,8 +94,10 @@ export const listUsers = query({
     });
 
     const users = await ctx.db.query('users').collect();
+    const actorCanManageSystemAdmins = hasPermission(actor, SYSTEM_ADMIN_ACCESS);
 
     return users
+      .filter((user) => actorCanManageSystemAdmins || user.accessLevel !== 'system_admin')
       .map((user) => ({
         _id: user._id,
         name: user.name,
@@ -108,9 +118,14 @@ export const listUsers = query({
 export const updateUserRoles = mutation({
   args: {
     userId: v.id('users'),
-    effectiveRole: v.union(v.literal('standard_user'), v.literal('system_admin')),
+    effectiveRole: v.union(
+      v.literal('standard_user'),
+      v.literal('admin'),
+      v.literal('system_admin')
+    ),
     ...SessionIdArg,
   },
+  // fallow-ignore-next-line complexity
   handler: async (ctx, args) => {
     const actor = await getAuthUser(ctx, args);
     requireAuthenticatedPermission(actor, USERS_WRITE, {
@@ -120,6 +135,16 @@ export const updateUserRoles = mutation({
     const target = await ctx.db.get('users', args.userId);
     if (!target) {
       throw new ConvexError({ code: 'NOT_FOUND', message: 'User not found' });
+    }
+
+    const actorCanManageSystemAdmins = hasPermission(actor, SYSTEM_ADMIN_ACCESS);
+    if (!actorCanManageSystemAdmins) {
+      if (args.effectiveRole === 'system_admin' || target.accessLevel === 'system_admin') {
+        throw new ConvexError({
+          code: 'FORBIDDEN',
+          message: 'Only system administrators can manage the system administrator role',
+        });
+      }
     }
 
     await assertNotLastSystemAdmin(ctx, target, args.effectiveRole);
