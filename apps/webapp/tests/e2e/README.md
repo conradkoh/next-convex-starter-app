@@ -50,7 +50,7 @@ tests/e2e/
     app-dashboard.page.ts  # /app
     profile.page.ts        # /app/profile
     admin-dashboard.page.ts      # /app/system-admin
-    admin-users.page.ts          # /app/system-admin/users
+    admin-users.page.ts          # /app/admin/users
     admin-google-auth.page.ts    # /app/system-admin/google-auth
   specs/
     upstream/              # template-owned flows (tagged @upstream)
