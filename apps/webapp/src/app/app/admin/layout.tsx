@@ -14,6 +14,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { ADMIN_ACCESS_PERMISSION, RequirePermission } from '@/application/auth';
+import { ScrollableRegion } from '@/components/ScrollableRegion';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -174,9 +175,9 @@ function _renderDesktopSidebar(pathname: string, visibleModules: AdminModule[]) 
 
 function _renderMainContent(children: React.ReactNode) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+    <ScrollableRegion className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
       <div className="p-4 lg:p-6">{children}</div>
-    </div>
+    </ScrollableRegion>
   );
 }
 

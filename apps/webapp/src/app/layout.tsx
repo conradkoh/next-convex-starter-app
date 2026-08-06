@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 
 import './globals.css';
+import { AppMain } from '@/app/AppMain';
 import { ConvexClientProvider } from '@/app/ConvexClientProvider';
 import { Navigation } from '@/components/Navigation';
 import { Toaster } from '@/components/ui/sonner';
@@ -76,10 +77,10 @@ export default function RootLayout({
                   <PwaInstallProvider>
                     <div className="flex h-dvh flex-col overflow-hidden">
                       <Navigation />
-                      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+                      <AppMain>
                         <InstallAppMobileBanner />
                         {children}
-                      </main>
+                      </AppMain>
                     </div>
                   </PwaInstallProvider>
                 </ThemeProvider>
