@@ -231,6 +231,7 @@ input,
     overflow: hidden;
   }
   body {
+    position: relative;
     @apply bg-background text-foreground;
   }
   /* Only apply transitions to direct children of body to reduce performance impact */
