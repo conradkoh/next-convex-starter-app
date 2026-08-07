@@ -11,6 +11,11 @@ export const UPSTREAM_FLOWS = {
     description: 'Public landing page with app version footer',
     specFile: 'specs/upstream/home.spec.ts',
   },
+  markdownEditor: {
+    path: '/test/markdown-editor',
+    description: 'Markdown WYSIWYG editor demo (editor + viewer markdown elements)',
+    specFile: 'specs/upstream/markdown-editor.spec.ts',
+  },
   login: {
     path: '/login',
     description: 'Login hub with auth method options',
