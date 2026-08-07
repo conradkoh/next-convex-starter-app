@@ -14,8 +14,9 @@
     "application/**/*",
     "config/**/*",
     "modules/**/*",
+    "convex/**/*.ts",
     "test.setup.ts",
     "vitest.config.mts"
   ],
-  "exclude": ["convex", "node_modules", "dist"]
+  "exclude": ["convex/_generated", "node_modules", "dist"]
 }

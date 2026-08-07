@@ -1,38 +1,61 @@
 'use client';
 
-import { ArrowLeft, Loader2, Menu, Settings, Shield, ShieldX, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronDown,
+  Loader2,
+  ShieldX,
+  Ticket,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-import { RequirePermission, SYSTEM_ADMIN_ACCESS_PERMISSION } from '@/application/auth';
-import { Button } from '@/components/ui/button';
+import { ADMIN_ACCESS_PERMISSION, RequirePermission } from '@/application/auth';
+import { ScrollableRegion } from '@/components/ScrollableRegion';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { useAuthState } from '@/modules/auth/AuthProvider';
 
-interface SystemAdminLayoutProps {
+interface AdminModule {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+const ADMIN_MODULES: AdminModule[] = [
+  { href: '/app/admin/users', label: 'User Roles', icon: Users },
+  { href: '/app/admin/invites', label: 'Invites', icon: Ticket },
+];
+
+function getActiveAdminModule(pathname: string, modules: AdminModule[]): AdminModule {
+  return (
+    [...modules]
+      .sort((a, b) => b.href.length - a.href.length)
+      .find((m) => pathname === m.href || pathname.startsWith(`${m.href}/`)) ?? modules[0]
+  );
+}
+
+interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-/** Layout for `/app/admin` — platform system administration (not business/org admin). */
-export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) {
+/** Layout for `/app/admin` — business administration portal. */
+export default function AdminLayout({ children }: AdminLayoutProps) {
   const authState = useAuthState();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const openSidebar = useCallback(() => {
-    setSidebarOpen(true);
-  }, []);
-
-  const closeSidebar = useCallback(() => {
-    setSidebarOpen(false);
-  }, []);
-
-  const handleBackdropKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setSidebarOpen(false);
-    }
-  }, []);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (authState?.state === 'unauthenticated') {
@@ -49,15 +72,13 @@ export default function SystemAdminLayout({ children }: SystemAdminLayoutProps) 
   }
 
   return (
-    <RequirePermission
-      permission={SYSTEM_ADMIN_ACCESS_PERMISSION}
-      fallback={_renderSystemAdminAccessDenied()}
-    >
-      <div className="flex h-full min-h-0">
-        {_renderMobileHeader(openSidebar)}
-        {_renderMobileSidebar(sidebarOpen, closeSidebar, handleBackdropKeyDown)}
-        {_renderDesktopSidebar(closeSidebar)}
-        {_renderMainContent(children)}
+    <RequirePermission permission={ADMIN_ACCESS_PERMISSION} fallback={_renderAdminAccessDenied()}>
+      <div className="flex min-h-0 flex-1">
+        {_renderDesktopSidebar(pathname, ADMIN_MODULES)}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {_renderMobileHeader(pathname, ADMIN_MODULES)}
+          {_renderMainContent(children)}
+        </div>
       </div>
     </RequirePermission>
   );
@@ -74,7 +95,7 @@ function _renderAuthLoading(message: string) {
   );
 }
 
-function _renderSystemAdminAccessDenied() {
+function _renderAdminAccessDenied() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -83,8 +104,8 @@ function _renderSystemAdminAccessDenied() {
             <ShieldX className="mx-auto h-16 w-16 text-destructive/60" />
             <h1 className="text-2xl font-semibold">Access Denied</h1>
             <p className="text-muted-foreground">
-              You need <span className="font-medium">system administrator</span> access (
-              <span className="font-medium">{SYSTEM_ADMIN_ACCESS_PERMISSION}</span>).
+              You need <span className="font-medium">administrator</span> access (
+              <span className="font-medium">{ADMIN_ACCESS_PERMISSION}</span>).
             </p>
             <Link href="/app">
               <Button variant="outline" className="w-full">
@@ -99,16 +120,43 @@ function _renderSystemAdminAccessDenied() {
   );
 }
 
-function _renderMobileHeader(openSidebar: () => void) {
+function _renderMobileHeader(pathname: string, visibleModules: AdminModule[]) {
+  const activeModule = getActiveAdminModule(pathname, visibleModules);
+  const ActiveIcon = activeModule.icon;
+
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-background border-b p-4">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={openSidebar}>
-          <Menu className="h-4 w-4 mr-2" />
-          System Admin
-        </Button>
+    <div className="lg:hidden shrink-0 border-b bg-background p-4">
+      <div className="flex items-center justify-between gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 max-w-[70%]')}
+          >
+            <ActiveIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{activeModule.label}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Admin</DropdownMenuLabel>
+              {visibleModules.map((module) => {
+                const Icon = module.icon;
+                const isActive = module.href === activeModule.href;
+                return (
+                  <Link key={module.href} href={module.href}>
+                    <DropdownMenuItem
+                      className={cn('cursor-pointer gap-2', isActive && 'bg-muted font-medium')}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {module.label}
+                    </DropdownMenuItem>
+                  </Link>
+                );
+              })}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Link href="/app">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" aria-label="Back to app">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -117,101 +165,68 @@ function _renderMobileHeader(openSidebar: () => void) {
   );
 }
 
-function _renderMobileSidebar(
-  sidebarOpen: boolean,
-  closeSidebar: () => void,
-  handleBackdropKeyDown: (e: React.KeyboardEvent) => void
-) {
-  if (!sidebarOpen) return null;
-
-  return (
-    <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-      <div
-        className="fixed left-0 top-0 bottom-0 w-64 bg-background border-r p-4"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        {_renderSidebarContent(closeSidebar)}
-      </div>
-      {/* Backdrop area to close sidebar */}
-      <div
-        className="fixed inset-0 -z-10"
-        onClick={closeSidebar}
-        onKeyDown={handleBackdropKeyDown}
-        aria-hidden="true"
-      />
-    </div>
-  );
-}
-
-function _renderDesktopSidebar(closeSidebar: () => void) {
+function _renderDesktopSidebar(pathname: string, visibleModules: AdminModule[]) {
   return (
     <div className="hidden lg:block w-64 border-r bg-muted/10 p-4">
-      {_renderSidebarContent(closeSidebar)}
+      {_renderSidebarContent(pathname, visibleModules)}
     </div>
   );
 }
 
 function _renderMainContent(children: React.ReactNode) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-      <div className="pt-20 lg:pt-0 p-4 lg:p-6">{children}</div>
-    </div>
+    <ScrollableRegion
+      regionId="content"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+    >
+      <div className="p-4 lg:p-6">{children}</div>
+    </ScrollableRegion>
   );
 }
 
-function _renderSidebarContent(closeSidebar: () => void) {
+function _renderSidebarContent(pathname: string, visibleModules: AdminModule[]) {
+  const activeModule = getActiveAdminModule(pathname, visibleModules);
+
   return (
     <div className="space-y-4 h-full">
-      {/* Header */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between lg:justify-start">
-          <Link href="/app">
-            <Button variant="ghost" size="sm" className="justify-start">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Back to App</span>
-            </Button>
-          </Link>
-          {/* Close button for mobile */}
-          <Button variant="ghost" size="sm" className="lg:hidden" onClick={closeSidebar}>
-            <X className="h-4 w-4" />
+        <Link href="/app">
+          <Button variant="ghost" size="sm" className="justify-start">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Back to App</span>
           </Button>
-        </div>
+        </Link>
         <div className="border-b pb-2">
-          <h2 className="text-lg font-semibold">System Admin</h2>
-          <p className="text-sm text-muted-foreground">Platform administration</p>
+          <h2 className="text-lg font-semibold">Admin</h2>
+          <p className="text-sm text-muted-foreground">Application administration</p>
         </div>
       </div>
 
-      {/* Navigation Menu */}
       <nav className="space-y-2">
-        <Link
-          href="/app/admin"
-          className="flex items-center space-x-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors"
-          onClick={closeSidebar}
-        >
-          <Settings className="h-4 w-4" />
-          <span>Dashboard</span>
-        </Link>
-
-        <Link
-          href="/app/admin/google-auth"
-          className="flex items-center space-x-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors"
-          onClick={closeSidebar}
-        >
-          <Shield className="h-4 w-4" />
-          <span>Google Auth Config</span>
-        </Link>
+        {visibleModules.map((module) => {
+          const Icon = module.icon;
+          const isActive = module.href === activeModule.href;
+          return (
+            <Link
+              key={module.href}
+              href={module.href}
+              className={cn(
+                'flex items-center space-x-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors',
+                isActive && 'bg-muted font-medium'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{module.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Admin Info */}
       <div className="mt-8">
         <Card className="p-3">
           <div className="text-xs text-muted-foreground">
-            <p className="font-medium">System Administrator</p>
-            <p className="mt-1">You have full system access</p>
+            <p className="font-medium">Administrator</p>
+            <p className="mt-1">You have admin access</p>
           </div>
         </Card>
       </div>

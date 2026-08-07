@@ -25,11 +25,11 @@ See `convex/system/auth/google.ts` for a reference. Full guide: `docs/features/r
 
 ### Add a role
 
-Append to `roleDefinitions` in both `roles.ts` files. **Assignment today:** only `accessLevel` → `user` \| `system_admin` in `getRolesForUser`. Do not enable placeholder roles until Phase 1b (`users.roleNames`).
+Append to `roleDefinitions` in both `roles.ts` files. **Assignment:** `users.roleNames` (array of role strings); legacy `accessLevel` is fallback when `roleNames` is absent.
 
 ### Naming
 
-Use `resource:action` (e.g. `users:list`, `auth:provider:manage`). Avoid bare `admin` — use `system_admin` for platform operators; reserve other prefixes (e.g. `org_admin`) for future business admins. See `docs/features/rbac/define-new-role.md`.
+Use `resource:action` (e.g. `users:list`, `system_admin:access`). Avoid bare `admin` — use `system_admin` for platform operators; reserve other prefixes (e.g. `org_admin`) for future business admins. See `docs/features/rbac/define-new-role.md`.
 
 ### Sync
 

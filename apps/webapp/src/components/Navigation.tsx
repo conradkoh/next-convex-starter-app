@@ -28,12 +28,18 @@ export function Navigation() {
     <header className="z-50 w-full shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 sm:px-6">
         <div className="mr-6 flex">
-          <Link
-            href={authStatus.isAuthenticated ? '/app' : '/'}
-            className="flex items-center whitespace-nowrap"
-          >
-            <span className="font-bold text-lg">Next Convex</span>
-          </Link>
+          {authStatus.isLoading ? (
+            <span className="flex items-center whitespace-nowrap">
+              <span className="font-bold text-lg">Next Convex</span>
+            </span>
+          ) : (
+            <Link
+              href={authStatus.isAuthenticated ? '/app' : '/'}
+              className="flex items-center whitespace-nowrap"
+            >
+              <span className="font-bold text-lg">Next Convex</span>
+            </Link>
+          )}
         </div>
         <nav className="flex items-center justify-between w-full">
           <div className="flex gap-6 text-sm">{/* Navigation links removed */}</div>

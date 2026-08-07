@@ -16,15 +16,15 @@ export const roleDefinitions = [
     role: 'user',
     permissions: ['attendance:read', 'presentation:read'] as const satisfies readonly Permission[],
   },
-  // Phase 1b: assign via users.roleNames — not active until then.
-  // {
-  //   role: 'manager',
-  //   permissions: [
-  //     'users:list',
-  //     'users:read',
-  //     'attendance:manage',
-  //   ] as const satisfies readonly Permission[],
-  // },
+  {
+    role: 'admin',
+    permissions: [
+      'admin:access',
+      'users:list',
+      'users:write',
+      'invites:manage',
+    ] as const satisfies readonly Permission[],
+  },
   {
     role: 'system_admin',
     permissions: systemAdminPermissions,
