@@ -261,6 +261,17 @@ export default [
     },
   },
 
+  // Workspace package files that are excluded from their package TS project
+  // (specs, root-level configs) cannot be type-aware linted.
+  {
+    files: ['packages/**/*.{spec,test}.ts', 'packages/**/vitest.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: false,
+      },
+    },
+  },
+
   // Configuration files
   {
     files: ['*.config.{js,ts,mjs,cjs}', 'postcss.config.mjs'],
@@ -272,6 +283,14 @@ export default [
   // Script files - console.log is expected
   {
     files: ['**/scripts/**/*.{js,ts,mjs,cjs}'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // CLI entry points - console I/O is the interface
+  {
+    files: ['packages/cli/src/**/*.{ts,tsx}'],
     rules: {
       'no-console': 'off',
     },

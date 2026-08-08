@@ -110,9 +110,27 @@ This will start:
 - The webapp at http://localhost:<PORT> (see `PORT` in `apps/webapp/.env.local`, assigned during setup)
 - The Convex backend development server
 
+## CLI
+
+The project ships a publishable CLI (`next-convex-starter-app`) and a convenience root script:
+
+```bash
+pnpm cli auth login          # uses the production environment (default)
+pnpm cli auth login --dev    # uses the development environment
+```
+
+Before running `pnpm cli auth login`, update the environment URL constants in
+[`packages/sdk/src/config/urls.ts`](packages/sdk/src/config/urls.ts) with your
+Convex deployment URL and webapp (Vercel) URL. The CLI fails fast with setup
+guidance when placeholders remain (except in the template repo itself).
+
+See [docs/developer/cli-config.md](docs/developer/cli-config.md) for the full
+conventions and a worked agent workflow.
+
 ## Documentation
 
 - **[Shadcn → Base UI Migration Guide](docs/developer/shadcn-base-ui-migration.md)** — upgrading UI components from Radix-based shadcn to Base UI (`base-vega`); includes a downstream migration playbook for forks built on this template.
+- [CLI Config](docs/developer/cli-config.md) — production/development URL conventions for `pnpm cli auth login`
 - [Testing Guide](guides/testing/testing.md)
 - [AGENTS.md](AGENTS.md) — development guidelines for agents and contributors
 
