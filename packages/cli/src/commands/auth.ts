@@ -1,7 +1,7 @@
 import {
+  CliConfigNotSetUpError,
   loginWithBrowser,
-  resolveConvexUrl,
-  resolveWebappUrl,
+  requireEnvironmentUrls,
   saveCredentials,
 } from '@workspace/sdk';
 import type { Command } from 'commander';
@@ -13,28 +13,42 @@ export function registerAuthCommands(program: Command): void {
   auth
     .command('login')
     .description('Log in via browser (Google OAuth)')
-    .action(async () => {
-      const convexUrl = resolveConvexUrl();
-      const webappUrl = resolveWebappUrl();
+    .option('--dev', 'Use development URLs from cli.config.json instead of production')
+    .action(runAuthLogin);
+}
 
-      console.log('Opening browser to log in...');
-      const result = await loginWithBrowser({
-        convexUrl,
-        webappUrl,
-        openBrowser: async (url: string) => {
-          await open(url);
-        },
-      });
+// fallow-ignore-next-line complexity
+async function runAuthLogin(options: { dev?: boolean }): Promise<void> {
+  const environment = options.dev ? 'development' : 'production';
 
-      if (!result.success) {
-        console.error(`Login failed: ${result.error}`);
-        process.exitCode = 1;
-        return;
-      }
+  let urls: { convexUrl: string; webappUrl: string };
+  try {
+    urls = requireEnvironmentUrls(environment);
+  } catch (error) {
+    if (error instanceof CliConfigNotSetUpError) {
+      console.error(error.message);
+      process.exitCode = 1;
+      return;
+    }
+    throw error;
+  }
 
-      saveCredentials({ convexUrl, sessionId: result.sessionId, webappUrl });
-      console.log(
-        result.userName ? `Logged in as ${result.userName}` : 'Login successful. Credentials saved.'
-      );
-    });
+  console.log(`Opening browser to log in (${environment})...`);
+  const result = await loginWithBrowser({
+    ...urls,
+    openBrowser: async (url: string) => {
+      await open(url);
+    },
+  });
+
+  if (!result.success) {
+    console.error(`Login failed: ${result.error}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  saveCredentials({ ...urls, sessionId: result.sessionId });
+  console.log(
+    result.userName ? `Logged in as ${result.userName}` : 'Login successful. Credentials saved.'
+  );
 }
