@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import os from 'node:os';
 import { dirname, join } from 'node:path';
 
 import { PACKAGE_NAME } from '../constants.js';
@@ -43,11 +43,27 @@ function readRootPackageName(): string {
 
 /** Resolves `~/.config/{packageName}/credentials.json`. */
 export function credentialsPath(): string {
-  return join(homedir(), '.config', readRootPackageName(), 'credentials.json');
+  return join(os.homedir(), '.config', readRootPackageName(), 'credentials.json');
 }
 
-/** Resolves `apps/webapp/.env.local` relative to the monorepo root, if one exists. */
-export function webappEnvPath(): string | null {
+/** Repo-local config: `{monorepoRoot}/cli.config.json` */
+export function repoConfigPath(): string | null {
   const root = findMonorepoRoot();
-  return root ? join(root, 'apps', 'webapp', '.env.local') : null;
+  return root ? join(root, 'cli.config.json') : null;
+}
+
+/** Global config: `~/.config/{packageName}/config.json` */
+export function globalConfigPath(): string {
+  return join(os.homedir(), '.config', readRootPackageName(), 'config.json');
+}
+
+/** Preferred config path for error messages: repo file when in monorepo, else global. */
+export function preferredConfigPath(): string {
+  return repoConfigPath() ?? globalConfigPath();
+}
+
+/** Example template path (for help text): `{monorepoRoot}/cli.config.example.json` */
+export function exampleConfigPath(): string | null {
+  const root = findMonorepoRoot();
+  return root ? join(root, 'cli.config.example.json') : null;
 }

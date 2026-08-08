@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CLI config for next-convex-starter-app",
+  "description": "Environment URLs used by the publishable CLI (pnpm cli / next-convex-starter-app).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["production"],
+  "properties": {
+    "production": {
+      "$ref": "#/$defs/environmentUrls"
+    },
+    "development": {
+      "$ref": "#/$defs/environmentUrls"
+    }
+  },
+  "$defs": {
+    "environmentUrls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["convexUrl", "webappUrl"],
+      "properties": {
+        "convexUrl": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Convex deployment URL (from `npx convex deploy` or the Convex dashboard)."
+        },
+        "webappUrl": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Webapp URL (Vercel for production, localhost for development)."
+        }
+      }
+    }
+  }
+}

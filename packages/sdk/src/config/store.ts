@@ -1,52 +1,87 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-import { credentialsPath, webappEnvPath } from './paths.js';
-import type { CliCredentials } from './types.js';
+import { CliConfigNotSetUpError } from './errors.js';
+import { credentialsPath, globalConfigPath, preferredConfigPath, repoConfigPath } from './paths.js';
+import type { CliConfig, CliCredentials, CliEnvironment, EnvironmentUrls } from './types.js';
 
-/**
- * Parses `.env`-style content into a key/value map. Mirrors the parser in
- * `apps/webapp/tests/e2e/support/env.ts`.
- */
-// fallow-ignore-next-line complexity
-function parseEnvContent(content: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('#') || trimmed === '') {
-      continue;
-    }
-    const withoutExport = trimmed.startsWith('export ') ? trimmed.slice(7) : trimmed;
-    const eqIndex = withoutExport.indexOf('=');
-    if (eqIndex === -1) {
-      continue;
-    }
-    const key = withoutExport.slice(0, eqIndex).trim();
-    let value = withoutExport.slice(eqIndex + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    result[key] = value;
-  }
-  return result;
-}
-
-function readEnvFile(envPath: string | null): Record<string, string> {
-  if (!envPath || !existsSync(envPath)) {
-    return {};
-  }
+function loadConfigFile(path: string): CliConfig | null {
   try {
-    return parseEnvContent(readFileSync(envPath, 'utf-8'));
+    const parsed = JSON.parse(readFileSync(path, 'utf-8')) as Partial<CliConfig>;
+    if (!parsed.production) {
+      return null;
+    }
+    return {
+      production: parsed.production,
+      ...(parsed.development ? { development: parsed.development } : {}),
+    };
   } catch {
-    return {};
+    return null;
   }
 }
 
-function readWebappEnvValue(key: string): string | undefined {
-  return readEnvFile(webappEnvPath())[key];
+export function loadCliConfig(): CliConfig | null {
+  const repoPath = repoConfigPath();
+  if (repoPath && existsSync(repoPath)) {
+    return loadConfigFile(repoPath);
+  }
+  const globalPath = globalConfigPath();
+  if (existsSync(globalPath)) {
+    return loadConfigFile(globalPath);
+  }
+  return null;
+}
+
+function validateEnvironmentUrls(
+  urls: Partial<EnvironmentUrls> | undefined,
+  prefix: string
+): string[] {
+  const missing: string[] = [];
+  if (!urls?.convexUrl?.trim()) {
+    missing.push(`${prefix}.convexUrl`);
+  }
+  if (!urls?.webappUrl?.trim()) {
+    missing.push(`${prefix}.webappUrl`);
+  }
+  return missing;
+}
+
+// fallow-ignore-next-line complexity
+export function requireEnvironmentUrls(environment: CliEnvironment): EnvironmentUrls {
+  const configPath = preferredConfigPath();
+  const config = loadCliConfig();
+
+  if (!config) {
+    throw new CliConfigNotSetUpError({
+      configPath,
+      environment,
+      missingFields: [`${environment}.convexUrl`, `${environment}.webappUrl`],
+      reason: 'missing_file',
+    });
+  }
+
+  const urls = environment === 'production' ? config.production : config.development;
+  const missing = validateEnvironmentUrls(urls, environment);
+
+  if (environment === 'development' && !urls) {
+    throw new CliConfigNotSetUpError({
+      configPath,
+      environment,
+      missingFields: ['development.convexUrl', 'development.webappUrl'],
+      reason: 'missing_environment',
+    });
+  }
+
+  if (missing.length > 0) {
+    throw new CliConfigNotSetUpError({
+      configPath,
+      environment,
+      missingFields: missing,
+      reason: 'missing_fields',
+    });
+  }
+
+  return urls as EnvironmentUrls;
 }
 
 // fallow-ignore-next-line complexity
@@ -71,27 +106,4 @@ export function saveCredentials(credentials: CliCredentials): void {
   const filePath = credentialsPath();
   mkdirSync(dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(credentials, null, 2)}\n`, { mode: 0o600 });
-}
-
-export function resolveConvexUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  const fromFile = readWebappEnvValue('NEXT_PUBLIC_CONVEX_URL')?.trim();
-  if (fromFile) {
-    return fromFile;
-  }
-  throw new Error(
-    'NEXT_PUBLIC_CONVEX_URL not found. Set it in apps/webapp/.env.local or via the environment.'
-  );
-}
-
-export function resolveWebappUrl(): string {
-  const fromEnv = process.env.WEBAPP_URL?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  const port = readWebappEnvValue('PORT')?.trim();
-  return `http://localhost:${port || '3000'}`;
 }

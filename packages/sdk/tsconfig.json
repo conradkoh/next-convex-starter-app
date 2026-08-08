@@ -11,6 +11,7 @@
     "rootDir": "src",
     "composite": true,
     "skipLibCheck": true,
+    "esModuleInterop": true,
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
