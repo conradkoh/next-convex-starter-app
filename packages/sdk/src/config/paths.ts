@@ -41,7 +41,7 @@ function readRootPackageName(): string {
   return PACKAGE_NAME;
 }
 
-/** Resolves `~/.config/{packageName}/credentials.json`. */
+/** Resolves `~/.{packageName}/auth.jsonc`. */
 export function credentialsPath(): string {
-  return join(os.homedir(), '.config', readRootPackageName(), 'credentials.json');
+  return join(os.homedir(), `.${readRootPackageName()}`, 'auth.jsonc');
 }

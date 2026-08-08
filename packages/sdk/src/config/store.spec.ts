@@ -1,7 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CliConfigNotSetUpError } from './errors';
-import { requireEnvironmentUrls } from './store';
+import { loadCredentials, requireEnvironmentUrls, saveCredentials } from './store';
 import * as templateRepo from './template-repo';
 import type { EnvironmentUrls } from './types';
 import * as urls from './urls';
@@ -15,6 +19,12 @@ const DEVELOPMENT: EnvironmentUrls = {
   webappUrl: 'http://localhost:3000',
 };
 
+let homeDir: string;
+
+function authJsoncPath(): string {
+  return join(homeDir, '.next-convex-starter-app', 'auth.jsonc');
+}
+
 function captureError(fn: () => unknown): CliConfigNotSetUpError {
   try {
     fn();
@@ -25,8 +35,14 @@ function captureError(fn: () => unknown): CliConfigNotSetUpError {
   throw new Error('Expected requireEnvironmentUrls to throw');
 }
 
+beforeEach(() => {
+  homeDir = fs.mkdtempSync(join(os.tmpdir(), 'cli-config-home-'));
+  vi.spyOn(os, 'homedir').mockReturnValue(homeDir);
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  fs.rmSync(homeDir, { recursive: true, force: true });
 });
 
 describe('requireEnvironmentUrls', () => {
@@ -86,5 +102,44 @@ describe('requireEnvironmentUrls', () => {
     expect(error.message).toContain('convexUrl');
     expect(error.message).toContain('webappUrl');
     expect(error.message).toContain('pnpm cli auth login --dev');
+  });
+});
+
+describe('credentials', () => {
+  it('saves credentials to ~/.appname/auth.jsonc with mode 0600', () => {
+    saveCredentials({
+      convexUrl: PRODUCTION.convexUrl,
+      webappUrl: PRODUCTION.webappUrl,
+      sessionId: 'session-1',
+    });
+
+    const filePath = authJsoncPath();
+    expect(fs.existsSync(filePath)).toBe(true);
+    const stat = fs.statSync(filePath);
+    expect(stat.mode & 0o777).toBe(0o600);
+    expect(JSON.parse(fs.readFileSync(filePath, 'utf-8'))).toEqual({
+      convexUrl: PRODUCTION.convexUrl,
+      webappUrl: PRODUCTION.webappUrl,
+      sessionId: 'session-1',
+    });
+  });
+
+  it('loads credentials from ~/.appname/auth.jsonc', () => {
+    const dir = join(homeDir, '.next-convex-starter-app');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      authJsoncPath(),
+      JSON.stringify({
+        convexUrl: PRODUCTION.convexUrl,
+        webappUrl: PRODUCTION.webappUrl,
+        sessionId: 'session-1',
+      })
+    );
+
+    expect(loadCredentials()).toEqual({
+      convexUrl: PRODUCTION.convexUrl,
+      webappUrl: PRODUCTION.webappUrl,
+      sessionId: 'session-1',
+    });
   });
 });

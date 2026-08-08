@@ -1,45 +1,64 @@
 # CLI Configuration
 
 The publishable CLI (`pnpm cli`, or the global `next-convex-starter-app` binary)
-requires explicit environment URLs before running commands such as `auth login`.
-There is **no silent fallback** to `apps/webapp/.env.local` or `localhost` — the
-CLI fails fast with setup guidance when it is not configured.
+uses **hardcoded environment URLs** in the SDK source and stores session
+credentials in a per-user `auth.jsonc` file. There is **no silent fallback** to
+`apps/webapp/.env.local` or `localhost` — the CLI fails fast with setup guidance
+when URLs are still placeholders.
 
 ## Why
 
-After deploying the Convex backend and the webapp (e.g. to Vercel), the CLI needs
-to know which URLs to talk to. **Production is the default environment**; the
-`development` block is opt-in via `--dev`.
+After deploying the Convex backend and the webapp (e.g. to Vercel), fork owners
+edit the URL constants in source. **Production is the default environment**;
+the `development` constants are opt-in via `--dev`.
 
-## Config file
+## Environment URLs (source code)
 
-The CLI looks for config in this order:
+**Single source of truth:** [`packages/sdk/src/config/urls.ts`](../../packages/sdk/src/config/urls.ts)
 
-1. **Repo-local** — `cli.config.json` at the monorepo root (gitignored)
-2. **Global** — `~/.config/{packageName}/config.json` (used by a published binary outside a repo)
+```typescript
+export const PRODUCTION_URLS = {
+  convexUrl: 'https://YOUR_DEPLOYMENT.convex.cloud',
+  webappUrl: 'https://YOUR_APP.vercel.app',
+};
 
-A committed template lives at `cli.config.example.json` (with editor validation
-via `packages/sdk/cli.config.schema.json`).
+export const DEVELOPMENT_URLS = {
+  convexUrl: 'https://YOUR_DEV_DEPLOYMENT.convex.cloud',
+  webappUrl: 'http://localhost:3000',
+};
+```
 
-### Shape
+After your first deploy, replace the placeholder values in this file with your
+real Convex deployment URL and webapp URL.
+
+### Template repo exception
+
+When the CLI runs from a checkout whose `git remote origin` contains
+`next-convex-starter-app`, placeholder URLs are allowed. This lets the template
+repo's own development and CI work without editing URLs. Forks must update
+`urls.ts` after deploy.
+
+## Session credentials
+
+After a successful `auth login`, the CLI saves credentials to:
+
+`~/.{packageName}/auth.jsonc`
+
+The package name is read from the root `package.json` at runtime (e.g.
+`~/.next-convex-starter-app/auth.jsonc` for this template). The file is written
+with mode `0600`.
+
+Shape:
 
 ```json
 {
-  "production": {
-    "convexUrl": "https://YOUR_DEPLOYMENT.convex.cloud",
-    "webappUrl": "https://YOUR_APP.vercel.app"
-  },
-  "development": {
-    "convexUrl": "https://YOUR_DEV_DEPLOYMENT.convex.cloud",
-    "webappUrl": "http://localhost:3000"
-  }
+  "convexUrl": "https://your-deployment.convex.cloud",
+  "webappUrl": "https://your-app.vercel.app",
+  "sessionId": "..."
 }
 ```
 
-- `production` — **required**. Used by `auth login` without flags.
-- `development` — optional. Used by `auth login --dev`.
-- `convexUrl` — the Convex deployment URL (from `npx convex deploy` or the Convex dashboard).
-- `webappUrl` — the webapp URL (the Vercel/production app URL; localhost for development).
+`auth.jsonc` stores the session from login only — not environment URL config.
 
 ## Commands
 
@@ -51,15 +70,14 @@ via `packages/sdk/cli.config.schema.json`).
 ## Agent / human workflow
 
 1. Run `pnpm cli auth login`.
-2. If unconfigured, the CLI exits `1` and prints a `CliConfigNotSetUpError` with:
-   - the exact config file path to create/update
-   - a pointer to `cli.config.example.json`
-   - the JSON shape for the requested environment
-   - **Ask the user for:** `convexUrl` (Convex deployment URL) and `webappUrl` (Vercel/production app URL)
-3. Copy `cli.config.example.json` to `cli.config.json`, fill in the real URLs, and re-run.
+2. If URLs are still placeholders (and not in the template repo), the CLI exits
+   `1` and prints a `CliConfigNotSetUpError` with:
+   - the path `packages/sdk/src/config/urls.ts` to edit
+   - the constant shape (`PRODUCTION_URLS` or `DEVELOPMENT_URLS`)
+   - **Ask the user for:** `convexUrl` and `webappUrl` from their deploy
+3. Edit `urls.ts`, commit the change, and re-run.
 
 ## Notes
 
-- `credentials.json` (the session saved after a successful login) is separate
-  from the config file.
-- Production is the default; there is no localhost default anywhere in config resolution.
+- Production is the default; there is no localhost default anywhere in URL resolution.
+- Re-login after changing URLs if your saved `auth.jsonc` session points at old endpoints.

@@ -119,9 +119,10 @@ pnpm cli auth login          # uses the production environment (default)
 pnpm cli auth login --dev    # uses the development environment
 ```
 
-Before running `pnpm cli auth login`, create a `cli.config.json` at the repo root
-(copy `cli.config.example.json`) with the Convex deployment URL and the webapp
-(Vercel) URL. The CLI fails fast with setup guidance when unconfigured.
+Before running `pnpm cli auth login`, update the environment URL constants in
+[`packages/sdk/src/config/urls.ts`](packages/sdk/src/config/urls.ts) with your
+Convex deployment URL and webapp (Vercel) URL. The CLI fails fast with setup
+guidance when placeholders remain (except in the template repo itself).
 
 See [docs/developer/cli-config.md](docs/developer/cli-config.md) for the full
 conventions and a worked agent workflow.
