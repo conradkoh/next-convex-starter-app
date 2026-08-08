@@ -32,6 +32,8 @@
     "@base-ui/react",
     // Workspace deps consumed via convex/_generated imports (ignored paths)
     "@workspace/backend",
+    // Workspace deps consumed via built dist entry points (ignored paths)
+    "@workspace/sdk",
   ],
   "ignoreUnresolvedImports": [
     "**/convex/_generated/**",

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { loginWithBrowser } from './login';
 
-vi.mock('@workspace/backend/convex/_generated/api', () => ({
+vi.mock('@workspace/backend/convex/_generated/api.js', () => ({
   api: {
     auth: {
       google: {

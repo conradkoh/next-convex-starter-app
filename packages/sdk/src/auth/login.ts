@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
-import { api } from '@workspace/backend/convex/_generated/api';
-import type { Doc, Id } from '@workspace/backend/convex/_generated/dataModel';
+import { api } from '@workspace/backend/convex/_generated/api.js';
+import type { Doc, Id } from '@workspace/backend/convex/_generated/dataModel.js';
 import { ConvexHttpClient } from 'convex/browser';
 import type { SessionId } from 'convex-helpers/server/sessions';
 

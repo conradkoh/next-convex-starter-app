@@ -3,12 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "next-convex-starter-app": "./dist/bin.js"
+  },
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc --build",
     "start": "node dist/bin.js",
     "prestart": "pnpm run build",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@workspace/sdk": "workspace:*",
+    "commander": "^13.1.0",
+    "open": "^10.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.17.24",

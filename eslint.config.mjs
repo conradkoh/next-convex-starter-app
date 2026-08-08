@@ -288,6 +288,14 @@ export default [
     },
   },
 
+  // CLI entry points - console I/O is the interface
+  {
+    files: ['packages/cli/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
   // Migration files - console.log is expected for debugging migrations
   {
     files: ['**/migration.ts', '**/migrations/**/*.ts'],
