@@ -13,7 +13,7 @@ export function registerAuthCommands(program: Command): void {
   auth
     .command('login')
     .description('Log in via browser (Google OAuth)')
-    .option('--dev', 'Use development URLs from cli.config.json instead of production')
+    .option('--dev', 'Use development URLs instead of production')
     .action(runAuthLogin);
 }
 

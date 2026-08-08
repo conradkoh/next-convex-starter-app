@@ -8,7 +8,7 @@ import { PACKAGE_NAME } from '../constants.js';
  * Walks up from a starting directory to find the monorepo root (the directory
  * containing `pnpm-workspace.yaml`).
  */
-function findMonorepoRoot(startDir: string = process.cwd()): string | null {
+export function findMonorepoRoot(startDir: string = process.cwd()): string | null {
   let dir = startDir;
   for (;;) {
     if (existsSync(join(dir, 'pnpm-workspace.yaml'))) {
@@ -44,26 +44,4 @@ function readRootPackageName(): string {
 /** Resolves `~/.config/{packageName}/credentials.json`. */
 export function credentialsPath(): string {
   return join(os.homedir(), '.config', readRootPackageName(), 'credentials.json');
-}
-
-/** Repo-local config: `{monorepoRoot}/cli.config.json` */
-export function repoConfigPath(): string | null {
-  const root = findMonorepoRoot();
-  return root ? join(root, 'cli.config.json') : null;
-}
-
-/** Global config: `~/.config/{packageName}/config.json` */
-export function globalConfigPath(): string {
-  return join(os.homedir(), '.config', readRootPackageName(), 'config.json');
-}
-
-/** Preferred config path for error messages: repo file when in monorepo, else global. */
-export function preferredConfigPath(): string {
-  return repoConfigPath() ?? globalConfigPath();
-}
-
-/** Example template path (for help text): `{monorepoRoot}/cli.config.example.json` */
-export function exampleConfigPath(): string | null {
-  const root = findMonorepoRoot();
-  return root ? join(root, 'cli.config.example.json') : null;
 }

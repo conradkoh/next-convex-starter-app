@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { CliConfigNotSetUpError } from './errors';
 
 const OPTIONS = {
-  configPath: '/path/to/cli.config.json',
+  configPath: 'packages/sdk/src/config/urls.ts',
   environment: 'production' as const,
   missingFields: ['production.convexUrl', 'production.webappUrl'],
-  reason: 'missing_file' as const,
+  reason: 'missing_fields' as const,
 };
 
 describe('CliConfigNotSetUpError', () => {
@@ -15,7 +15,7 @@ describe('CliConfigNotSetUpError', () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(error.name).toBe('CliConfigNotSetUpError');
-    expect(error.configPath).toBe('/path/to/cli.config.json');
+    expect(error.configPath).toBe('packages/sdk/src/config/urls.ts');
     expect(error.environment).toBe('production');
     expect(error.missingFields).toEqual(['production.convexUrl', 'production.webappUrl']);
   });
@@ -31,18 +31,18 @@ describe('CliConfigNotSetUpError', () => {
       ...OPTIONS,
       environment: 'development',
       missingFields: ['development.convexUrl', 'development.webappUrl'],
-      reason: 'missing_environment',
+      reason: 'missing_fields',
     });
 
     expect(message).toContain('development (--dev)');
-    expect(message).toContain('"development"');
+    expect(message).toContain('DEVELOPMENT_URLS');
   });
 
-  it('includes the config path, example reference, JSON shape, and guidance', () => {
+  it('includes the source path, constant shape, and guidance', () => {
     const message = CliConfigNotSetUpError.formatHelp(OPTIONS);
 
-    expect(message).toContain('/path/to/cli.config.json');
-    expect(message).toContain('cli.config.example.json');
+    expect(message).toContain('packages/sdk/src/config/urls.ts');
+    expect(message).toContain('PRODUCTION_URLS');
     expect(message).toContain('"convexUrl"');
     expect(message).toContain('"webappUrl"');
     expect(message).toContain('Ask the user for:');

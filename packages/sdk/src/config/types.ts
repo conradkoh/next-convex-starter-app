@@ -3,11 +3,6 @@ export type EnvironmentUrls = {
   webappUrl: string;
 };
 
-export type CliConfig = {
-  production: EnvironmentUrls;
-  development?: EnvironmentUrls;
-};
-
 export type CliEnvironment = 'production' | 'development';
 
 export type CliCredentials = {

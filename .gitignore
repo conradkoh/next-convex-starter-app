@@ -19,6 +19,3 @@ test-results/
 .env*.local
 package-lock.json
 .chatroom/pi-sessions/
-
-# CLI
-cli.config.json

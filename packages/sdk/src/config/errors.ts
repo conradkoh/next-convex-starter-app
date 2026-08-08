@@ -1,24 +1,12 @@
-import { exampleConfigPath } from './paths.js';
 import type { CliEnvironment } from './types.js';
+import { DEVELOPMENT_URLS, PRODUCTION_URLS } from './urls.js';
 
 export type CliConfigNotSetUpReason = 'missing_file' | 'missing_fields' | 'missing_environment';
 
-function environmentJsonExample(environment: CliEnvironment): string {
-  const example =
-    environment === 'development'
-      ? {
-          development: {
-            convexUrl: 'https://YOUR_DEV_DEPLOYMENT.convex.cloud',
-            webappUrl: 'http://localhost:3000',
-          },
-        }
-      : {
-          production: {
-            convexUrl: 'https://YOUR_DEPLOYMENT.convex.cloud',
-            webappUrl: 'https://YOUR_APP.vercel.app',
-          },
-        };
-  return JSON.stringify(example, null, 2);
+function environmentConstantExample(environment: CliEnvironment): string {
+  const urls = environment === 'production' ? PRODUCTION_URLS : DEVELOPMENT_URLS;
+  const constantName = environment === 'production' ? 'PRODUCTION_URLS' : 'DEVELOPMENT_URLS';
+  return `export const ${constantName} = ${JSON.stringify(urls, null, 2)};`;
 }
 
 export class CliConfigNotSetUpError extends Error {
@@ -45,19 +33,16 @@ export class CliConfigNotSetUpError extends Error {
     missingFields: string[];
     reason: CliConfigNotSetUpReason;
   }): string {
-    const examplePath = exampleConfigPath();
     const envLabel =
       options.environment === 'production' ? 'production (default)' : 'development (--dev)';
 
     const lines = [
       `CLI is not configured for the ${envLabel} environment.`,
       '',
-      `Create or update: ${options.configPath}`,
+      `Update: ${options.configPath}`,
+      '',
+      environmentConstantExample(options.environment),
     ];
-    if (examplePath) {
-      lines.push(`Copy the template from: ${examplePath}`);
-    }
-    lines.push('', environmentJsonExample(options.environment));
     if (options.missingFields.length > 0) {
       lines.push('', `Missing field(s): ${options.missingFields.join(', ')}`);
     }
@@ -67,7 +52,9 @@ export class CliConfigNotSetUpError extends Error {
       '  - convexUrl: the Convex deployment URL (from `npx convex deploy` or the Convex dashboard)',
       '  - webappUrl: the Vercel/production app URL (from the first Vercel deploy)',
       '',
-      'Production is the default environment. Use `pnpm cli auth login --dev` to select the development block.'
+      'Then edit the matching constant in packages/sdk/src/config/urls.ts.',
+      '',
+      'Production is the default environment. Use `pnpm cli auth login --dev` for development URLs.'
     );
     return lines.join('\n');
   }
