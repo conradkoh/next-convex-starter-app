@@ -17,6 +17,12 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@workspace/backend": "workspace:*",
+    "convex": "^1.42.2",
+    "convex-helpers": "^0.1.120",
+    "open": "^10.1.0"
+  },
   "devDependencies": {
     "@types/node": "^20.17.24",
     "typescript": "^5.9.3",
