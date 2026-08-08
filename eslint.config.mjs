@@ -261,6 +261,17 @@ export default [
     },
   },
 
+  // Workspace package files that are excluded from their package TS project
+  // (specs, root-level configs) cannot be type-aware linted.
+  {
+    files: ['packages/**/*.{spec,test}.ts', 'packages/**/vitest.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: false,
+      },
+    },
+  },
+
   // Configuration files
   {
     files: ['*.config.{js,ts,mjs,cjs}', 'postcss.config.mjs'],
