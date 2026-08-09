@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { MarkdownEditor, MarkdownViewer } from '@/components/markdown-editor';
+import { MarkdownEditor, MarkdownViewer, EditableMarkdown } from '@/components/markdown-editor';
 
 const SAMPLE_MARKDOWN = `# Markdown WYSIWYG Demo
 
@@ -34,8 +34,18 @@ This panel uses **MarkdownViewer** only — no editor chrome.
 - Same typography as MDX pages
 `;
 
+const EDITABLE_MARKDOWN = `## Editable demo
+
+Click anywhere on this rendered markdown to open the WYSIWYG editor.
+
+- Edit freely
+- [Links still open](https://example.com) when clicked
+- Save to persist, Cancel to discard
+`;
+
 export default function MarkdownEditorTestPage() {
   const [content, setContent] = useState(SAMPLE_MARKDOWN);
+  const [editableContent, setEditableContent] = useState(EDITABLE_MARKDOWN);
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -57,6 +67,19 @@ export default function MarkdownEditorTestPage() {
             defaultMarkdown={SAMPLE_MARKDOWN}
             onChange={setContent}
             placeholder="Start writing markdown..."
+          />
+        </section>
+
+        <section className="border border-border rounded-lg bg-card p-6 space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Click to Edit</h2>
+          <p className="text-sm text-muted-foreground">
+            Click the rendered markdown below to open the WYSIWYG editor. Save returns to a pristine
+            read-only view with no editor chrome.
+          </p>
+          <EditableMarkdown
+            markdown={editableContent}
+            onChange={setEditableContent}
+            placeholder="Click to add markdown..."
           />
         </section>
 

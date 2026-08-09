@@ -15,3 +15,17 @@ export type MarkdownViewerProps = {
   markdown: string;
   className?: string;
 };
+
+export type EditableMarkdownProps = {
+  /** Current markdown content (controlled). */
+  markdown: string;
+  /** Called when user saves edited content. */
+  onChange: (markdown: string) => void;
+  /** Optional callback after save (receives saved markdown). */
+  onSave?: (markdown: string) => void;
+  /** Optional callback when user cancels editing. */
+  onCancel?: () => void;
+  /** Placeholder shown in empty view mode and in editor. */
+  placeholder?: string;
+  className?: string;
+};
