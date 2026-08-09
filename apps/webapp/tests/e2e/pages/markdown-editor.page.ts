@@ -29,6 +29,22 @@ export class MarkdownEditorTestPage extends BasePage {
     return this.sectionByName('Standalone Viewer');
   }
 
+  get clickToEditSection(): Locator {
+    return this.sectionByName('Click to Edit');
+  }
+
+  get clickToEditView(): Locator {
+    return this.clickToEditSection.locator('[aria-label="Edit markdown"]');
+  }
+
+  get clickToEditSaveButton(): Locator {
+    return this.clickToEditSection.getByRole('button', { name: 'Save' });
+  }
+
+  get clickToEditCancelButton(): Locator {
+    return this.clickToEditSection.getByRole('button', { name: 'Cancel' });
+  }
+
   get interactiveEditor(): Locator {
     return this.interactiveEditorSection.locator('.mdxeditor');
   }

@@ -13,6 +13,7 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     await expect(markdownPage.interactiveEditorSection).toBeVisible();
     await expect(markdownPage.livePreviewSection).toBeVisible();
     await expect(markdownPage.standaloneViewerSection).toBeVisible();
+    await expect(markdownPage.clickToEditSection).toBeVisible();
 
     await expect(markdownPage.interactiveEditor).toBeVisible();
     await expect(markdownPage.interactiveToolbar).toBeVisible();
@@ -92,5 +93,30 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     await markdownPage.insertCodeBlockButton.click();
     await expect(codeEditors).toHaveCount(before + 1);
     await expect(codeEditors.nth(before).locator('.cm-content')).toBeVisible();
+  });
+
+  test('click to edit: view → edit → save returns to pristine rendered view', async ({ page }) => {
+    const markdownPage = new MarkdownEditorTestPage(page);
+    await markdownPage.navigate();
+
+    const view = markdownPage.clickToEditView;
+    await expect(view).toBeVisible();
+
+    // Click view area (not a link) to enter edit mode
+    await view.click();
+    await expect(markdownPage.clickToEditSaveButton).toBeVisible();
+    await expect(markdownPage.clickToEditSection.locator('.mdxeditor')).toBeVisible();
+
+    // Type unique marker in editor
+    const editable = markdownPage.clickToEditSection.getByLabel('editable markdown', {
+      exact: true,
+    });
+    await editable.click();
+    await page.keyboard.insertText(' E2E-EDITABLE-MARKER');
+
+    // Save — editor chrome should disappear, marker visible in rendered view
+    await markdownPage.clickToEditSaveButton.click();
+    await expect(markdownPage.clickToEditSection.locator('.mdxeditor')).toHaveCount(0);
+    await expect(view).toContainText('E2E-EDITABLE-MARKER');
   });
 });
