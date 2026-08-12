@@ -30,6 +30,10 @@
     "react-day-picker",
     "@legendapp/state",
     "@base-ui/react",
+    // Workspace deps consumed via convex/_generated imports (ignored paths)
+    "@workspace/backend",
+    // Workspace deps consumed via built dist entry points (ignored paths)
+    "@workspace/sdk",
   ],
   "ignoreUnresolvedImports": [
     "**/convex/_generated/**",
@@ -77,6 +81,8 @@
       "apps/webapp/src/app/app/system-admin/**",
       // Markdown viewer mirrors mdx-components.tsx styling intentionally (not shared to avoid MDX hook coupling)
       "apps/webapp/src/components/markdown-editor/markdown-components.tsx",
+      // SDK oauth helpers intentionally mirror webapp google-oauth.ts (ported per feature/cli-sdk-auth slice)
+      "packages/sdk/src/auth/oauth.ts",
     ],
   },
   "health": {

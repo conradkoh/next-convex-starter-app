@@ -12,6 +12,7 @@
     "test:watch": "turbo run test:watch",
     "test:kill-stale": "bash scripts/kill-stale-vitest.sh",
     "dev": "turbo run dev",
+    "cli": "pnpm --filter next-convex-starter-app-cli run start --",
     "setup": "bun scripts/setup.ts",
     "migrate": "bun scripts/migrate.ts",
     "start-convex-dev": "bun scripts/start-convex-dev.ts",

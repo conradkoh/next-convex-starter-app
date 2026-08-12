@@ -45,6 +45,7 @@ type BrandingStatus = {
   navigation: FileBrandingResult;
   landingPage: FileBrandingResult;
   rootPackageJson: FileBrandingResult;
+  cliPackageJson: FileBrandingResult;
 };
 
 const args = process.argv.slice(2);
@@ -137,6 +138,7 @@ const BRANDING_CONFIG = {
     landingPage: join(scriptDir, '..', 'apps', 'webapp', 'src', 'app', 'page.tsx'),
     rootPackageJson: join(scriptDir, '..', 'package.json'),
     webappPackageJson: join(scriptDir, '..', 'apps', 'webapp', 'package.json'),
+    cliPackageJson: join(scriptDir, '..', 'packages', 'cli', 'package.json'),
   },
 };
 
@@ -386,6 +388,9 @@ function detectBrandingStatus(): BrandingStatus {
     rootPackageJson: checkFileBranding(BRANDING_CONFIG.files.rootPackageJson, [
       BRANDING_CONFIG.templates.packageName,
     ]),
+    cliPackageJson: checkFileBranding(BRANDING_CONFIG.files.cliPackageJson, [
+      `${BRANDING_CONFIG.templates.packageName}-cli`,
+    ]),
   };
 }
 
@@ -418,6 +423,11 @@ function displayBrandingStatus(status: BrandingStatus): void {
       label: 'Package Name',
       status: status.rootPackageJson,
       file: 'package.json',
+    },
+    {
+      label: 'CLI Package Name',
+      status: status.cliPackageJson,
+      file: 'packages/cli/package.json',
     },
   ];
 
@@ -488,9 +498,39 @@ function updateLandingPage(landingPageTitle: string): void {
 
 function updatePackageJson(packageName: string): void {
   const filePath = BRANDING_CONFIG.files.rootPackageJson;
-  const packageJson = JSON.parse(readFileSync(filePath, 'utf8')) as { name: string };
+  const packageJson = JSON.parse(readFileSync(filePath, 'utf8')) as {
+    name: string;
+    scripts?: Record<string, string>;
+  };
 
   packageJson.name = packageName;
+
+  // Keep the root `cli` script pointed at the renamed CLI workspace package.
+  if (packageJson.scripts?.cli) {
+    packageJson.scripts.cli = `pnpm --filter ${packageName}-cli run start --`;
+  }
+
+  writeFileSync(filePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+}
+
+/**
+ * Rebrands the CLI workspace package: renames it to `{packageName}-cli` and
+ * renames its publishable `bin` entry to `{packageName}`.
+ */
+function updateCliPackageJson(packageName: string): void {
+  const filePath = BRANDING_CONFIG.files.cliPackageJson;
+  const packageJson = JSON.parse(readFileSync(filePath, 'utf8')) as {
+    name: string;
+    bin: Record<string, string>;
+  };
+
+  packageJson.name = `${packageName}-cli`;
+
+  const binKey = Object.keys(packageJson.bin)[0];
+  const binTarget = packageJson.bin[binKey];
+  const newBin: Record<string, string> = {};
+  newBin[packageName] = binTarget;
+  packageJson.bin = newBin;
 
   writeFileSync(filePath, `${JSON.stringify(packageJson, null, 2)}\n`);
 }
@@ -616,6 +656,9 @@ async function setupBranding(
 
     updatePackageJson(packageName);
     console.log('✅ Updated package.json');
+
+    updateCliPackageJson(packageName);
+    console.log('✅ Updated CLI package.json');
 
     console.log('\n✅ Branding setup completed successfully!');
   } catch (error) {
