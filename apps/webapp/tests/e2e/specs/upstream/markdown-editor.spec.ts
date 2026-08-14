@@ -72,7 +72,7 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     await editable.click();
     await page.keyboard.type('Bold E2E marker');
     await expect(
-      markdownPage.livePreviewViewer.locator('strong').filter({ hasText: 'Bold E2E marker' })
+      editor.locator('strong').filter({ hasText: 'Bold E2E marker' })
     ).toBeVisible();
   });
 
