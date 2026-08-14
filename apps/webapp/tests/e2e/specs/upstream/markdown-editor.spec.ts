@@ -64,10 +64,12 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
   test('toolbar bold toggle applies formatting', async ({ page }) => {
     const markdownPage = new MarkdownEditorTestPage(page);
     await markdownPage.navigate();
-    await markdownPage.interactiveEditorEditable.click();
-    await markdownPage.interactiveEditorEditable.press('ControlOrMeta+A');
-    await markdownPage.interactiveToolbar.click();
-    await markdownPage.interactiveEditorEditable.click();
+    const editor = markdownPage.livePreviewSection.getByTestId('markdown-editor');
+    const editable = editor.locator('.ProseMirror');
+    await editable.click();
+    await editable.press('ControlOrMeta+A');
+    await editor.locator('button[title="Bold"]').click();
+    await editable.click();
     await page.keyboard.type('Bold E2E marker');
     await expect(
       markdownPage.livePreviewViewer.locator('strong').filter({ hasText: 'Bold E2E marker' })
