@@ -67,7 +67,9 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     await markdownPage.interactiveToolbar.click();
     await markdownPage.interactiveEditorEditable.click();
     await page.keyboard.type('Bold E2E marker');
-    await expect(markdownPage.livePreviewViewer.locator('strong')).toContainText('Bold E2E marker');
+    await expect(
+      markdownPage.livePreviewViewer.locator('strong').filter({ hasText: 'Bold E2E marker' })
+    ).toBeVisible();
   });
 
   test('click to edit: view → edit → save returns to pristine rendered view', async ({ page }) => {
