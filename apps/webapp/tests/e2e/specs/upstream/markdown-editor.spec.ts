@@ -64,6 +64,8 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
   test('toolbar bold toggle applies formatting', async ({ page }) => {
     const markdownPage = new MarkdownEditorTestPage(page);
     await markdownPage.navigate();
+    await markdownPage.interactiveEditorEditable.click();
+    await markdownPage.interactiveEditorEditable.press('ControlOrMeta+A');
     await markdownPage.interactiveToolbar.click();
     await markdownPage.interactiveEditorEditable.click();
     await page.keyboard.type('Bold E2E marker');
