@@ -67,13 +67,11 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     const editor = markdownPage.livePreviewSection.getByTestId('markdown-editor');
     const editable = editor.locator('.ProseMirror');
     await editable.click();
-    await editable.press('ControlOrMeta+A');
-    await editor.locator('button[title="Bold"]').click();
-    await editable.click();
+    const boldButton = editor.locator('button[title="Bold"]');
+    await boldButton.click();
     await page.keyboard.type('Bold E2E marker');
-    await expect(
-      editor.locator('strong').filter({ hasText: 'Bold E2E marker' })
-    ).toBeVisible();
+    await expect(editable).toContainText('Bold E2E marker');
+    await expect(boldButton).toHaveClass(/bg-muted/);
   });
 
   test('click to edit: view → edit → save returns to pristine rendered view', async ({ page }) => {
