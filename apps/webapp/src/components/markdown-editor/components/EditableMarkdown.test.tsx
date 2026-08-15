@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { EditableMarkdown } from './EditableMarkdown';
-import { defaultMarkdownEditorProseClassNames } from './proseClassNames';
+import { defaultMarkdownEditorProseClassNames } from '../utils/proseClassNames';
 
 // MarkdownEditor is mocked here to keep EditableMarkdown tests focused on
 // view/edit/save behavior without mounting TipTap in jsdom.
