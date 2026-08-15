@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import { MarkdownEditor } from './MarkdownEditor';
 import { MarkdownViewer } from './MarkdownViewer';
-import type { EditableMarkdownProps } from './types';
+import type { EditableMarkdownProps } from '../types';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

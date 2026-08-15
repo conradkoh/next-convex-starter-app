@@ -1,12 +1,12 @@
 'use client';
 import { useEditor } from '@tiptap/react';
 import { useCallback, useEffect, useRef } from 'react';
-import { handleModEnter } from './handleModEnter';
-import { looksLikeMarkdown } from './pasteMarkdown';
-import { createMarkdownEditorExtensions } from './markdownEditorExtensions';
-import { getNormalizedEditorMarkdown } from './getNormalizedEditorMarkdown';
-import { looksLikeHtml, normalizeMarkdownContent } from './normalizeMarkdownContent';
-import type { MarkdownContentNormalizer } from './types';
+import { handleModEnter } from '../utils/handleModEnter';
+import { looksLikeMarkdown } from '../utils/pasteMarkdown';
+import { createMarkdownEditorExtensions } from '../extensions/markdownEditorExtensions';
+import { getNormalizedEditorMarkdown } from '../utils/getNormalizedEditorMarkdown';
+import { looksLikeHtml, normalizeMarkdownContent } from '../utils/normalizeMarkdownContent';
+import type { MarkdownContentNormalizer } from '../types';
 export interface UseMarkdownEditorOptions { content: string; onUpdate: (markdown: string) => void; placeholder?: string; editable?: boolean; autoFocus?: boolean; onCmdEnter?: () => void; initialClickCoords?: { left: number; top: number } | null; normalizeContent?: MarkdownContentNormalizer; }
 export function useMarkdownEditor({ content, onUpdate, placeholder, editable = true, autoFocus, onCmdEnter, initialClickCoords, normalizeContent }: UseMarkdownEditorOptions) {
   const normalize = normalizeContent ?? normalizeMarkdownContent;
