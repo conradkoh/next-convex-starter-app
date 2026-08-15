@@ -5,7 +5,7 @@ import { handleModEnter } from '../utils/handleModEnter';
 import { looksLikeMarkdown } from '../utils/pasteMarkdown';
 import { createMarkdownEditorExtensions } from '../extensions/markdownEditorExtensions';
 import { getNormalizedEditorMarkdown } from '../utils/getNormalizedEditorMarkdown';
-import { looksLikeHtml, normalizeMarkdownContent } from '../utils/normalizeMarkdownContent';
+import { looksLikeHtml, normalizeMarkdownContent } from '@workspace/shared/utilities/markdown';
 import type { MarkdownContentNormalizer } from '../types';
 export interface UseMarkdownEditorOptions { content: string; onUpdate: (markdown: string) => void; placeholder?: string; editable?: boolean; autoFocus?: boolean; onCmdEnter?: () => void; initialClickCoords?: { left: number; top: number } | null; normalizeContent?: MarkdownContentNormalizer; }
 export function useMarkdownEditor({ content, onUpdate, placeholder, editable = true, autoFocus, onCmdEnter, initialClickCoords, normalizeContent }: UseMarkdownEditorOptions) {
