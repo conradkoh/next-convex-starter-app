@@ -1,6 +1,8 @@
 'use client';
-import { Calendar } from 'lucide-react';
+
 import Link from 'next/link';
+
+import { componentHarnesses } from './registry';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +12,13 @@ export default function DeveloperComponentsIndexPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="mb-4 text-4xl font-bold text-foreground">Component Harnesses</h1>
+          <Link
+            href="/developer"
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            ← Developer
+          </Link>
+          <h1 className="mb-4 mt-2 text-4xl font-bold text-foreground">Component Harnesses</h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
             Organized visual and compatibility tests for UI components. Each harness isolates a
             component or pattern for Safari/iOS regression checking.
@@ -27,45 +35,73 @@ export default function DeveloperComponentsIndexPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/developer/components/date-picker" className="group">
-            <Card className="h-full border-border bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20">
-                      <Calendar className="h-5 w-5 text-primary" />
+          {componentHarnesses.map((harness) => {
+            const Icon = harness.icon;
+            return (
+              <Link key={harness.path} href={harness.path} className="group">
+                <Card className="h-full border-border bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20">
+                          <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <CardTitle className="text-lg font-semibold group-hover:text-primary">
+                          {harness.title}
+                        </CardTitle>
+                      </div>
+                      {harness.status && (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs text-orange-600 dark:text-orange-400"
+                        >
+                          {harness.status}
+                        </Badge>
+                      )}
                     </div>
-                    <CardTitle className="text-lg font-semibold group-hover:text-primary">
-                      Date Picker Layouts
-                    </CardTitle>
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className="text-xs text-orange-600 dark:text-orange-400"
-                  >
-                    experimental
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <CardDescription className="mb-4 line-clamp-3">
-                  Safari/iOS visual harness for custom Popover+Calendar pickers and native temporal
-                  inputs (native marked DO NOT USE). Tests form layouts in light and dark mode.
-                </CardDescription>
-                <div className="flex flex-wrap gap-2">
-                  {['Safari', 'iOS', 'Dark Mode'].map((badge) => (
-                    <Badge
-                      key={badge}
-                      variant="outline"
-                      className="border-border bg-accent/50 text-xs"
-                    >
-                      {badge}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <CardDescription className="mb-4 line-clamp-3">
+                      {harness.description}
+                    </CardDescription>
+                    <div className="mb-4 space-y-3">
+                      <div>
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-green-400">
+                          Best practices
+                        </p>
+                        <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+                          {harness.bestPractices.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
+                          Practices to avoid
+                        </p>
+                        <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+                          {harness.practicesToAvoid.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {harness.badges?.map((badge) => (
+                        <Badge
+                          key={badge}
+                          variant="outline"
+                          className="border-border bg-accent/50 text-xs"
+                        >
+                          {badge}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>
