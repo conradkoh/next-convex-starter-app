@@ -16,6 +16,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -193,10 +202,19 @@ export default function DatePickerStorybookPage() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalDate, setModalDate] = useState<Date>();
   const [modalEndDate, setModalEndDate] = useState<Date>();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTitle, setDrawerTitle] = useState('');
+  const [drawerDate, setDrawerDate] = useState<Date>();
+  const [drawerEndDate, setDrawerEndDate] = useState<Date>();
   const resetModalForm = () => {
     setModalTitle('');
     setModalDate(undefined);
     setModalEndDate(undefined);
+  };
+  const resetDrawerForm = () => {
+    setDrawerTitle('');
+    setDrawerDate(undefined);
+    setDrawerEndDate(undefined);
   };
   const setValue = (id: string) => (v: string) => setValues((s) => ({ ...s, [id]: v }));
   const setDate = (id: string) => (v?: Date) => setCustomDates((s) => ({ ...s, [id]: v }));
@@ -319,6 +337,25 @@ export default function DatePickerStorybookPage() {
               />
             </div>
           </div>
+        </div>
+      </Section>
+      <Section title="Drawer form (Drawer + DatePickerField)" description="Safari regression: date picker popover inside a bottom drawer. Tests nested overlay behavior in a mobile-style sheet.">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Open the drawer, tap date fields, and confirm the calendar popover works inside the drawer sheet.</p>
+          <Drawer open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open) resetDrawerForm(); }}>
+            <DrawerTrigger render={<Button type="button" variant="outline">Open drawer form</Button>} />
+            <DrawerContent>
+              <DrawerHeader><DrawerTitle>Schedule item</DrawerTitle><DrawerDescription>Form with date fields inside a drawer — test on iOS Safari.</DrawerDescription></DrawerHeader>
+              <form className="flex-1 space-y-4 overflow-y-auto px-4 pb-4" onSubmit={(e) => { e.preventDefault(); setDrawerOpen(false); resetDrawerForm(); }}>
+                <div className="space-y-2"><Label htmlFor="drawer-item-title">Title</Label><Input id="drawer-item-title" value={drawerTitle} onChange={(e) => setDrawerTitle(e.target.value)} placeholder="Item title" /></div>
+                <DatePickerField id="drawer-item-date" label="Start date" date={drawerDate} onSelect={setDrawerDate} />
+                <DatePickerField id="drawer-item-end-date" label="End date" date={drawerEndDate} onSelect={setDrawerEndDate} />
+                <DrawerFooter className="px-0"><Button type="submit" className="w-full">Save</Button><Button type="button" variant="outline" className="w-full" onClick={() => setDrawerOpen(false)}>Cancel</Button></DrawerFooter>
+              </form>
+            </DrawerContent>
+          </Drawer>
+          <div className="rounded-md border bg-muted/30 p-4 text-sm"><p className="font-medium">Current state</p><ul className="mt-2 space-y-1 font-mono text-xs text-muted-foreground"><li>drawer: {drawerOpen ? 'open' : 'closed'}</li><li>title: {drawerTitle === '' ? '""' : JSON.stringify(drawerTitle)}</li><li>start: {drawerDate?.toISOString().slice(0, 10) ?? 'undefined'}</li><li>end: {drawerEndDate?.toISOString().slice(0, 10) ?? 'undefined'}</li></ul></div>
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground"><li>Tap “Open drawer form”.</li><li>Tap “Start date” and select a date.</li><li>Repeat for “End date”.</li><li>Swipe down or tap Cancel; the page must remain interactive.</li></ol>
         </div>
       </Section>
       <Section
