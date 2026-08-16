@@ -105,15 +105,6 @@ const testPages: TestPage[] = [
     badges: ['iOS Fix', 'Modal Testing'],
     status: 'experimental',
   },
-  {
-    path: '/test/date-picker',
-    title: 'Date Picker Layouts',
-    description:
-      'Safari/iOS visual test harness for native temporal inputs and Popover+Calendar picker across form layouts in light and dark mode.',
-    icon: Calendar,
-    badges: ['Safari', 'iOS', 'Dark Mode'],
-    status: 'experimental',
-  },
 ];
 
 function getStatusBadgeVariant(status: TestPage['status']) {
