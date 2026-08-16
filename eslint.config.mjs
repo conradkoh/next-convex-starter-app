@@ -27,6 +27,7 @@ import globals from 'globals';
  * - @typescript-eslint/no-inferrable-types - Disallow explicit types for inferrable values
  * - no-else-return - Disallow unnecessary else blocks
  * - @typescript-eslint/array-type - Enforce consistent array type syntax
+ * - no-restricted-imports (Calendar) - Use DatePicker/DatePickerField instead of importing Calendar directly
  */
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -290,6 +291,33 @@ export default [
     files: ['**/api/**/callback/**/*.{ts,tsx}'],
     rules: {
       'no-console': 'off',
+    },
+  },
+
+  // Enforce DatePicker convention — ban direct Calendar imports outside canonical implementation
+  {
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['apps/webapp/src/components/ui/date-picker.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/components/ui/calendar',
+              message:
+                'Use DatePicker or DatePickerField from @/components/ui/date-picker instead of importing Calendar directly.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/components/ui/calendar'],
+              message:
+                'Use DatePicker or DatePickerField from @/components/ui/date-picker instead of importing Calendar directly.',
+            },
+          ],
+        },
+      ],
     },
   },
 ];
