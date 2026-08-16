@@ -12,7 +12,7 @@ Developer guide for diagnosing and fixing horizontal overflow of native HTML dat
 - **Text alignment:** Selected values are not properly centered vertically or horizontally.
 - **Auto-modification:** Values may change without user interaction.
 
-Use custom Popover + Calendar pickers (see the date-picker harness at `/developer/components/date-picker`) instead. Native inputs in this doc are documented for diagnosis and regression comparison only.
+Use custom Popover + Calendar pickers (see the date-picker story in the Component Storybook at `/developer/components/date-picker`) instead. Native inputs in this doc are documented for diagnosis and regression comparison only.
 
 ---
 
