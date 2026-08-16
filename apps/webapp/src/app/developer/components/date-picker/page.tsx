@@ -178,6 +178,12 @@ function Section({
     </Card>
   );
 }
+function variantBlockClass(issue?: VariantIssue) {
+  return cn(
+    'space-y-2 rounded-md',
+    issue?.severity === 'do-not-use' && 'border-2 border-destructive/50 bg-destructive/5 p-3'
+  );
+}
 function VariantBlock({
   label,
   issue,
@@ -187,16 +193,12 @@ function VariantBlock({
   issue?: VariantIssue;
   children: ReactNode;
 }) {
+  const isDoNotUse = issue?.severity === 'do-not-use';
   return (
-    <div
-      className={cn(
-        'space-y-2 rounded-md',
-        issue?.severity === 'do-not-use' && 'border-2 border-destructive/50 bg-destructive/5 p-3'
-      )}
-    >
+    <div className={variantBlockClass(issue)}>
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        {issue?.severity === 'do-not-use' && <Badge variant="destructive">DO NOT USE</Badge>}
+        {isDoNotUse && <Badge variant="destructive">DO NOT USE</Badge>}
       </div>
       {issue && <p className="text-xs text-destructive">{issue.message}</p>}
       {children}
@@ -210,60 +212,52 @@ export default function DatePickerHarnessPage() {
   const [customDates, setCustomDates] = useState<Record<string, Date | undefined>>({});
   const setValue = (id: string) => (v: string) => setValues((s) => ({ ...s, [id]: v }));
   const setDate = (id: string) => (v?: Date) => setCustomDates((s) => ({ ...s, [id]: v }));
-  const renderFields = (layout: Layout, prefix: string, wrapInput: boolean, showState = false) =>
-    layout.twoFields ? (
+  const renderFields = (layout: Layout, prefix: string, wrapInput: boolean, showState = false) => {
+    const fieldConfigs = layout.twoFields
+      ? [
+          { id: `${prefix}-start`, label: 'Start date' },
+          { id: `${prefix}-end`, label: 'End date' },
+        ]
+      : [{ id: `${prefix}-date`, label: 'Date' }];
+
+    return (
       <>
-        <Field
-          id={`${prefix}-start`}
-          label="Start date"
-          value={values[`${prefix}-start`] ?? ''}
-          onChange={setValue(`${prefix}-start`)}
-          wrapInput={wrapInput}
-          showState={showState}
-        />
-        <Field
-          id={`${prefix}-end`}
-          label="End date"
-          value={values[`${prefix}-end`] ?? ''}
-          onChange={setValue(`${prefix}-end`)}
-          wrapInput={wrapInput}
-          showState={showState}
-        />
+        {fieldConfigs.map(({ id, label }) => (
+          <Field
+            key={id}
+            id={id}
+            label={label}
+            value={values[id] ?? ''}
+            onChange={setValue(id)}
+            wrapInput={wrapInput}
+            showState={showState}
+          />
+        ))}
       </>
-    ) : (
-      <Field
-        id={`${prefix}-date`}
-        label="Date"
-        value={values[`${prefix}-date`] ?? ''}
-        onChange={setValue(`${prefix}-date`)}
-        wrapInput={wrapInput}
-        showState={showState}
-      />
     );
-  const renderCustom = (layout: Layout) =>
-    layout.twoFields ? (
+  };
+  const renderCustom = (layout: Layout) => {
+    const fieldConfigs = layout.twoFields
+      ? [
+          { id: `${layout.key}-custom-start`, label: 'Start date' },
+          { id: `${layout.key}-custom-end`, label: 'End date' },
+        ]
+      : [{ id: `${layout.key}-custom-date`, label: 'Date' }];
+
+    return (
       <>
-        <CustomDateField
-          id={`${layout.key}-custom-start`}
-          label="Start date"
-          date={customDates[`${layout.key}-custom-start`]}
-          onSelect={setDate(`${layout.key}-custom-start`)}
-        />
-        <CustomDateField
-          id={`${layout.key}-custom-end`}
-          label="End date"
-          date={customDates[`${layout.key}-custom-end`]}
-          onSelect={setDate(`${layout.key}-custom-end`)}
-        />
+        {fieldConfigs.map(({ id, label }) => (
+          <CustomDateField
+            key={id}
+            id={id}
+            label={label}
+            date={customDates[id]}
+            onSelect={setDate(id)}
+          />
+        ))}
       </>
-    ) : (
-      <CustomDateField
-        id={`${layout.key}-custom-date`}
-        label="Date"
-        date={customDates[`${layout.key}-custom-date`]}
-        onSelect={setDate(`${layout.key}-custom-date`)}
-      />
     );
+  };
   return (
     <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8">
       <header>
@@ -275,9 +269,9 @@ export default function DatePickerHarnessPage() {
         </Link>
         <h1 className="mt-2 text-3xl font-bold">Safari Date Picker Harness</h1>
         <p className="mt-2 text-muted-foreground">
-          Component compatibility harness at <code>/developer/components/date-picker</code>.
-          Compare native temporal inputs (DO NOT USE) and custom Popover + Calendar pickers on Safari
-          and iOS, including dark mode and constrained layouts.
+          Component compatibility harness at <code>/developer/components/date-picker</code>. Compare
+          native temporal inputs (DO NOT USE) and custom Popover + Calendar pickers on Safari and
+          iOS, including dark mode and constrained layouts.
         </p>
       </header>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-4">
@@ -301,7 +295,9 @@ export default function DatePickerHarnessPage() {
         </Button>
       </div>
       <div className="space-y-4 rounded-lg border-2 border-destructive/50 bg-destructive/5 p-6">
-        <h2 className="text-xl font-semibold text-destructive">Native temporal inputs: DO NOT USE</h2>
+        <h2 className="text-xl font-semibold text-destructive">
+          Native temporal inputs: DO NOT USE
+        </h2>
         <p className="text-sm text-muted-foreground">
           Do not use native HTML temporal inputs (<code>date</code>, <code>datetime-local</code>,{' '}
           <code>time</code>, <code>month</code>, <code>week</code>) in production. They remain in
@@ -321,7 +317,9 @@ export default function DatePickerHarnessPage() {
             visual display with the <code className="font-mono text-xs">state:</code> readout.
           </li>
         </ul>
-        <p className="text-sm text-muted-foreground">Use custom Popover + Calendar pickers instead.</p>
+        <p className="text-sm text-muted-foreground">
+          Use custom Popover + Calendar pickers instead.
+        </p>
       </div>
       <div className="space-y-4 rounded-lg border border-destructive/30 bg-destructive/5 p-6">
         <h2 className="text-xl font-semibold text-destructive">Known Issues (iOS Safari)</h2>
@@ -336,8 +334,8 @@ export default function DatePickerHarnessPage() {
             mobile testing.
           </li>
           <li>
-            <strong>Custom date picker popover:</strong> Opening the popover may cause parent content
-            height to shift — check custom sections below.
+            <strong>Custom date picker popover:</strong> Opening the popover may cause parent
+            content height to shift — check custom sections below.
           </li>
         </ul>
       </div>
