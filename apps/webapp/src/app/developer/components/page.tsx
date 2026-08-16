@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { componentHarnesses } from './registry';
+import { componentStorybookEntries } from './registry';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,9 +18,9 @@ export default function DeveloperComponentsIndexPage() {
           >
             ← Developer
           </Link>
-          <h1 className="mb-4 mt-2 text-4xl font-bold text-foreground">Component Harnesses</h1>
+          <h1 className="mb-4 mt-2 text-4xl font-bold text-foreground">Component Storybook</h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
-            Organized visual and compatibility tests for UI components. Each harness isolates a
+            Organized visual and compatibility stories for UI components. Each story isolates a
             component or pattern for Safari/iOS regression checking.
           </p>
           <div className="mt-4 rounded-lg border bg-muted/50 p-4">
@@ -35,10 +35,10 @@ export default function DeveloperComponentsIndexPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {componentHarnesses.map((harness) => {
-            const Icon = harness.icon;
+          {componentStorybookEntries.map((entry) => {
+            const Icon = entry.icon;
             return (
-              <Link key={harness.path} href={harness.path} className="group">
+              <Link key={entry.path} href={entry.path} className="group">
                 <Card className="h-full border-border bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -47,22 +47,22 @@ export default function DeveloperComponentsIndexPage() {
                           <Icon className="h-5 w-5 text-primary" />
                         </div>
                         <CardTitle className="text-lg font-semibold group-hover:text-primary">
-                          {harness.title}
+                          {entry.title}
                         </CardTitle>
                       </div>
-                      {harness.status && (
+                      {entry.status && (
                         <Badge
                           variant="secondary"
                           className="text-xs text-orange-600 dark:text-orange-400"
                         >
-                          {harness.status}
+                          {entry.status}
                         </Badge>
                       )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <CardDescription className="mb-4 line-clamp-3">
-                      {harness.description}
+                      {entry.description}
                     </CardDescription>
                     <div className="mb-4 space-y-3">
                       <div>
@@ -70,7 +70,7 @@ export default function DeveloperComponentsIndexPage() {
                           Best practices
                         </p>
                         <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
-                          {harness.bestPractices.map((item) => (
+                          {entry.bestPractices.map((item) => (
                             <li key={item}>{item}</li>
                           ))}
                         </ul>
@@ -80,14 +80,14 @@ export default function DeveloperComponentsIndexPage() {
                           Practices to avoid
                         </p>
                         <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
-                          {harness.practicesToAvoid.map((item) => (
+                          {entry.practicesToAvoid.map((item) => (
                             <li key={item}>{item}</li>
                           ))}
                         </ul>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {harness.badges?.map((badge) => (
+                      {entry.badges?.map((badge) => (
                         <Badge
                           key={badge}
                           variant="outline"

@@ -1,24 +1,24 @@
 import { Calendar, type LucideIcon } from 'lucide-react';
 
-export type ComponentHarnessStatus = 'stable' | 'experimental';
+export type ComponentStorybookStatus = 'stable' | 'experimental';
 
-export type ComponentHarness = {
+export type ComponentStorybookEntry = {
   path: string;
   title: string;
   description: string;
   icon: LucideIcon;
   badges?: string[];
-  status?: ComponentHarnessStatus;
+  status?: ComponentStorybookStatus;
   bestPractices: string[];
   practicesToAvoid: string[];
 };
 
-export const componentHarnesses: ComponentHarness[] = [
+export const componentStorybookEntries: ComponentStorybookEntry[] = [
   {
     path: '/developer/components/date-picker',
     title: 'Date Picker Layouts',
     description:
-      'Safari/iOS visual harness for custom Popover+Calendar pickers and native temporal inputs (native marked DO NOT USE). Tests form layouts in light and dark mode.',
+      'Safari/iOS visual story for custom Popover+Calendar pickers and native temporal inputs (native marked DO NOT USE). Tests form layouts in light and dark mode.',
     icon: Calendar,
     badges: ['Safari', 'iOS', 'Dark Mode'],
     status: 'experimental',

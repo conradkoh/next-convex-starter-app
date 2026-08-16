@@ -71,14 +71,14 @@ const layouts: Layout[] = [
   {
     key: 'flex',
     title: 'Flex side by side',
-    description: 'Two date fields in a flex row (forced on mobile for harness testing).',
+    description: 'Two date fields in a flex row (forced on mobile for storybook testing).',
     className: 'flex flex-row flex-wrap gap-4 rounded-md border bg-muted/20 p-4',
     twoFields: true,
   },
   {
     key: 'grid',
     title: 'Grid layout (2 columns)',
-    description: 'Two fields in a 2-column grid (forced on mobile for harness testing).',
+    description: 'Two fields in a 2-column grid (forced on mobile for storybook testing).',
     className: 'grid grid-cols-2 gap-4 rounded-md border bg-muted/20 p-4',
     twoFields: true,
   },
@@ -171,7 +171,7 @@ function VariantBlock({
   );
 }
 
-export default function DatePickerHarnessPage() {
+export default function DatePickerStorybookPage() {
   const { theme, setTheme } = useTheme();
   const [values, setValues] = useState<Record<string, string>>({});
   const [customDates, setCustomDates] = useState<Record<string, Date | undefined>>({});
@@ -235,11 +235,11 @@ export default function DatePickerHarnessPage() {
           href="/developer/components"
           className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
-          ← Component Harnesses
+          ← Component Storybook
         </Link>
-        <h1 className="mt-2 text-3xl font-bold">Safari Date Picker Harness</h1>
+        <h1 className="mt-2 text-3xl font-bold">Safari Date Picker Story</h1>
         <p className="mt-2 text-muted-foreground">
-          Component compatibility harness at <code>/developer/components/date-picker</code>. Compare
+          Component Storybook story at <code>/developer/components/date-picker</code>. Compare
           native temporal inputs (DO NOT USE) and custom Popover + Calendar pickers on Safari and
           iOS, including dark mode and constrained layouts.
         </p>
@@ -310,7 +310,7 @@ export default function DatePickerHarnessPage() {
         <p className="text-sm text-muted-foreground">
           Do not use native HTML temporal inputs (<code>date</code>, <code>datetime-local</code>,{' '}
           <code>time</code>, <code>month</code>, <code>week</code>) in production. They remain in
-          this harness for regression comparison only.
+          this story for regression comparison only.
         </p>
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>

@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 const developerSections = [
   {
     path: '/developer/components',
-    title: 'Component Harnesses',
+    title: 'Component Storybook',
     description:
-      'Browse UI component compatibility harnesses. Each entry shows recommended patterns and practices to avoid — especially for Safari/iOS regressions.',
+      'Browse UI component compatibility stories. Each entry shows recommended patterns and practices to avoid — especially for Safari/iOS regressions.',
     icon: Boxes,
     badges: ['Safari', 'Best Practices', 'Anti-patterns'],
     status: 'stable' as const,
@@ -26,7 +26,7 @@ export default function DeveloperIndexPage() {
           <h1 className="mb-4 text-4xl font-bold text-foreground">Developer</h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
             Internal developer resources for component compatibility, patterns, and regression
-            harnesses. Available in development mode only.
+            stories. Available in development mode only.
           </p>
           <div className="mt-4 rounded-lg border bg-muted/50 p-4">
             <p className="text-sm text-muted-foreground">
