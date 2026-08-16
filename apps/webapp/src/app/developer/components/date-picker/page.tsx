@@ -1,15 +1,14 @@
 'use client';
-import { CalendarIcon, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatePickerField } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/modules/theme/ThemeProvider';
 
@@ -125,40 +124,6 @@ function Field({
     </div>
   );
 }
-function CustomDateField({
-  id,
-  label,
-  date,
-  onSelect,
-}: {
-  id: string;
-  label: string;
-  date?: Date;
-  onSelect: (d?: Date) => void;
-}) {
-  return (
-    <div className="min-w-0 flex-1 space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <div className="min-h-9">
-        <Popover modal>
-          <PopoverTrigger
-            id={id}
-            className={cn(
-              'mt-0 flex h-9 w-full items-center rounded-md border border-input bg-transparent px-2.5 py-1 text-sm shadow-xs',
-              !date && 'text-muted-foreground'
-            )}
-          >
-            <CalendarIcon className="mr-2 size-4" />
-            {date ? date.toLocaleDateString() : 'Pick a date'}
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={date} onSelect={onSelect} />
-          </PopoverContent>
-        </Popover>
-      </div>
-    </div>
-  );
-}
 function Section({
   title,
   description,
@@ -210,6 +175,11 @@ export default function DatePickerHarnessPage() {
   const { theme, setTheme } = useTheme();
   const [values, setValues] = useState<Record<string, string>>({});
   const [customDates, setCustomDates] = useState<Record<string, Date | undefined>>({});
+  const [recommendedDates, setRecommendedDates] = useState<{
+    single?: Date;
+    start?: Date;
+    end?: Date;
+  }>({});
   const setValue = (id: string) => (v: string) => setValues((s) => ({ ...s, [id]: v }));
   const setDate = (id: string) => (v?: Date) => setCustomDates((s) => ({ ...s, [id]: v }));
   const renderFields = (layout: Layout, prefix: string, wrapInput: boolean, showState = false) => {
@@ -247,7 +217,7 @@ export default function DatePickerHarnessPage() {
     return (
       <>
         {fieldConfigs.map(({ id, label }) => (
-          <CustomDateField
+          <DatePickerField
             key={id}
             id={id}
             label={label}
@@ -294,6 +264,45 @@ export default function DatePickerHarnessPage() {
           System
         </Button>
       </div>
+      <Section
+        title="Recommended implementations"
+        description="Production-ready custom date pickers. Import from @/components/ui/date-picker — avoids native temporal inputs."
+      >
+        <div className="space-y-8">
+          <div>
+            <p className="mb-3 text-sm font-medium text-muted-foreground">
+              Custom Popover + Calendar
+            </p>
+            <div className="max-w-sm">
+              <DatePickerField
+                id="recommended-single"
+                label="Date"
+                date={recommendedDates.single}
+                onSelect={(d) => setRecommendedDates((s) => ({ ...s, single: d }))}
+              />
+            </div>
+          </div>
+          <div>
+            <p className="mb-3 text-sm font-medium text-muted-foreground">
+              Custom Popover + Calendar (side by side)
+            </p>
+            <div className="flex flex-row flex-wrap gap-4">
+              <DatePickerField
+                id="recommended-start"
+                label="Start date"
+                date={recommendedDates.start}
+                onSelect={(d) => setRecommendedDates((s) => ({ ...s, start: d }))}
+              />
+              <DatePickerField
+                id="recommended-end"
+                label="End date"
+                date={recommendedDates.end}
+                onSelect={(d) => setRecommendedDates((s) => ({ ...s, end: d }))}
+              />
+            </div>
+          </div>
+        </div>
+      </Section>
       <div className="space-y-4 rounded-lg border-2 border-destructive/50 bg-destructive/5 p-6">
         <h2 className="text-xl font-semibold text-destructive">
           Native temporal inputs: DO NOT USE
