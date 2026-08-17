@@ -25,8 +25,17 @@ function DatePicker({
   className,
   id,
 }: DatePickerProps) {
+  const [open, setOpen] = React.useState(false);
+  const handleSelect = React.useCallback(
+    (selectedDate: Date | undefined) => {
+      onSelect?.(selectedDate);
+      setOpen(false);
+    },
+    [onSelect]
+  );
+
   return (
-    <Popover modal>
+    <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         id={id}
         disabled={disabled}
@@ -42,7 +51,7 @@ function DatePicker({
         {date ? date.toLocaleDateString() : placeholder}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <Calendar mode="single" selected={date} onSelect={onSelect} />
+        <Calendar mode="single" selected={date} onSelect={handleSelect} />
       </PopoverContent>
     </Popover>
   );
