@@ -4,6 +4,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from '@tiptap/markdown';
 import StarterKit from '@tiptap/starter-kit';
 
+import { CodeBlockLineBoundarySelection } from './codeBlockLineBoundarySelection';
+
 export const ParagraphWithBlankLinePreservation = Paragraph.extend({
   renderMarkdown(node, h) {
     const content = Array.isArray(node.content) ? node.content : [];
@@ -12,5 +14,5 @@ export const ParagraphWithBlankLinePreservation = Paragraph.extend({
 });
 
 export function createMarkdownEditorExtensions(placeholder?: string) {
-  return [StarterKit.configure({ heading: { levels: [1, 2, 3] }, paragraph: false }), ParagraphWithBlankLinePreservation, ...(placeholder ? [Placeholder.configure({ placeholder })] : []), Link.configure({ openOnClick: false }), Markdown];
+  return [StarterKit.configure({ heading: { levels: [1, 2, 3] }, paragraph: false }), CodeBlockLineBoundarySelection, ParagraphWithBlankLinePreservation, ...(placeholder ? [Placeholder.configure({ placeholder })] : []), Link.configure({ openOnClick: false }), Markdown];
 }
