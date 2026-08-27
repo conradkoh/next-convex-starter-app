@@ -1,4 +1,15 @@
 #!/usr/bin/env sh
+
+# Capture Git's ref-update input before running checks that inherit stdin.
+# Git provides one ref-update line per pushed ref:
+# <local ref> <local sha> <remote ref> <remote sha>
+PUSHES_TO_MASTER=false
+while IFS=' ' read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+  if [ "$REMOTE_REF" = "refs/heads/master" ]; then
+    PUSHES_TO_MASTER=true
+  fi
+done
+
 # Run tests before pushing
 pnpm run test
 
@@ -8,5 +19,10 @@ bun run test:scripts
 # Run typecheck before pushing
 pnpm run typecheck
 
-# Run e2e before pushing — suite selected by push destination (@upstream for template, @downstream for forks).
-bun scripts/run-pre-push-e2e.ts "$1" "$2"
+# Run e2e before pushing directly to master. Pull-request branches are covered by GitHub Actions.
+if [ "$PUSHES_TO_MASTER" = true ]; then
+  # Suite is selected by push destination (@upstream for template, @downstream for forks).
+  bun scripts/run-pre-push-e2e.ts "$1" "$2"
+else
+  echo "[pre-push] e2e: skipping (push does not target master; covered by GitHub Actions for PRs targeting master)"
+fi
