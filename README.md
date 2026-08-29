@@ -15,6 +15,8 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
 1. Run `pnpm install` to install the dependencies
 2. Run `pnpm run setup` to initialize the Convex backend and configure the webapp
 
+   - **Bumps minor version** — When branding is customized, increments the minor version across all workspace `package.json` files (root is canonical). This updates `services/backend/package.json`, which triggers the Production Deployment workflow on push to `master`.
+
    This script will:
    - **Check and update branding** - Detects if you're using template branding and prompts you to customize:
      - Application name and short name
@@ -172,7 +174,7 @@ To deploy your Convex backend to production:
    - Name: `CONVEX_DEPLOY_KEY_PROD`
    - Value: Your deployment key from the Convex dashboard
 
-3. The GitHub Action workflow included in this template will handle deployment of your Convex backend automatically when you push to the main branch.
+3. The GitHub Action workflow included in this template deploys automatically on pushes to `master` that change files under `services/backend/`.
 
 This setup allows for secure automated deployments of your Convex functions and schema without exposing your credentials.
 
