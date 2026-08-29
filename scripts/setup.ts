@@ -7,6 +7,7 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 import { generateRandomDevPort } from './devPort';
+import { bumpMinorAndSyncAll } from './package-versions';
 import { TEMPLATE_REPO_URL, parseGitHubOwnerRepo } from './template-repo';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -114,6 +115,7 @@ NOTES:
   - The script is idempotent and safe to run multiple times
   - In non-interactive mode without branding options, branding setup is skipped
   - Branding is only updated if template values are detected
+  - Branding updates also bump the minor version across all workspace packages
 `);
 }
 
@@ -324,7 +326,7 @@ function configureGhDefaultRepo(ownerRepo: string): void {
 async function configureGitHubRepo(
   nonInteractive = false,
   repoUrl: string | null = null
-): Promise<void> {
+): Promise<boolean> {
   console.log('\n🐙 GitHub Repository Setup');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -594,7 +596,7 @@ async function setupBranding(
 
   const branding = await resolveBrandingValues(nonInteractive, brandingOptions);
   if (!branding) {
-    return;
+    return false;
   }
 
   const { appName, appShortName, appDescription, landingPageTitle, packageName } = branding;
@@ -617,7 +619,11 @@ async function setupBranding(
     updatePackageJson(packageName);
     console.log('✅ Updated package.json');
 
+    const newVersion = bumpMinorAndSyncAll(join(scriptDir, '..'));
+    console.log(`✅ Bumped minor version to ${newVersion} across all workspace packages`);
+
     console.log('\n✅ Branding setup completed successfully!');
+    return true;
   } catch (error) {
     console.error('\n❌ Error updating branding:', getErrorMessage(error));
     throw error;

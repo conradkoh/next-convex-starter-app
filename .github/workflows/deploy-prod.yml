@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    # Redeploy when any file under the backend workspace changes, including
+    # package.json version bumps from setup (services/backend/package.json).
     paths:
       - 'services/backend/**'
 
