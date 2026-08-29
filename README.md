@@ -66,6 +66,61 @@ If you prefer to set up manually:
    ```
 3. Run `pnpm dev` in the root directory to start both services
 
+## Deployment
+
+### Convex Backend Deployment
+
+To deploy your Convex backend to production:
+
+1. Generate a deployment key from the Convex dashboard:
+   - Go to your project in the [Convex dashboard](https://dashboard.convex.dev)
+   - Navigate to Project Settings > Settings > General > Generate Production Deploy Key
+   - Create a new deployment key
+
+2. Add the deployment key to GitHub Secrets:
+   - Go to your GitHub repository
+   - Navigate to Settings > Secrets and variables > Actions
+   - Click "New repository secret"
+   - Name: `CONVEX_DEPLOY_KEY_PROD`
+   - Value: Your deployment key from the Convex dashboard
+
+3. The GitHub Action workflow included in this template deploys automatically on pushes to `master` that change files under `services/backend/`.
+
+> **Warning: Deployment not running?**
+>
+> The Production Deployment workflow only runs when a push to `master` includes changes under `services/backend/`. Pushes that only change the frontend, docs, or empty commits will **not** trigger a deploy.
+>
+> To re-trigger deployment:
+>
+> 1. **Ensure `CONVEX_DEPLOY_KEY_PROD` is set** in your GitHub repository secrets (Settings → Secrets and variables → Actions).
+> 2. **Push a change under `services/backend/`** to `master` — for example, any Convex function, schema, or `services/backend/package.json` edit.
+> 3. **Re-run setup with branding** — if you skipped branding during onboarding, run `pnpm run setup` and customize branding. This bumps the minor version in `services/backend/package.json`, which counts as a backend change when you commit and push.
+> 4. **Verify in GitHub Actions** — check your repository’s Actions tab for a "Production Deployment" run on your latest commit.
+>
+> If you forked this template with existing git history, remember that workflows only run on **new** pushes after the workflow file exists — they are not replayed for old commits.
+
+This setup allows for secure automated deployments of your Convex functions and schema without exposing your credentials.
+
+### Vercel Frontend Deployment
+
+To deploy your NextJS frontend to Vercel:
+
+1. Navigate to your Convex dashboard:
+   - Go to [Convex dashboard](https://dashboard.convex.dev)
+   - Navigate to Settings > URL & Deploy Key
+   - Copy the Deployment URL
+
+2. Set up the Vercel deployment
+   - Go to the Vercel dashboard
+   - Navigate to Project Settings > Build and Deployment > Root Directory
+     - Set the Root Directory to `apps/webapp`
+   - Navigate to Project Settings > Environment Variables
+     - Add a new variable:
+     - Name: `NEXT_PUBLIC_CONVEX_URL`
+     - Value: Paste the Deployment URL you copied from Convex
+
+3. Deploy your NextJS application to Vercel as usual.
+
 ## System Administration Setup
 
 To create a system administrator:
@@ -155,48 +210,6 @@ To add a new project to the monorepo:
 1. Create the project in the appropriate directory (`apps/` or `services/`)
 2. Add a `project.json` file to define the project's targets
 3. Update the root `package.json` to include the new project in the dev command if needed
-
-## Deployment
-
-### Convex Backend Deployment
-
-To deploy your Convex backend to production:
-
-1. Generate a deployment key from the Convex dashboard:
-   - Go to your project in the [Convex dashboard](https://dashboard.convex.dev)
-   - Navigate to Project Settings > Settings > General > Generate Production Deploy Key
-   - Create a new deployment key
-
-2. Add the deployment key to GitHub Secrets:
-   - Go to your GitHub repository
-   - Navigate to Settings > Secrets and variables > Actions
-   - Click "New repository secret"
-   - Name: `CONVEX_DEPLOY_KEY_PROD`
-   - Value: Your deployment key from the Convex dashboard
-
-3. The GitHub Action workflow included in this template deploys automatically on pushes to `master` that change files under `services/backend/`.
-
-This setup allows for secure automated deployments of your Convex functions and schema without exposing your credentials.
-
-### Vercel Frontend Deployment
-
-To deploy your NextJS frontend to Vercel:
-
-1. Navigate to your Convex dashboard:
-   - Go to [Convex dashboard](https://dashboard.convex.dev)
-   - Navigate to Settings > URL & Deploy Key
-   - Copy the Deployment URL
-
-2. Set up the Vercel deployment
-   - Go to the Vercel dashboard
-   - Navigate to Project Settings > Build and Deployment > Root Directory
-     - Set the Root Directory to `apps/webapp`
-   - Navigate to Project Settings > Environment Variables
-     - Add a new variable:
-     - Name: `NEXT_PUBLIC_CONVEX_URL`
-     - Value: Paste the Deployment URL you copied from Convex
-
-3. Deploy your NextJS application to Vercel as usual.
 
 <br/>
 
