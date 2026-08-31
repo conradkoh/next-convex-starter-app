@@ -6,6 +6,11 @@ import { dirname, join } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
+import {
+  formatDeploymentEnv,
+  getProductionConvexUrl,
+  readVercelProjectConfig,
+} from './deployment-config';
 import { generateRandomDevPort } from './devPort';
 import { bumpMinorAndSyncAll } from './package-versions';
 import {
@@ -16,8 +21,11 @@ import {
 import { TEMPLATE_REPO_URL } from './template-repo';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-const backendEnvPath = join(scriptDir, '..', 'services', 'backend', '.env.local');
+const backendDirectory = join(scriptDir, '..', 'services', 'backend');
+const backendEnvPath = join(backendDirectory, '.env.local');
 const webappEnvPath = join(scriptDir, '..', 'apps', 'webapp', '.env.local');
+const vercelProjectPath = join(scriptDir, '..', 'apps', 'webapp', '.vercel', 'project.json');
+const vercelRepoPath = join(scriptDir, '..', '.vercel', 'repo.json');
 
 type CliArgs = {
   skipBranding: boolean;
@@ -218,6 +226,79 @@ function setupWebappEnv(convexUrl: string): void {
   }
 
   writeFileSync(webappEnvPath, envContent);
+}
+
+function linkVercelProject(): boolean {
+  console.log('\n▲ Starting Vercel project setup...');
+  const result = spawnSync('pnpm', ['exec', 'vercel', 'link'], {
+    cwd: join(scriptDir, '..', 'apps', 'webapp'),
+    stdio: 'inherit',
+  });
+
+  if (result.status === 0) return true;
+
+  console.error('❌ Vercel project setup did not complete.');
+  return false;
+}
+
+function readLinkedVercelProject(): ReturnType<typeof readVercelProjectConfig> {
+  return (
+    readVercelProjectConfig(vercelProjectPath) ??
+    readVercelProjectConfig(vercelRepoPath, 'apps/webapp')
+  );
+}
+
+function acceptedPrompt(answer: string): boolean {
+  return ['y', 'yes'].includes(answer.toLowerCase());
+}
+
+async function getVercelProjectForDeployment(
+  nonInteractive: boolean
+): Promise<ReturnType<typeof readVercelProjectConfig>> {
+  const existingProject = readLinkedVercelProject();
+  if (existingProject) return existingProject;
+
+  return offerVercelProjectSetup(nonInteractive);
+}
+
+async function offerVercelProjectSetup(
+  nonInteractive: boolean
+): Promise<ReturnType<typeof readVercelProjectConfig>> {
+  if (nonInteractive) return null;
+
+  const answer = await promptUser(
+    'Would you like to set up this project for production deployment with Vercel? (y/n)',
+    'y'
+  );
+  if (!acceptedPrompt(answer)) return null;
+
+  if (!linkVercelProject()) return null;
+  return readLinkedVercelProject();
+}
+
+async function showDeploymentEnv(nonInteractive: boolean): Promise<void> {
+  const vercelProject = await getVercelProjectForDeployment(nonInteractive);
+
+  console.log('\n📋 GitHub Actions deployment configuration');
+  if (!vercelProject) {
+    console.log(
+      '   Vercel is not linked. Run this command when you are ready to configure deployment:'
+    );
+    console.log('   cd apps/webapp && pnpm exec vercel link');
+    return;
+  }
+
+  console.log('   Resolving the production Convex deployment URL...');
+  const productionConvexUrl = getProductionConvexUrl(backendDirectory);
+  if (!productionConvexUrl) {
+    console.log('   Could not read the production Convex URL. Check your Convex login and retry.');
+    console.log('   No deployment configuration block was printed.');
+    return;
+  }
+
+  console.log('   Copy this block into a UI that supports importing environment variables:');
+  console.log('');
+  console.log(formatDeploymentEnv(productionConvexUrl, vercelProject));
 }
 
 function addUpstreamRemote(): void {
@@ -755,10 +836,10 @@ async function setup(): Promise<void> {
   addUpstreamRemote();
   await configureGitHubRepo(cliArgs.nonInteractive, cliArgs.repoUrl, cliArgs.skipGitHubRepo);
   disableNextTelemetry();
-  continueSetup();
+  await continueSetup();
 }
 
-function continueSetup(): void {
+async function continueSetup(): Promise<void> {
   console.log('📄 Extracting CONVEX_URL from backend .env.local...');
   const convexUrl = getConvexUrl();
   console.log(`✅ Found CONVEX_URL: ${convexUrl}`);
@@ -766,6 +847,8 @@ function continueSetup(): void {
   console.log('📄 Setting up webapp .env.local file...');
   setupWebappEnv(convexUrl);
   console.log('✅ Webapp .env.local file created/updated successfully.');
+
+  await showDeploymentEnv(cliArgs.nonInteractive);
 
   console.log('\n🎉 Setup completed successfully!');
   console.log('You can now run "pnpm run dev" to start both the frontend and backend services.');
