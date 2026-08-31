@@ -70,8 +70,8 @@ If you prefer to set up manually:
 
 The included [production workflow](.github/workflows/deploy-prod.yml) deploys both
 Convex and Vercel. Deployment credentials and environment-specific values are
-kept together as GitHub Actions repository secrets, so they do not need to be
-committed or duplicated across repository files.
+kept together as GitHub Actions repository secrets and variables, so they do
+not need to be committed or duplicated across repository files.
 
 ### 1. Create the production projects
 
@@ -87,7 +87,7 @@ committed or duplicated across repository files.
    `apps/webapp/.vercel/project.json` to obtain the `orgId` and `projectId`. Do
    not commit this file.
 
-### 2. Configure GitHub Actions secrets
+### 2. Configure GitHub Actions secrets and variables
 
 Open **GitHub repository → Settings → Secrets and variables → Actions → New
 repository secret** and add:
@@ -97,8 +97,13 @@ repository secret** and add:
 | `CONVEX_DEPLOY_KEY_PROD` | Convex production deploy key                   |
 | `NEXT_PUBLIC_CONVEX_URL` | Convex production deployment URL               |
 | `VERCEL_TOKEN`           | Vercel access token with access to the project |
-| `VERCEL_ORG_ID`          | `orgId` from Vercel project metadata           |
-| `VERCEL_PROJECT_ID`      | `projectId` from Vercel project metadata       |
+
+Then open the **Variables** tab, create these repository variables, and add:
+
+| Variable            | Value                                    |
+| ------------------- | ---------------------------------------- |
+| `VERCEL_TEAM_ID`    | `orgId` from Vercel project metadata     |
+| `VERCEL_PROJECT_ID` | `projectId` from Vercel project metadata |
 
 These are the only production deployment values required by the default
 workflow. Additional build-time values can follow the same pattern: store them
