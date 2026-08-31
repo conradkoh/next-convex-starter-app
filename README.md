@@ -111,6 +111,12 @@ as GitHub Actions secrets and expose them only to the frontend build job. Values
 that must remain available to server functions at runtime should be configured
 in Vercel or passed explicitly by a customized deploy step.
 
+The workflow writes the required Vercel project settings locally before the
+build, including the Next.js framework, `apps/webapp` root directory, Node.js
+version, and monorepo build command. It intentionally does not run
+`vercel pull`, so Vercel project environment variables are not downloaded into
+CI.
+
 ### 3. Deploy
 
 Push a deployment-related change to `master`. Convex deployment and the Vercel

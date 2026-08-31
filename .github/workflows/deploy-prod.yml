@@ -115,7 +115,24 @@ jobs:
         working-directory: apps/webapp
         run: |
           mkdir -p .vercel
-          node -e 'require("node:fs").writeFileSync(".vercel/project.json", JSON.stringify({ orgId: process.env.VERCEL_ORG_ID, projectId: process.env.VERCEL_PROJECT_ID }))'
+          node -e '
+            require("node:fs").writeFileSync(
+              ".vercel/project.json",
+              JSON.stringify({
+                orgId: process.env.VERCEL_ORG_ID,
+                projectId: process.env.VERCEL_PROJECT_ID,
+                settings: {
+                  framework: "nextjs",
+                  devCommand: null,
+                  installCommand: null,
+                  buildCommand: "cd ../.. && pnpm turbo run build --filter=@workspace/webapp",
+                  outputDirectory: null,
+                  rootDirectory: "apps/webapp",
+                  directoryListing: false,
+                  nodeVersion: "24.x"
+                }
+              })
+            )'
 
       - name: Build Vercel production artifacts
         working-directory: apps/webapp
