@@ -8,7 +8,12 @@ import { fileURLToPath } from 'node:url';
 
 import { generateRandomDevPort } from './devPort';
 import { bumpMinorAndSyncAll } from './package-versions';
-import { TEMPLATE_REPO_URL, parseGitHubOwnerRepo } from './template-repo';
+import {
+  getOriginRemoteUrl,
+  parseGitHubOwnerRepo,
+  shouldSkipGitHubRepoSetup,
+} from './setup-github-repo';
+import { TEMPLATE_REPO_URL } from './template-repo';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const backendEnvPath = join(scriptDir, '..', 'services', 'backend', '.env.local');
@@ -16,6 +21,7 @@ const webappEnvPath = join(scriptDir, '..', 'apps', 'webapp', '.env.local');
 
 type CliArgs = {
   skipBranding: boolean;
+  skipGitHubRepo: boolean;
   nonInteractive: boolean;
   appName: string | null;
   appShortName: string | null;
@@ -51,6 +57,7 @@ type BrandingStatus = {
 const args = process.argv.slice(2);
 const cliArgs: CliArgs = {
   skipBranding: args.includes('--skip-branding'),
+  skipGitHubRepo: args.includes('--skip-github-repo'),
   nonInteractive: args.includes('--non-interactive') || args.includes('-y'),
   appName: getArgValue(args, '--app-name'),
   appShortName: getArgValue(args, '--app-short-name'),
@@ -83,6 +90,7 @@ configures application branding.
 OPTIONS:
   --help, -h                    Show this help message
   --skip-branding               Skip branding setup entirely
+  --skip-github-repo             Skip GitHub repository setup (auto-skipped for configured origins)
   --non-interactive, -y         Run in non-interactive mode (skip prompts)
   --repo-url <url>              GitHub repository URL (e.g. https://github.com/owner/repo)
   
@@ -323,12 +331,36 @@ function configureGhDefaultRepo(ownerRepo: string): void {
   );
 }
 
+function skipConfiguredGitHubRepo(originUrl: string | null): void {
+  console.log(`✅ Origin remote already configured (${originUrl}). Skipping GitHub repo setup.`);
+  const parsed = originUrl ? parseGitHubOwnerRepo(originUrl) : null;
+  if (parsed) {
+    configureGhDefaultRepo(`${parsed.owner}/${parsed.repo}`);
+  }
+  console.log('');
+}
+
+function skipGitHubRepoSetup(skipFlag: boolean, originUrl: string | null): void {
+  if (skipFlag) {
+    console.log('⏭️  Skipping GitHub repo configuration (--skip-github-repo flag).\n');
+    return;
+  }
+  skipConfiguredGitHubRepo(originUrl);
+}
+
 async function configureGitHubRepo(
   nonInteractive = false,
-  repoUrl: string | null = null
-): Promise<boolean> {
+  repoUrl: string | null = null,
+  skipGitHubRepo = false
+): Promise<void> {
   console.log('\n🐙 GitHub Repository Setup');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  const originUrl = getOriginRemoteUrl();
+  if (shouldSkipGitHubRepoSetup(originUrl, repoUrl, skipGitHubRepo)) {
+    skipGitHubRepoSetup(skipGitHubRepo, originUrl);
+    return;
+  }
 
   const githubRepoUrl = await resolveGitHubRepoUrl(nonInteractive, repoUrl);
   if (!githubRepoUrl) {
@@ -721,7 +753,7 @@ async function setup(): Promise<void> {
   await checkBranding();
   ensureBackendEnv();
   addUpstreamRemote();
-  await configureGitHubRepo(cliArgs.nonInteractive, cliArgs.repoUrl);
+  await configureGitHubRepo(cliArgs.nonInteractive, cliArgs.repoUrl, cliArgs.skipGitHubRepo);
   disableNextTelemetry();
   continueSetup();
 }
