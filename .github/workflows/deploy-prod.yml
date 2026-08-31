@@ -91,7 +91,7 @@ jobs:
           [[ -n "${VERCEL_TOKEN}" ]] || missing+=(VERCEL_TOKEN)
           [[ -n "${NEXT_PUBLIC_CONVEX_URL}" ]] || missing+=(NEXT_PUBLIC_CONVEX_URL)
           if (( ${#missing[@]} > 0 )); then
-            echo "::error::Missing required GitHub Actions secret(s): ${missing[*]}"
+            echo "::error::Missing required GitHub Actions configuration: ${missing[*]}"
             exit 1
           fi
 
@@ -177,4 +177,5 @@ jobs:
         run: tar -xzf vercel-prebuilt.tgz
 
       - name: Deploy Vercel production artifacts
+        working-directory: apps/webapp
         run: pnpm exec vercel deploy --prebuilt --prod
