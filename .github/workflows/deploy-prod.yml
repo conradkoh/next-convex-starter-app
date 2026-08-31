@@ -4,37 +4,177 @@ on:
   push:
     branches:
       - master
-    # Redeploy when any file under the backend workspace changes, including
-    # package.json version bumps from setup (services/backend/package.json).
     paths:
+      - '.github/workflows/deploy-prod.yml'
+      - 'apps/webapp/**'
+      - 'packages/shared/**'
       - 'services/backend/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: Deploy Convex backend and run migrations
+        type: boolean
+        default: true
+      deploy_frontend:
+        description: Deploy webapp to Vercel
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  deploy_backend:
+    if: github.event_name != 'workflow_dispatch' || inputs.deploy_backend
     runs-on: ubuntu-latest
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_PROD }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Check backend deploy secret
+        shell: bash
+        run: |
+          if [[ -z "${CONVEX_DEPLOY_KEY}" ]]; then
+            echo "::error::Missing required GitHub Actions secret: CONVEX_DEPLOY_KEY_PROD"
+            exit 1
+          fi
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-      - name: Install pnpm
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
         uses: pnpm/action-setup@v4
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Deploy Backend to Convex
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_PROD }}
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy backend to Convex
         run: pnpm --filter @workspace/backend run deploy
 
       - name: Run migrations
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_PROD }}
         run: pnpm --filter @workspace/backend run migrate
+
+  build_frontend:
+    if: github.event_name != 'workflow_dispatch' || inputs.deploy_frontend
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+
+    steps:
+      - name: Check frontend deploy secrets
+        shell: bash
+        run: |
+          missing=()
+          [[ -n "${VERCEL_ORG_ID}" ]] || missing+=(VERCEL_ORG_ID)
+          [[ -n "${VERCEL_PROJECT_ID}" ]] || missing+=(VERCEL_PROJECT_ID)
+          [[ -n "${VERCEL_TOKEN}" ]] || missing+=(VERCEL_TOKEN)
+          [[ -n "${NEXT_PUBLIC_CONVEX_URL}" ]] || missing+=(NEXT_PUBLIC_CONVEX_URL)
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing required GitHub Actions secret(s): ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Vercel project
+        working-directory: apps/webapp
+        run: |
+          mkdir -p .vercel
+          node -e 'require("node:fs").writeFileSync(".vercel/project.json", JSON.stringify({ orgId: process.env.VERCEL_ORG_ID, projectId: process.env.VERCEL_PROJECT_ID }))'
+
+      - name: Build Vercel production artifacts
+        working-directory: apps/webapp
+        run: pnpm exec vercel build --prod
+
+      - name: Package Vercel production artifacts
+        run: >-
+          tar --exclude=apps/webapp/.next/cache -czf vercel-prebuilt.tgz
+          -C apps/webapp .vercel/output .vercel/project.json
+          -C ../.. apps/webapp/.next
+
+      - name: Upload Vercel production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-prebuilt
+          path: vercel-prebuilt.tgz
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy_frontend:
+    needs:
+      - deploy_backend
+      - build_frontend
+    if: >-
+      ${{
+        always() &&
+        needs.build_frontend.result == 'success' &&
+        (needs.deploy_backend.result == 'success' || needs.deploy_backend.result == 'skipped')
+      }}
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download Vercel production artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vercel-prebuilt
+
+      - name: Restore Vercel production artifacts
+        run: tar -xzf vercel-prebuilt.tgz
+
+      - name: Deploy Vercel production artifacts
+        run: pnpm exec vercel deploy --prebuilt --prod
