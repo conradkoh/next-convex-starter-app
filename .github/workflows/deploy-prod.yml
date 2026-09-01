@@ -145,12 +145,12 @@ jobs:
       - name: Build Vercel production artifacts
         run: >-
           pnpm exec vercel build --prod --yes --non-interactive
-          --project "$VERCEL_PROJECT_ID"
+          --project "$VERCEL_PROJECT_ID" --output .vercel/output
 
       - name: Package Vercel production artifacts
         run: >-
           tar --exclude=apps/webapp/.next/cache -czf vercel-prebuilt.tgz
-          .vercel/repo.json apps/webapp/.vercel/output
+          .vercel/repo.json .vercel/output
           apps/webapp/.vercel/project.json apps/webapp/.next
 
       - name: Upload Vercel production artifacts
@@ -204,6 +204,5 @@ jobs:
 
       - name: Deploy Vercel production artifacts
         run: >-
-          pnpm exec vercel deploy --cwd apps/webapp --prebuilt --prod --yes
-          --non-interactive
+          pnpm exec vercel deploy --prebuilt --prod --yes --non-interactive
           --project "$VERCEL_PROJECT_ID"
