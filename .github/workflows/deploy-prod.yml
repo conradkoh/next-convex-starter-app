@@ -143,7 +143,7 @@ jobs:
             )'
 
       - name: Build Vercel production artifacts
-        run: pnpm exec vercel build --prod
+        run: pnpm exec vercel build --prod --yes
 
       - name: Package Vercel production artifacts
         run: >-
@@ -201,4 +201,4 @@ jobs:
         run: tar -xzf vercel-prebuilt.tgz
 
       - name: Deploy Vercel production artifacts
-        run: pnpm exec vercel deploy --prebuilt --prod
+        run: pnpm exec vercel deploy --prebuilt --prod --yes
