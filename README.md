@@ -104,7 +104,7 @@ Then open the **Variables** tab, create these repository variables, and add:
 | `NEXT_PUBLIC_CONVEX_URL` | Convex production deployment URL         |
 | `VERCEL_TEAM_ID`         | `orgId` from Vercel project metadata     |
 | `VERCEL_PROJECT_ID`      | `projectId` from Vercel project metadata |
-| `VERCEL_USER_EMAIL`      | Email of a Vercel team member            |
+| `VERCEL_USER_EMAIL`      | Email of a Vercel team member (required) |
 
 These are the only production deployment values required by the default
 workflow. Additional build-time values can follow the same pattern: store them

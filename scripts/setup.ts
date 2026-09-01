@@ -295,6 +295,10 @@ async function showDeploymentEnv(nonInteractive: boolean): Promise<void> {
   console.log('   Copy this block into a UI that supports importing environment variables:');
   console.log('');
   console.log(formatDeploymentEnv(productionConvexUrl, vercelProject));
+  console.log('');
+  console.log(
+    '   Then set the GitHub Actions repository variable VERCEL_USER_EMAIL to an email address associated with a Vercel team member.'
+  );
 }
 
 function addUpstreamRemote(): void {
