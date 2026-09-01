@@ -111,16 +111,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Configure Vercel project
-        working-directory: apps/webapp
+      - name: Configure Vercel monorepo project
         run: |
-          mkdir -p .vercel
+          mkdir -p .vercel apps/webapp/.vercel
           node -e '
             require("node:fs").writeFileSync(
-              ".vercel/project.json",
+              ".vercel/repo.json",
               JSON.stringify({
-                orgId: process.env.VERCEL_ORG_ID,
-                projectId: process.env.VERCEL_PROJECT_ID,
+                remoteName: "origin",
+                projects: [{
+                  id: process.env.VERCEL_PROJECT_ID,
+                  directory: "apps/webapp",
+                  orgId: process.env.VERCEL_ORG_ID
+                }]
+              })
+            )
+            require("node:fs").writeFileSync(
+              "apps/webapp/.vercel/project.json",
+              JSON.stringify({
                 settings: {
                   framework: "nextjs",
                   devCommand: null,
@@ -135,14 +143,13 @@ jobs:
             )'
 
       - name: Build Vercel production artifacts
-        working-directory: apps/webapp
         run: pnpm exec vercel build --prod
 
       - name: Package Vercel production artifacts
         run: >-
           tar --exclude=apps/webapp/.next/cache -czf vercel-prebuilt.tgz
-          -C apps/webapp .vercel/output .vercel/project.json
-          -C ../.. apps/webapp/.next
+          .vercel/repo.json apps/webapp/.vercel/output
+          apps/webapp/.vercel/project.json apps/webapp/.next
 
       - name: Upload Vercel production artifacts
         uses: actions/upload-artifact@v4
@@ -194,5 +201,4 @@ jobs:
         run: tar -xzf vercel-prebuilt.tgz
 
       - name: Deploy Vercel production artifacts
-        working-directory: apps/webapp
         run: pnpm exec vercel deploy --prebuilt --prod

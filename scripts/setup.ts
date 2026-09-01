@@ -24,7 +24,6 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const backendDirectory = join(scriptDir, '..', 'services', 'backend');
 const backendEnvPath = join(backendDirectory, '.env.local');
 const webappEnvPath = join(scriptDir, '..', 'apps', 'webapp', '.env.local');
-const vercelProjectPath = join(scriptDir, '..', 'apps', 'webapp', '.vercel', 'project.json');
 const vercelRepoPath = join(scriptDir, '..', '.vercel', 'repo.json');
 
 type CliArgs = {
@@ -230,8 +229,8 @@ function setupWebappEnv(convexUrl: string): void {
 
 function linkVercelProject(): boolean {
   console.log('\n▲ Starting Vercel project setup...');
-  const result = spawnSync('pnpm', ['exec', 'vercel', 'link'], {
-    cwd: join(scriptDir, '..', 'apps', 'webapp'),
+  const result = spawnSync('pnpm', ['exec', 'vercel', 'link', '--repo'], {
+    cwd: join(scriptDir, '..'),
     stdio: 'inherit',
   });
 
@@ -242,10 +241,7 @@ function linkVercelProject(): boolean {
 }
 
 function readLinkedVercelProject(): ReturnType<typeof readVercelProjectConfig> {
-  return (
-    readVercelProjectConfig(vercelProjectPath) ??
-    readVercelProjectConfig(vercelRepoPath, 'apps/webapp')
-  );
+  return readVercelProjectConfig(vercelRepoPath, 'apps/webapp');
 }
 
 function acceptedPrompt(answer: string): boolean {
@@ -284,7 +280,7 @@ async function showDeploymentEnv(nonInteractive: boolean): Promise<void> {
     console.log(
       '   Vercel is not linked. Run this command when you are ready to configure deployment:'
     );
-    console.log('   cd apps/webapp && pnpm exec vercel link');
+    console.log('   pnpm exec vercel link --repo');
     return;
   }
 

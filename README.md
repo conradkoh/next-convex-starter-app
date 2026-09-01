@@ -82,10 +82,10 @@ not need to be committed or duplicated across repository files.
    `apps/webapp`. No application environment variables need to be added in
    Vercel for the default template deployment; the workflow supplies
    `NEXT_PUBLIC_CONVEX_URL` during the production build.
-3. Create a Vercel access token. Run
-   `cd apps/webapp && pnpm exec vercel link` locally if needed, then read
-   `apps/webapp/.vercel/project.json` to obtain the `orgId` and `projectId`. Do
-   not commit this file.
+3. Create a Vercel access token. Run `pnpm exec vercel link --repo` from the
+   repository root if needed, then read the `apps/webapp` entry in
+   `.vercel/repo.json` to obtain its `orgId` and `id`. Do not commit the
+   `.vercel` directory.
 
 ### 2. Configure GitHub Actions secrets and variables
 
@@ -111,11 +111,12 @@ as GitHub Actions secrets and expose them only to the frontend build job. Values
 that must remain available to server functions at runtime should be configured
 in Vercel or passed explicitly by a customized deploy step.
 
-The workflow writes the required Vercel project settings locally before the
-build, including the Next.js framework, `apps/webapp` root directory, Node.js
-version, and monorepo build command. It intentionally does not run
-`vercel pull`, so Vercel project environment variables are not downloaded into
-CI.
+The workflow recreates Vercel's repository-level monorepo link in
+`.vercel/repo.json`. It also writes the transient, settings-only project metadata
+that `vercel build` expects beneath `apps/webapp`; project identity remains in
+the repository link. Both build and deploy run from the repository root. The
+workflow intentionally does not run `vercel pull`, so Vercel project environment
+variables are not downloaded into CI.
 
 ### 3. Deploy
 
