@@ -204,5 +204,6 @@ jobs:
 
       - name: Deploy Vercel production artifacts
         run: >-
-          pnpm exec vercel deploy --prebuilt --prod --yes --non-interactive
+          pnpm exec vercel deploy --cwd apps/webapp --prebuilt --prod --yes
+          --non-interactive
           --project "$VERCEL_PROJECT_ID"
