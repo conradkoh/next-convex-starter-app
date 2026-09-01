@@ -80,6 +80,7 @@ jobs:
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       NEXT_PUBLIC_CONVEX_URL: ${{ vars.NEXT_PUBLIC_CONVEX_URL }}
+      VERCEL_USER_EMAIL: ${{ vars.VERCEL_USER_EMAIL }}
 
     steps:
       - name: Check frontend deploy secrets
@@ -90,6 +91,7 @@ jobs:
           [[ -n "${VERCEL_PROJECT_ID}" ]] || missing+=(VERCEL_PROJECT_ID)
           [[ -n "${VERCEL_TOKEN}" ]] || missing+=(VERCEL_TOKEN)
           [[ -n "${NEXT_PUBLIC_CONVEX_URL}" ]] || missing+=(NEXT_PUBLIC_CONVEX_URL)
+          [[ -n "${VERCEL_USER_EMAIL}" ]] || missing+=(VERCEL_USER_EMAIL)
           if (( ${#missing[@]} > 0 )); then
             echo "::error::Missing required GitHub Actions configuration: ${missing[*]}"
             exit 1
@@ -179,6 +181,7 @@ jobs:
       VERCEL_ORG_ID: ${{ vars.VERCEL_TEAM_ID }}
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_USER_EMAIL: ${{ vars.VERCEL_USER_EMAIL }}
 
     steps:
       - name: Checkout repository
@@ -204,6 +207,13 @@ jobs:
 
       - name: Restore Vercel production artifacts
         run: tar -xzf vercel-prebuilt.tgz
+
+      - name: Rewrite latest commit author email for Vercel
+        run: |
+          author_name="$(git log -1 --format='%an')"
+          git config user.name "$author_name"
+          git config user.email "$VERCEL_USER_EMAIL"
+          HUSKY=0 git commit --amend --no-edit --author="${author_name} <${VERCEL_USER_EMAIL}>"
 
       - name: Deploy Vercel production artifacts
         run: >-

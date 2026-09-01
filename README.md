@@ -104,12 +104,19 @@ Then open the **Variables** tab, create these repository variables, and add:
 | `NEXT_PUBLIC_CONVEX_URL` | Convex production deployment URL         |
 | `VERCEL_TEAM_ID`         | `orgId` from Vercel project metadata     |
 | `VERCEL_PROJECT_ID`      | `projectId` from Vercel project metadata |
+| `VERCEL_USER_EMAIL`      | Email of a Vercel team member            |
 
 These are the only production deployment values required by the default
 workflow. Additional build-time values can follow the same pattern: store them
 as GitHub Actions secrets and expose them only to the frontend build job. Values
 that must remain available to server functions at runtime should be configured
 in Vercel or passed explicitly by a customized deploy step.
+
+The frontend deployment rewrites the latest commit's author email in the CI
+runner's local checkout before invoking the Vercel CLI. Set `VERCEL_USER_EMAIL`
+to an email address associated with a member of the Vercel team so Vercel can
+identify the deployment author. The amended commit is local to the workflow and
+is never pushed back to the repository.
 
 The workflow recreates Vercel's repository-level monorepo link in
 `.vercel/repo.json`. It also writes the transient, settings-only project metadata
