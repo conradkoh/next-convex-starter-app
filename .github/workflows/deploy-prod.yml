@@ -129,13 +129,15 @@ jobs:
             require("node:fs").writeFileSync(
               "apps/webapp/.vercel/project.json",
               JSON.stringify({
+                orgId: process.env.VERCEL_ORG_ID,
+                projectId: process.env.VERCEL_PROJECT_ID,
                 settings: {
                   framework: "nextjs",
                   devCommand: null,
                   installCommand: null,
                   buildCommand: "cd ../.. && pnpm turbo run build --filter=@workspace/webapp",
                   outputDirectory: null,
-                  rootDirectory: "apps/webapp",
+                  rootDirectory: ".",
                   directoryListing: false,
                   nodeVersion: "24.x"
                 }
@@ -143,14 +145,15 @@ jobs:
             )'
 
       - name: Build Vercel production artifacts
+        working-directory: apps/webapp
         run: >-
           pnpm exec vercel build --prod --yes --non-interactive
-          --project "$VERCEL_PROJECT_ID" --output .vercel/output
+          --project "$VERCEL_PROJECT_ID"
 
       - name: Package Vercel production artifacts
         run: >-
           tar --exclude=apps/webapp/.next/cache -czf vercel-prebuilt.tgz
-          .vercel/repo.json .vercel/output
+          .vercel/repo.json apps/webapp/.vercel/output
           apps/webapp/.vercel/project.json apps/webapp/.next
 
       - name: Upload Vercel production artifacts
