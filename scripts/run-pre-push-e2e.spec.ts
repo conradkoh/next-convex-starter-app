@@ -97,17 +97,14 @@ describe('runPrePushE2eWithSpawn (exit propagation)', () => {
 });
 
 describe('pre-push hook contract', () => {
-  it('runs e2e only when pushing to master', async () => {
+  it('runs only typecheck, without tests or e2e locally', async () => {
     const hook = await Bun.file(new URL('../.husky/pre-push', import.meta.url)).text();
-    expect(hook).toContain('bun scripts/run-pre-push-e2e.ts "$1" "$2"');
-    expect(hook).toContain("while IFS=' ' read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA");
-    expect(hook).toContain('[ "$REMOTE_REF" = "refs/heads/master" ]');
-    expect(hook).toContain('[ "$PUSHES_TO_MASTER" = true ]');
-    expect(hook).not.toContain('git symbolic-ref --quiet --short HEAD');
-    expect(hook).toContain('push does not target master');
-    // test/test:scripts/typecheck stay unconditional
-    expect(hook).toContain('pnpm run test');
-    expect(hook).toContain('bun run test:scripts');
     expect(hook).toContain('pnpm run typecheck');
+    expect(hook).not.toContain('pnpm run test');
+    expect(hook).not.toContain('bun run test:scripts');
+    expect(hook).not.toContain('run-pre-push-e2e');
+    expect(hook).not.toContain('git symbolic-ref --quiet --short HEAD');
+    expect(hook).not.toContain('while IFS');
+    expect(hook).not.toContain('refs/heads/master');
   });
 });
