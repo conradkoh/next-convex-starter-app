@@ -286,6 +286,7 @@ jobs:
         run: tar -xzf vercel-prebuilt.tgz
 
       - name: Deploy Vercel production artifacts
+        working-directory: apps/webapp
         run: >-
           pnpm exec vercel deploy --prebuilt --prod --yes --non-interactive
           --project "$VERCEL_PROJECT_ID"
