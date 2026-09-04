@@ -622,7 +622,7 @@ rg 'asChild' src/                         # must return zero after fixes
 rg '@radix-ui/react-' src/ package.json   # must return zero on migration branch
 pnpm typecheck                            # catches API surface breaks (pre-push gate)
 pnpm test                                 # RTL component tests
-pnpm e2e                                  # root turbo e2e — matches pre-push hook
+pnpm e2e                                  # root turbo e2e — run in CI or manually
 ```
 
 **Prerequisite for admin e2e:** `E2E_SEEDING_ENABLED=true` on the Convex deployment matching `NEXT_PUBLIC_CONVEX_URL`. See `apps/webapp/tests/e2e/README.md#e2e-admin-seeding`.
@@ -638,7 +638,7 @@ pnpm e2e                                  # root turbo e2e — matches pre-push 
 
 **Real example (this repo):** Merging master into `feat/shadcn-base-ui-migration` brought `admin/layout.tsx` mobile module switcher (`<DropdownMenuTrigger asChild><Button>…</Button></DropdownMenuTrigger>`). Fixed by applying `buttonVariants()` on the trigger directly.
 
-**Regression gate:** The upstream e2e suite (`apps/webapp/tests/e2e/specs/upstream/`, 11 specs including `admin-interactions.spec.ts`) is the end-to-end regression baseline for the Base UI migration. Root `pnpm e2e` mirrors the pre-push hook exactly.
+**Regression gate:** The upstream e2e suite (`apps/webapp/tests/e2e/specs/upstream/`, 11 specs including `admin-interactions.spec.ts`) is the end-to-end regression baseline for the Base UI migration. It is validated in CI and can be run manually with root `pnpm e2e`; the local pre-push gate runs only `pnpm typecheck`.
 
 ---
 
