@@ -77,6 +77,38 @@ export const stripManagerRoleNames = migrations.define({
   },
 });
 
+/**
+ * Migration: Backfill the `sessionActivity` projection from the legacy
+ * `sessions.lastActivityAt` mirror. Idempotent: only creates a projection
+ * when the legacy value exists, and only repairs an existing projection when
+ * the legacy value is newer (max-wins). Returns no session patch.
+ */
+export const backfillSessionActivity = migrations.define({
+  table: 'sessions',
+  migrateOne: async (ctx, session) => {
+    if (session.lastActivityAt === undefined) return;
+
+    const existing = await ctx.db
+      .query('sessionActivity')
+      .withIndex('by_sessionId', (q) => q.eq('sessionId', session._id))
+      .first();
+
+    if (!existing) {
+      await ctx.db.insert('sessionActivity', {
+        sessionId: session._id,
+        lastActivityAt: session.lastActivityAt,
+      });
+      return;
+    }
+
+    if (session.lastActivityAt > existing.lastActivityAt) {
+      await ctx.db.patch('sessionActivity', existing._id, {
+        lastActivityAt: session.lastActivityAt,
+      });
+    }
+  },
+});
+
 // ========================================
 // Batch Runners
 // ========================================
@@ -90,4 +122,5 @@ export const runAll = migrations.runner([
   internal.migrations.setUserAccessLevelDefault,
   internal.migrations.backfillUserRoleNames,
   internal.migrations.stripManagerRoleNames,
+  internal.migrations.backfillSessionActivity,
 ]);

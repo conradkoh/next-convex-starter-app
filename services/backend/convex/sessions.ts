@@ -3,6 +3,11 @@ import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import type { Doc, Id } from './_generated/dataModel';
 import { internalMutation, mutation, query } from './_generated/server';
+import {
+  deleteSessionActivity,
+  getSessionActivity,
+  upsertSessionActivity,
+} from './sessionActivity';
 
 /**
  * Device info for session tracking.
@@ -53,15 +58,22 @@ export const listMySessions = query({
       .withIndex('by_userId', (q) => q.eq('userId', currentSession.userId))
       .collect();
 
-    // Map to session info, marking the current session
-    const sessions: SessionInfo[] = allSessions.map((session) => ({
-      _id: session._id,
-      createdAt: session.createdAt,
-      lastActivityAt: session.lastActivityAt,
-      authMethod: session.authMethod,
-      deviceInfo: session.deviceInfo,
-      isCurrent: session.sessionId === args.sessionId,
-    }));
+    // Map to session info, marking the current session.
+    // Rolling-deploy read contract: prefer the `sessionActivity` projection,
+    // fall back to the legacy `sessions.lastActivityAt` mirror while rows may
+    // be missing, and use `createdAt` only when both are undefined.
+    const sessions: SessionInfo[] = [];
+    for (const session of allSessions) {
+      const activity = await getSessionActivity(ctx, session._id);
+      sessions.push({
+        _id: session._id,
+        createdAt: session.createdAt,
+        lastActivityAt: activity?.lastActivityAt ?? session.lastActivityAt,
+        authMethod: session.authMethod,
+        deviceInfo: session.deviceInfo,
+        isCurrent: session.sessionId === args.sessionId,
+      });
+    }
 
     // Sort by last activity (most recent first), with current session at top
     sessions.sort((a, b) => {
@@ -113,7 +125,9 @@ export const revokeSession = mutation({
       return { success: false, reason: 'cannot_revoke_current_session' };
     }
 
-    // Delete the session
+    // Delete the projection row alongside the parent session so revoke
+    // never orphans projection rows. Deletion is idempotent.
+    await deleteSessionActivity(ctx, args.sessionIdToRevoke);
     await ctx.db.delete('sessions', args.sessionIdToRevoke);
 
     return { success: true };
@@ -151,6 +165,7 @@ export const revokeAllOtherSessions = mutation({
     // Delete all other sessions
     let revokedCount = 0;
     for (const session of otherSessions) {
+      await deleteSessionActivity(ctx, session._id);
       await ctx.db.delete('sessions', session._id);
       revokedCount++;
     }
@@ -197,6 +212,8 @@ export const updateSessionActivity = mutation({
     }
 
     await ctx.db.patch('sessions', currentSession._id, updates);
+    // Dual-write the projection so high-frequency reads stay off the parent.
+    await upsertSessionActivity(ctx, currentSession._id, now);
 
     return { success: true };
   },
@@ -221,5 +238,7 @@ export const updateSessionDeviceInfo = internalMutation({
       deviceInfo: args.deviceInfo,
       lastActivityAt: args.lastActivityAt,
     });
+    // Dual-write the projection (max-wins guards out-of-order delivery).
+    await upsertSessionActivity(ctx, args.sessionId, args.lastActivityAt);
   },
 });

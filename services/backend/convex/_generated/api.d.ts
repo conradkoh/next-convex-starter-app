@@ -22,6 +22,7 @@ import type * as e2e from "../e2e.js";
 import type * as migrations from "../migrations.js";
 import type * as presentations from "../presentations.js";
 import type * as serviceDesk from "../serviceDesk.js";
+import type * as sessionActivity from "../sessionActivity.js";
 import type * as sessions from "../sessions.js";
 import type * as system_auth_google from "../system/auth/google.js";
 
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   presentations: typeof presentations;
   serviceDesk: typeof serviceDesk;
+  sessionActivity: typeof sessionActivity;
   sessions: typeof sessions;
   "system/auth/google": typeof system_auth_google;
 }>;

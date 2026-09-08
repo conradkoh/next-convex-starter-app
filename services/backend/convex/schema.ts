@@ -191,6 +191,21 @@ export default defineSchema({
     .index('by_userId', ['userId']),
 
   /**
+   * High-frequency session activity projection.
+   * Stores the latest activity timestamp per session outside the `sessions`
+   * row to avoid invalidating session reads on every heartbeat.
+   *
+   * `sessions.lastActivityAt` is retained as the migration/rolling-deploy
+   * compatibility mirror: it is dual-written alongside this projection, and
+   * reads fall back to it while projection rows are incomplete or absent
+   * (e.g. after deploy-before-migrate or backfill failure).
+   */
+  sessionActivity: defineTable({
+    sessionId: v.id('sessions'),
+    lastActivityAt: v.number(),
+  }).index('by_sessionId', ['sessionId']),
+
+  /**
    * Temporary login codes for cross-device authentication.
    * Stores time-limited codes for secure device-to-device login.
    */
