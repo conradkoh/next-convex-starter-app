@@ -59,16 +59,27 @@ export const listMySessions = query({
       .collect();
 
     // Map to session info, marking the current session.
-    // Rolling-deploy read contract: prefer the `sessionActivity` projection,
-    // fall back to the legacy `sessions.lastActivityAt` mirror while rows may
-    // be missing, and use `createdAt` only when both are undefined.
+    // Rolling-deploy read contract: reconcile the `sessionActivity`
+    // projection and the legacy `sessions.lastActivityAt` mirror by taking
+    // the newer defined timestamp (max-wins), so reads stay correct if the
+    // two stores temporarily diverge (e.g. an old writer advanced the mirror
+    // after a projection row exists). Returns `undefined` when both are
+    // absent; `createdAt` remains sort-only, never the returned value.
     const sessions: SessionInfo[] = [];
     for (const session of allSessions) {
       const activity = await getSessionActivity(ctx, session._id);
+      const projectionTime = activity?.lastActivityAt;
+      const legacyTime = session.lastActivityAt;
+      const lastActivityAt =
+        projectionTime === undefined
+          ? legacyTime
+          : legacyTime === undefined
+            ? projectionTime
+            : Math.max(projectionTime, legacyTime);
       sessions.push({
         _id: session._id,
         createdAt: session.createdAt,
-        lastActivityAt: activity?.lastActivityAt ?? session.lastActivityAt,
+        lastActivityAt,
         authMethod: session.authMethod,
         deviceInfo: session.deviceInfo,
         isCurrent: session.sessionId === args.sessionId,
@@ -202,8 +213,10 @@ export const updateSessionActivity = mutation({
     }
 
     const now = Date.now();
+    // Max-wins for the legacy mirror: never move `lastActivityAt` backwards.
+    const lastActivityAt = Math.max(currentSession.lastActivityAt ?? now, now);
     const updates: Partial<Doc<'sessions'>> = {
-      lastActivityAt: now,
+      lastActivityAt,
     };
 
     // Only update device info if provided and not already set
@@ -213,7 +226,7 @@ export const updateSessionActivity = mutation({
 
     await ctx.db.patch('sessions', currentSession._id, updates);
     // Dual-write the projection so high-frequency reads stay off the parent.
-    await upsertSessionActivity(ctx, currentSession._id, now);
+    await upsertSessionActivity(ctx, currentSession._id, lastActivityAt);
 
     return { success: true };
   },
@@ -234,11 +247,20 @@ export const updateSessionDeviceInfo = internalMutation({
     lastActivityAt: v.number(),
   },
   handler: async (ctx, args): Promise<void> => {
+    // Max-wins for both stores: a delayed older write must neither regress
+    // the legacy mirror nor seed the projection with a stale value when the
+    // projection row does not exist yet (deploy-before-migrate). Device-info
+    // semantics are unchanged: the supplied device info is always written.
+    const session = await ctx.db.get('sessions', args.sessionId);
+    const lastActivityAt = Math.max(
+      session?.lastActivityAt ?? args.lastActivityAt,
+      args.lastActivityAt
+    );
     await ctx.db.patch('sessions', args.sessionId, {
       deviceInfo: args.deviceInfo,
-      lastActivityAt: args.lastActivityAt,
+      lastActivityAt,
     });
     // Dual-write the projection (max-wins guards out-of-order delivery).
-    await upsertSessionActivity(ctx, args.sessionId, args.lastActivityAt);
+    await upsertSessionActivity(ctx, args.sessionId, lastActivityAt);
   },
 });

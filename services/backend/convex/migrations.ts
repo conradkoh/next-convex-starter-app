@@ -2,6 +2,7 @@ import { Migrations } from '@convex-dev/migrations';
 
 import { components, internal } from './_generated/api.js';
 import type { DataModel } from './_generated/dataModel.js';
+import { upsertSessionActivity } from './sessionActivity.js';
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -79,33 +80,16 @@ export const stripManagerRoleNames = migrations.define({
 
 /**
  * Migration: Backfill the `sessionActivity` projection from the legacy
- * `sessions.lastActivityAt` mirror. Idempotent: only creates a projection
- * when the legacy value exists, and only repairs an existing projection when
- * the legacy value is newer (max-wins). Returns no session patch.
+ * `sessions.lastActivityAt` mirror. Idempotent: delegates to the canonical
+ * `upsertSessionActivity` helper (create-if-absent / repair-if-newer
+ * max-wins). Returns no session patch.
  */
 export const backfillSessionActivity = migrations.define({
   table: 'sessions',
   migrateOne: async (ctx, session) => {
     if (session.lastActivityAt === undefined) return;
 
-    const existing = await ctx.db
-      .query('sessionActivity')
-      .withIndex('by_sessionId', (q) => q.eq('sessionId', session._id))
-      .first();
-
-    if (!existing) {
-      await ctx.db.insert('sessionActivity', {
-        sessionId: session._id,
-        lastActivityAt: session.lastActivityAt,
-      });
-      return;
-    }
-
-    if (session.lastActivityAt > existing.lastActivityAt) {
-      await ctx.db.patch('sessionActivity', existing._id, {
-        lastActivityAt: session.lastActivityAt,
-      });
-    }
+    await upsertSessionActivity(ctx, session._id, session.lastActivityAt);
   },
 });
 
