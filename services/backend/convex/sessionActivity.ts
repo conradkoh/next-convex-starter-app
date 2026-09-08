@@ -7,9 +7,11 @@ import type { DataModel, Doc, Id } from './_generated/dataModel';
  *
  * Rolling-deploy invariant: `sessions.lastActivityAt` remains the legacy
  * compatibility mirror and is dual-written alongside the projection. Reads
- * must use `projection?.lastActivityAt ?? session.lastActivityAt` so the app
- * stays correct while projection rows are missing (new backend is live but
- * the backfill migration has not finished or has failed).
+ * must reconcile the projection and the legacy mirror by taking the newer
+ * defined timestamp, returning `undefined` only when both are absent, so the
+ * app stays correct while projection rows are missing (new backend is live
+ * but the backfill migration has not finished or has failed). `createdAt`
+ * remains sort-only and is not an activity value.
  *
  * Projection updates are max-wins: an older delayed mutation must never
  * overwrite a newer stored timestamp.
