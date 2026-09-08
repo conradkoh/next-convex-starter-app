@@ -73,15 +73,15 @@ test('projection updates are max-wins: older activity cannot move time backwards
   });
   expect((await getProjection(sessionDbId))?.lastActivityAt).toBe(5000);
 
-  // An older delayed write still patches the legacy mirror but must not
-  // move the projection backwards.
+  // An older delayed write must move neither the legacy mirror nor the
+  // projection backwards (max-wins for both stores).
   await t.mutation(internal.sessions.updateSessionDeviceInfo, {
     sessionId: sessionDbId,
     deviceInfo: {},
     lastActivityAt: 4000,
   });
   const session = await t.run(async (ctx) => ctx.db.get('sessions', sessionDbId));
-  expect(session?.lastActivityAt).toBe(4000);
+  expect(session?.lastActivityAt).toBe(5000);
   expect((await getProjection(sessionDbId))?.lastActivityAt).toBe(5000);
 
   // A newer write advances both.
@@ -93,6 +93,68 @@ test('projection updates are max-wins: older activity cannot move time backwards
   const updated = await t.run(async (ctx) => ctx.db.get('sessions', sessionDbId));
   expect(updated?.lastActivityAt).toBe(6000);
   expect((await getProjection(sessionDbId))?.lastActivityAt).toBe(6000);
+});
+
+test('missing-projection delayed write cannot seed a stale projection', async () => {
+  // Rolling-deploy race: session has legacy `5000` with no projection row
+  // (backfill not yet run), and an older delayed write arrives with `4000`.
+  // Neither stored value may become `4000`.
+  const { userId, sessionDbId } = await seedSession('missing-proj-race', {
+    lastActivityAt: 5000,
+  });
+  expect(await getProjection(sessionDbId)).toBeNull();
+
+  const deviceInfo = { browser: 'test-browser' };
+  await t.mutation(internal.sessions.updateSessionDeviceInfo, {
+    sessionId: sessionDbId,
+    deviceInfo,
+    lastActivityAt: 4000,
+  });
+
+  const session = await t.run(async (ctx) => ctx.db.get('sessions', sessionDbId));
+  expect(session?.lastActivityAt).toBe(5000);
+  // Device-info semantics are unchanged: the supplied info is still written.
+  expect(session?.deviceInfo).toMatchObject(deviceInfo);
+  expect((await getProjection(sessionDbId))?.lastActivityAt).toBe(5000);
+
+  const currentSessionId =
+    `${'missing-proj-race'}-${Math.random().toString(36).slice(2)}` as SessionId;
+  const currentDbId: Id<'sessions'> = await t.run(async (ctx) => {
+    return await ctx.db.insert('sessions', {
+      sessionId: currentSessionId,
+      userId,
+      createdAt: 1000,
+      authMethod: 'anonymous',
+    });
+  });
+  void currentDbId;
+  const result = await t.query(api.sessions.listMySessions, {
+    sessionId: currentSessionId,
+  });
+  expect(result.success).toBe(true);
+  expect(result.sessions?.find((s) => s._id === sessionDbId)?.lastActivityAt).toBe(5000);
+});
+
+test('listMySessions returns the newer timestamp when projection and legacy diverge', async () => {
+  // Legacy-newer direction: an old writer advanced the mirror after the
+  // projection row existed. Reads must reconcile with max-wins.
+  const current = await seedSession('legacy-newer', { createdAt: 1000, lastActivityAt: 1000 });
+  const legacyNewerDbId: Id<'sessions'> = await t.run(async (ctx) => {
+    return await ctx.db.insert('sessions', {
+      sessionId: `legacy-newer-second-${Math.random().toString(36).slice(2)}`,
+      userId: current.userId,
+      createdAt: 1000,
+      authMethod: 'anonymous',
+      lastActivityAt: 9000,
+    });
+  });
+  await t.run(async (ctx) => {
+    await ctx.db.insert('sessionActivity', { sessionId: legacyNewerDbId, lastActivityAt: 5000 });
+  });
+
+  const result = await t.query(api.sessions.listMySessions, { sessionId: current.sessionId });
+  expect(result.success).toBe(true);
+  expect(result.sessions?.find((s) => s._id === legacyNewerDbId)?.lastActivityAt).toBe(9000);
 });
 
 test('listMySessions prefers the projection timestamp when present', async () => {

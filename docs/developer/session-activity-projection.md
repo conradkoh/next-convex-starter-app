@@ -23,13 +23,19 @@ Id<'sessions'>, lastActivityAt: number }`, indexed by `by_sessionId`. This
   (`updateSessionActivity`, `updateSessionDeviceInfo` in
   `services/backend/convex/sessions.ts`). All activity writers must update
   both values.
-- **Projection-first reads.** `listMySessions` resolves each session's
-  activity as `projection?.lastActivityAt ?? session.lastActivityAt`, with
-  `createdAt` only as the final fallback when both are undefined. Never fall
-  back directly to `createdAt` when a legacy activity value exists.
-- **Max-wins.** `upsertSessionActivity` patches the projection only when the
-  incoming timestamp is greater than the stored one, so an older delayed
-  mutation cannot move time backwards.
+- **Max-wins writes.** Activity writes are max-wins for both
+  `sessions.lastActivityAt` and `sessionActivity`: each writer first resolves
+  the effective timestamp as the max of the stored legacy value and the
+  incoming timestamp, then patches the mirror and calls
+  `upsertSessionActivity` with that effective value. A delayed older write
+  therefore cannot regress either store, and it cannot seed a projection row
+  with a timestamp lower than the legacy mirror during deploy-before-migrate.
+- **Reconciling reads.** `listMySessions` resolves each session's activity as
+  the newer defined value of the projection and legacy timestamps (explicit
+  `undefined` handling with `Math.max` when both are defined), returning
+  `undefined` only when both are absent. `createdAt` remains sort-only and is
+  never returned as `lastActivityAt`. Never fall back directly to `createdAt`
+  when a legacy activity value exists.
 - **Deletes clean up.** `logout` (`auth.ts`), `revokeSession`, and
   `revokeAllOtherSessions` (`sessions.ts`) call `deleteSessionActivity`
   alongside deleting the parent session. Deletion is idempotent, so deletes
@@ -56,6 +62,13 @@ construction:
 Do not add a projection-complete flag or a projection-only cutover: the
 fallback makes the rollout safe without a second deployment, and the legacy
 field must not be removed in the same change.
+
+## Limitation: legacy-mirror invalidation
+
+Retaining the legacy `sessions.lastActivityAt` mirror means any consumer that
+still reads `sessions` rows remains invalidated by its writes. The projection
+reduces invalidation only for consumers that read the projection alone (or
+after a coordinated cutover to projection-only reads).
 
 ## Note for downstream projects
 
