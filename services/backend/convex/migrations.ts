@@ -1,7 +1,8 @@
-import { Migrations } from '@convex-dev/migrations';
+import { Migrations, type MigrationFunctionReference } from '@convex-dev/migrations';
 
 import { components, internal } from './_generated/api.js';
 import type { DataModel } from './_generated/dataModel.js';
+import { query } from './_generated/server.js';
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -85,9 +86,32 @@ export const stripManagerRoleNames = migrations.define({
  * Run all migrations in order.
  * Usage: npx convex run migrations:runAll
  */
-export const runAll = migrations.runner([
+const allMigrationReferences = [
   internal.migrations.unsetSessionExpiration,
   internal.migrations.setUserAccessLevelDefault,
   internal.migrations.backfillUserRoleNames,
   internal.migrations.stripManagerRoleNames,
-]);
+] as unknown as MigrationFunctionReference[];
+
+export const runAll = migrations.runner(allMigrationReferences);
+
+/**
+ * Returns status for the migrations in the current, ordered migration plan.
+ *
+ * This is intentionally scoped to `allMigrationReferences` rather than
+ * returning every migration known to the component, since old migrations may
+ * have been removed from the plan but remain in the component's history.
+ * The one-off migration script uses this to report and poll only the work in
+ * the current plan.
+ */
+export const getRunAllStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    // @convex-dev/migrations returns explicitly named statuses newest-first;
+    // expose the same oldest-first order used by runAll's serial plan.
+    const statuses = await migrations.getStatus(ctx, {
+      migrations: allMigrationReferences,
+    });
+    return statuses.reverse();
+  },
+});
