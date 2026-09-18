@@ -19,10 +19,10 @@ on:
         description: Deploy Convex backend and run migrations
         type: boolean
         default: true
-      deploy_frontend:
-        description: Deploy webapp to Vercel
-        type: boolean
-        default: true
+      # deploy_frontend:
+      #   description: Deploy webapp to Vercel
+      #   type: boolean
+      #   default: true
 
 permissions:
   contents: read
@@ -151,138 +151,143 @@ jobs:
       - name: Run migrations
         run: pnpm --filter @workspace/backend run migrate
 
-  build_frontend:
-    needs: tests
-    if: github.event_name != 'workflow_dispatch' || inputs.deploy_frontend
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_ORG_ID: ${{ vars.VERCEL_TEAM_ID }}
-      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      NEXT_PUBLIC_CONVEX_URL: ${{ vars.NEXT_PUBLIC_CONVEX_URL }}
-
-    steps:
-      - name: Check frontend deploy secrets
-        shell: bash
-        run: |
-          missing=()
-          [[ -n "${VERCEL_ORG_ID}" ]] || missing+=(VERCEL_TEAM_ID)
-          [[ -n "${VERCEL_PROJECT_ID}" ]] || missing+=(VERCEL_PROJECT_ID)
-          [[ -n "${VERCEL_TOKEN}" ]] || missing+=(VERCEL_TOKEN)
-          [[ -n "${NEXT_PUBLIC_CONVEX_URL}" ]] || missing+=(NEXT_PUBLIC_CONVEX_URL)
-          if (( ${#missing[@]} > 0 )); then
-            echo "::error::Missing required GitHub Actions configuration: ${missing[*]}"
-            exit 1
-          fi
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Configure Vercel monorepo project
-        run: |
-          mkdir -p .vercel apps/webapp/.vercel
-          node -e '
-            require("node:fs").writeFileSync(
-              ".vercel/repo.json",
-              JSON.stringify({
-                remoteName: "origin",
-                projects: [{
-                  id: process.env.VERCEL_PROJECT_ID,
-                  directory: "apps/webapp",
-                  orgId: process.env.VERCEL_ORG_ID
-                }]
-              })
-            )
-            require("node:fs").writeFileSync(
-              "apps/webapp/.vercel/project.json",
-              JSON.stringify({
-                settings: {
-                  framework: "nextjs",
-                  devCommand: null,
-                  installCommand: null,
-                  buildCommand: "cd ../.. && pnpm turbo run build --filter=@workspace/webapp",
-                  outputDirectory: null,
-                  rootDirectory: "apps/webapp",
-                  directoryListing: false,
-                  nodeVersion: "24.x"
-                }
-              })
-            )'
-
-      - name: Build Vercel production artifacts
-        run: >-
-          pnpm exec vercel build --prod --yes --non-interactive
-          --project "$VERCEL_PROJECT_ID" --output .vercel/output
-
-      - name: Package Vercel production artifacts
-        run: >-
-          tar --exclude=apps/webapp/.next/cache -czf vercel-prebuilt.tgz
-          .vercel/repo.json .vercel/output
-          apps/webapp/.vercel/project.json apps/webapp/.next
-
-      - name: Upload Vercel production artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: vercel-prebuilt
-          path: vercel-prebuilt.tgz
-          retention-days: 1
-          if-no-files-found: error
-
-  deploy_frontend:
-    needs:
-      - deploy_backend
-      - build_frontend
-    if: >-
-      ${{
-        always() &&
-        needs.build_frontend.result == 'success' &&
-        (needs.deploy_backend.result == 'success' || needs.deploy_backend.result == 'skipped')
-      }}
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_ORG_ID: ${{ vars.VERCEL_TEAM_ID }}
-      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download Vercel production artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: vercel-prebuilt
-
-      - name: Restore Vercel production artifacts
-        run: tar -xzf vercel-prebuilt.tgz
-
-      - name: Deploy Vercel production artifacts
-        run: >-
-          pnpm exec vercel deploy --prebuilt --prod --yes --non-interactive
-          --project "$VERCEL_PROJECT_ID"
+  # Vercel GitHub Actions deployment is disabled for this project because Vercel's
+  # GitHub integration handles frontend deployments. Enable the commented frontend
+  # input/jobs below for projects that do not use Vercel's GitHub integration to
+  # deploy. Before enabling, add support for multiple collaborators so deployment
+  # access and ownership do not depend on a single collaborator's Vercel key.
+  # build_frontend:
+  #   needs: tests
+  #   if: github.event_name != 'workflow_dispatch' || inputs.deploy_frontend
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     VERCEL_ORG_ID: ${{ vars.VERCEL_TEAM_ID }}
+  #     VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+  #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  #     NEXT_PUBLIC_CONVEX_URL: ${{ vars.NEXT_PUBLIC_CONVEX_URL }}
+  #
+  #   steps:
+  #     - name: Check frontend deploy secrets
+  #       shell: bash
+  #       run: |
+  #         missing=()
+  #         [[ -n "${VERCEL_ORG_ID}" ]] || missing+=(VERCEL_TEAM_ID)
+  #         [[ -n "${VERCEL_PROJECT_ID}" ]] || missing+=(VERCEL_PROJECT_ID)
+  #         [[ -n "${VERCEL_TOKEN}" ]] || missing+=(VERCEL_TOKEN)
+  #         [[ -n "${NEXT_PUBLIC_CONVEX_URL}" ]] || missing+=(NEXT_PUBLIC_CONVEX_URL)
+  #         if (( ${#missing[@]} > 0 )); then
+  #           echo "::error::Missing required GitHub Actions configuration: ${missing[*]}"
+  #           exit 1
+  #         fi
+  #
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up pnpm
+  #       uses: pnpm/action-setup@v4
+  #
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '24'
+  #         cache: pnpm
+  #         cache-dependency-path: pnpm-lock.yaml
+  #
+  #     - name: Install dependencies
+  #       run: pnpm install --frozen-lockfile
+  #
+  #     - name: Configure Vercel monorepo project
+  #       run: |
+  #         mkdir -p .vercel apps/webapp/.vercel
+  #         node -e '
+  #           require("node:fs").writeFileSync(
+  #             ".vercel/repo.json",
+  #             JSON.stringify({
+  #               remoteName: "origin",
+  #               projects: [{
+  #                 id: process.env.VERCEL_PROJECT_ID,
+  #                 directory: "apps/webapp",
+  #                 orgId: process.env.VERCEL_ORG_ID
+  #               }]
+  #             })
+  #           )
+  #           require("node:fs").writeFileSync(
+  #             "apps/webapp/.vercel/project.json",
+  #             JSON.stringify({
+  #               settings: {
+  #                 framework: "nextjs",
+  #                 devCommand: null,
+  #                 installCommand: null,
+  #                 buildCommand: "cd ../.. && pnpm turbo run build --filter=@workspace/webapp",
+  #                 outputDirectory: null,
+  #                 rootDirectory: "apps/webapp",
+  #                 directoryListing: false,
+  #                 nodeVersion: "24.x"
+  #               }
+  #             })
+  #           )'
+  #
+  #     - name: Build Vercel production artifacts
+  #       run: >-
+  #         pnpm exec vercel build --prod --yes --non-interactive
+  #         --project "$VERCEL_PROJECT_ID" --output .vercel/output
+  #
+  #     - name: Package Vercel production artifacts
+  #       run: >-
+  #         tar --exclude=apps/webapp/.next/cache -czf vercel-prebuilt.tgz
+  #         .vercel/repo.json .vercel/output
+  #         apps/webapp/.vercel/project.json apps/webapp/.next
+  #
+  #     - name: Upload Vercel production artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: vercel-prebuilt
+  #         path: vercel-prebuilt.tgz
+  #         retention-days: 1
+  #         if-no-files-found: error
+  #
+  # deploy_frontend:
+  #   needs:
+  #     - deploy_backend
+  #     - build_frontend
+  #   if: >-
+  #     ${{
+  #       always() &&
+  #       needs.build_frontend.result == 'success' &&
+  #       (needs.deploy_backend.result == 'success' || needs.deploy_backend.result == 'skipped')
+  #     }}
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     VERCEL_ORG_ID: ${{ vars.VERCEL_TEAM_ID }}
+  #     VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+  #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  #
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up pnpm
+  #       uses: pnpm/action-setup@v4
+  #
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '24'
+  #         cache: pnpm
+  #         cache-dependency-path: pnpm-lock.yaml
+  #
+  #     - name: Install dependencies
+  #       run: pnpm install --frozen-lockfile
+  #
+  #     - name: Download Vercel production artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: vercel-prebuilt
+  #
+  #     - name: Restore Vercel production artifacts
+  #       run: tar -xzf vercel-prebuilt.tgz
+  #
+  #     - name: Deploy Vercel production artifacts
+  #       run: >-
+  #         pnpm exec vercel deploy --prebuilt --prod --yes --non-interactive
+  #         --project "$VERCEL_PROJECT_ID"
