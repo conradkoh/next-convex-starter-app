@@ -6,6 +6,7 @@ import { isSelfSignupAllowed } from '../config/signupMethods';
 import { api, internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
+import { deleteSessionActivity } from './sessionActivity';
 import { getResolvedPermissionsForUser } from '../application/auth/resolve';
 import { getAccessLevel } from '../modules/auth/accessControl';
 import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
@@ -134,6 +135,7 @@ export const logout = mutation({
       .first();
 
     if (existingSession) {
+      await deleteSessionActivity(ctx, existingSession._id);
       await ctx.db.delete('sessions', existingSession._id);
     }
 

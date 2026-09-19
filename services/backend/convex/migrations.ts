@@ -3,6 +3,7 @@ import { Migrations, type MigrationFunctionReference } from '@convex-dev/migrati
 import { components, internal } from './_generated/api.js';
 import type { DataModel } from './_generated/dataModel.js';
 import { query } from './_generated/server.js';
+import { upsertSessionActivity } from './sessionActivity.js';
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -78,6 +79,21 @@ export const stripManagerRoleNames = migrations.define({
   },
 });
 
+/**
+ * Migration: Backfill the `sessionActivity` projection from the legacy
+ * `sessions.lastActivityAt` mirror. Idempotent: delegates to the canonical
+ * `upsertSessionActivity` helper (create-if-absent / repair-if-newer
+ * max-wins). Returns no session patch.
+ */
+export const backfillSessionActivity = migrations.define({
+  table: 'sessions',
+  migrateOne: async (ctx, session) => {
+    if (session.lastActivityAt === undefined) return;
+
+    await upsertSessionActivity(ctx, session._id, session.lastActivityAt);
+  },
+});
+
 // ========================================
 // Batch Runners
 // ========================================
@@ -91,6 +107,7 @@ const allMigrationReferences = [
   internal.migrations.setUserAccessLevelDefault,
   internal.migrations.backfillUserRoleNames,
   internal.migrations.stripManagerRoleNames,
+  internal.migrations.backfillSessionActivity,
 ] as unknown as MigrationFunctionReference[];
 
 export const runAll = migrations.runner(allMigrationReferences);

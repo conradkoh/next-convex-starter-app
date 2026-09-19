@@ -3,6 +3,11 @@ import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import type { Doc, Id } from './_generated/dataModel';
 import { internalMutation, mutation, query } from './_generated/server';
+import {
+  deleteSessionActivity,
+  getSessionActivity,
+  upsertSessionActivity,
+} from './sessionActivity';
 
 /**
  * Device info for session tracking.
@@ -53,15 +58,33 @@ export const listMySessions = query({
       .withIndex('by_userId', (q) => q.eq('userId', currentSession.userId))
       .collect();
 
-    // Map to session info, marking the current session
-    const sessions: SessionInfo[] = allSessions.map((session) => ({
-      _id: session._id,
-      createdAt: session.createdAt,
-      lastActivityAt: session.lastActivityAt,
-      authMethod: session.authMethod,
-      deviceInfo: session.deviceInfo,
-      isCurrent: session.sessionId === args.sessionId,
-    }));
+    // Map to session info, marking the current session.
+    // Rolling-deploy read contract: reconcile the `sessionActivity`
+    // projection and the legacy `sessions.lastActivityAt` mirror by taking
+    // the newer defined timestamp (max-wins), so reads stay correct if the
+    // two stores temporarily diverge (e.g. an old writer advanced the mirror
+    // after a projection row exists). Returns `undefined` when both are
+    // absent; `createdAt` remains sort-only, never the returned value.
+    const sessions: SessionInfo[] = [];
+    for (const session of allSessions) {
+      const activity = await getSessionActivity(ctx, session._id);
+      const projectionTime = activity?.lastActivityAt;
+      const legacyTime = session.lastActivityAt;
+      const lastActivityAt =
+        projectionTime === undefined
+          ? legacyTime
+          : legacyTime === undefined
+            ? projectionTime
+            : Math.max(projectionTime, legacyTime);
+      sessions.push({
+        _id: session._id,
+        createdAt: session.createdAt,
+        lastActivityAt,
+        authMethod: session.authMethod,
+        deviceInfo: session.deviceInfo,
+        isCurrent: session.sessionId === args.sessionId,
+      });
+    }
 
     // Sort by last activity (most recent first), with current session at top
     sessions.sort((a, b) => {
@@ -113,7 +136,9 @@ export const revokeSession = mutation({
       return { success: false, reason: 'cannot_revoke_current_session' };
     }
 
-    // Delete the session
+    // Delete the projection row alongside the parent session so revoke
+    // never orphans projection rows. Deletion is idempotent.
+    await deleteSessionActivity(ctx, args.sessionIdToRevoke);
     await ctx.db.delete('sessions', args.sessionIdToRevoke);
 
     return { success: true };
@@ -151,6 +176,7 @@ export const revokeAllOtherSessions = mutation({
     // Delete all other sessions
     let revokedCount = 0;
     for (const session of otherSessions) {
+      await deleteSessionActivity(ctx, session._id);
       await ctx.db.delete('sessions', session._id);
       revokedCount++;
     }
@@ -187,8 +213,10 @@ export const updateSessionActivity = mutation({
     }
 
     const now = Date.now();
+    // Max-wins for the legacy mirror: never move `lastActivityAt` backwards.
+    const lastActivityAt = Math.max(currentSession.lastActivityAt ?? now, now);
     const updates: Partial<Doc<'sessions'>> = {
-      lastActivityAt: now,
+      lastActivityAt,
     };
 
     // Only update device info if provided and not already set
@@ -197,6 +225,8 @@ export const updateSessionActivity = mutation({
     }
 
     await ctx.db.patch('sessions', currentSession._id, updates);
+    // Dual-write the projection so high-frequency reads stay off the parent.
+    await upsertSessionActivity(ctx, currentSession._id, lastActivityAt);
 
     return { success: true };
   },
@@ -217,9 +247,20 @@ export const updateSessionDeviceInfo = internalMutation({
     lastActivityAt: v.number(),
   },
   handler: async (ctx, args): Promise<void> => {
+    // Max-wins for both stores: a delayed older write must neither regress
+    // the legacy mirror nor seed the projection with a stale value when the
+    // projection row does not exist yet (deploy-before-migrate). Device-info
+    // semantics are unchanged: the supplied device info is always written.
+    const session = await ctx.db.get('sessions', args.sessionId);
+    const lastActivityAt = Math.max(
+      session?.lastActivityAt ?? args.lastActivityAt,
+      args.lastActivityAt
+    );
     await ctx.db.patch('sessions', args.sessionId, {
       deviceInfo: args.deviceInfo,
-      lastActivityAt: args.lastActivityAt,
+      lastActivityAt,
     });
+    // Dual-write the projection (max-wins guards out-of-order delivery).
+    await upsertSessionActivity(ctx, args.sessionId, lastActivityAt);
   },
 });
