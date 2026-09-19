@@ -68,10 +68,12 @@ If you prefer to set up manually:
 
 ## Deployment
 
-The included [production workflow](.github/workflows/deploy-prod.yml) deploys both
-Convex and Vercel. Deployment credentials and environment-specific values are
-kept together as GitHub Actions repository secrets and variables, so they do
-not need to be committed or duplicated across repository files.
+The included [production workflow](.github/workflows/deploy-prod.yml) deploys
+Convex and runs pending migrations. Frontend deployments are handled by Vercel's
+GitHub integration for this project. The workflow retains a commented Vercel
+GitHub Actions path for projects that do not use that integration; before
+enabling it, add support for multiple collaborators so deployment access and
+ownership do not depend on a single collaborator's Vercel key.
 
 ### 1. Create the production projects
 
@@ -79,10 +81,10 @@ not need to be committed or duplicated across repository files.
    deployment and copy its deployment URL. Generate a production deploy key from
    **Project Settings → Settings → General**.
 2. Import the repository into Vercel and set its **Root Directory** to
-   `apps/webapp`. No application environment variables need to be added in
-   Vercel for the default template deployment; the workflow supplies
-   `NEXT_PUBLIC_CONVEX_URL` during the production build.
-3. Create a Vercel access token. Run `pnpm exec vercel link --repo` from the
+   `apps/webapp`. Configure the production `NEXT_PUBLIC_CONVEX_URL` environment
+   variable in Vercel for deployments from its GitHub integration.
+3. If you plan to enable the optional commented Vercel GitHub Actions path,
+   create a Vercel access token. Run `pnpm exec vercel link --repo` from the
    repository root if needed, then read the `apps/webapp` entry in
    `.vercel/repo.json` to obtain its `orgId` and `id`. Do not commit the
    `.vercel` directory.
@@ -92,47 +94,58 @@ not need to be committed or duplicated across repository files.
 Open **GitHub repository → Settings → Secrets and variables → Actions → New
 repository secret** and add:
 
-| Secret                   | Value                                          |
-| ------------------------ | ---------------------------------------------- |
-| `CONVEX_DEPLOY_KEY_PROD` | Convex production deploy key                   |
-| `VERCEL_TOKEN`           | Vercel access token with access to the project |
+| Secret                   | Value                                             |
+| ------------------------ | ------------------------------------------------- |
+| `CONVEX_DEPLOY_KEY_PROD` | Convex production deploy key                      |
+| `VERCEL_TOKEN`           | Vercel access token for the optional Actions path |
 
 Then open the **Variables** tab, create these repository variables, and add:
 
-| Variable                 | Value                                    |
-| ------------------------ | ---------------------------------------- |
-| `NEXT_PUBLIC_CONVEX_URL` | Convex production deployment URL         |
-| `VERCEL_TEAM_ID`         | `orgId` from Vercel project metadata     |
-| `VERCEL_PROJECT_ID`      | `projectId` from Vercel project metadata |
+| Variable                 | Value                                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CONVEX_URL` | Convex production deployment URL                                                                      |
+| `VERCEL_TEAM_ID`         | `orgId` from Vercel project metadata (optional Actions path)                                          |
+| `VERCEL_PROJECT_ID`      | `projectId` from Vercel project metadata (optional Actions path)                                      |
+| `VERCEL_USER_EMAIL`      | Email of a Vercel team member (required only when the optional Vercel GitHub Actions path is enabled) |
 
-These are the only production deployment values required by the default
-workflow. Additional build-time values can follow the same pattern: store them
-as GitHub Actions secrets and expose them only to the frontend build job. Values
-that must remain available to server functions at runtime should be configured
-in Vercel or passed explicitly by a customized deploy step.
+The active workflow requires `CONVEX_DEPLOY_KEY_PROD` for the backend deployment.
+The Vercel token and Vercel metadata variables are required only if you
+intentionally re-enable the commented frontend jobs. Additional build-time
+values can follow the same pattern: store them as GitHub Actions secrets and
+expose them only to the optional frontend build job. Values that must remain
+available to server functions at runtime should be configured in Vercel or
+passed explicitly by a customized deploy step.
 
-The workflow recreates Vercel's repository-level monorepo link in
+The optional Vercel GitHub Actions path rewrites the latest commit's author
+email only in the CI runner's local checkout before invoking the Vercel CLI. Set
+`VERCEL_USER_EMAIL` to an email address associated with a member of the Vercel
+team so Vercel can identify the deployment author. The amended commit is local
+to the workflow, is never pushed back to the repository, and is not performed
+by the current default workflow.
+
+When the optional Actions path is enabled, the workflow recreates Vercel's
+repository-level monorepo link in
 `.vercel/repo.json`. It also writes the transient, settings-only project metadata
 that `vercel build` expects beneath `apps/webapp`; project identity remains in
 the repository link. Both build and deploy run from the repository root. The
-workflow intentionally does not run `vercel pull`, so Vercel project environment
-variables are not downloaded into CI.
+optional path intentionally does not run `vercel pull`, so Vercel project
+environment variables are not downloaded into CI.
 
 ### 3. Deploy
 
-Push a deployment-related change to `master`. Convex deployment and the Vercel
-build start in parallel, so the backend is not blocked by frontend CLI setup or
-build time. The workflow then:
+Push a deployment-related change to `master`. The active workflow then:
 
 1. Deploys Convex and runs pending idempotent migrations.
-2. Builds the Vercel production output exactly once.
-3. Promotes that prebuilt output only after the requested backend deployment and
-   migrations succeed.
+
+Vercel's GitHub integration handles the frontend deployment separately. If you
+intentionally enable the optional commented Vercel GitHub Actions path, it also
+builds the Vercel production output exactly once and promotes that prebuilt
+output only after the requested backend deployment and migrations succeed.
 
 The workflow runs for changes under `apps/webapp`, `packages/shared`, or
 `services/backend`, as well as workspace and deployment configuration files. It
 can also be started from **GitHub Actions → Production Deployment → Run
-workflow**, where backend and frontend deployment can be enabled independently.
+workflow**, where backend deployment can be enabled or skipped.
 
 > If you forked this template with existing git history, workflows only run on
 > new pushes after the workflow file exists; they are not replayed for old
