@@ -24,7 +24,7 @@ interface SettingsModule {
 }
 
 const SETTINGS_MODULES: SettingsModule[] = [
-  { href: '/app/settings', label: 'Notifications', icon: Bell },
+  { href: '/app/settings/notifications', label: 'Notifications', icon: Bell },
   { href: '/app/settings/account', label: 'Account', icon: UserRound },
 ];
 

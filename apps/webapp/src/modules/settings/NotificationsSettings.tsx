@@ -5,16 +5,6 @@ import { useSessionAction, useSessionMutation } from 'convex-helpers/react/sessi
 import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,6 +23,7 @@ export type NotificationSettingsValue = {
 
 export type NotificationsSettingsProps = {
   settings: NotificationSettingsValue | null | undefined;
+  onSaved?: () => void;
 };
 
 type SettingsSnapshot = Pick<NotificationSettingsValue, 'channelId' | 'enabled' | 'hasBotToken'>;
@@ -40,10 +31,9 @@ type Status = { kind: 'success' | 'error' | 'info'; message: string } | null;
 
 const GENERIC_SAVE_ERROR = 'Unable to save notification settings. Please try again.';
 const GENERIC_TEST_ERROR = 'Unable to test the Telegram connection. Please try again.';
-const GENERIC_REMOVE_ERROR = 'Unable to remove notification settings. Please try again.';
 
 // fallow-ignore-next-line complexity
-export function NotificationsSettings({ settings }: NotificationsSettingsProps) {
+export function NotificationsSettings({ settings, onSaved }: NotificationsSettingsProps) {
   const [channelId, setChannelId] = useState(settings?.channelId ?? '');
   const [botToken, setBotToken] = useState('');
   const [enabled, setEnabled] = useState(settings?.enabled ?? true);
@@ -58,16 +48,13 @@ export function NotificationsSettings({ settings }: NotificationsSettingsProps) 
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
-  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const saveSettings = useSessionMutation(api.notifications.saveSettings);
-  const removeSettings = useSessionMutation(api.notifications.removeSettings);
   const testConnection = useSessionAction(api.notifications.telegram.testConnection);
 
-  const isBusy = isSaving || isTesting || isRemoving;
+  const isBusy = isSaving || isTesting;
   const isDirty = savedSnapshot
     ? channelId.trim() !== savedSnapshot.channelId ||
       enabled !== savedSnapshot.enabled ||
@@ -113,6 +100,7 @@ export function NotificationsSettings({ settings }: NotificationsSettingsProps) 
       });
       setStatus({ kind: 'success', message: 'Telegram notification settings saved.' });
       toast.success('Telegram notification settings saved.');
+      onSaved?.();
     } catch {
       setStatus({ kind: 'error', message: GENERIC_SAVE_ERROR });
       toast.error(GENERIC_SAVE_ERROR);
@@ -141,27 +129,6 @@ export function NotificationsSettings({ settings }: NotificationsSettingsProps) 
       toast.error(GENERIC_TEST_ERROR);
     } finally {
       setIsTesting(false);
-    }
-  };
-
-  const handleRemove = async () => {
-    setStatus(null);
-    setIsRemoving(true);
-    try {
-      await removeSettings({});
-      setChannelId('');
-      setBotToken('');
-      setEnabled(true);
-      setSavedSnapshot(null);
-      setRemoveDialogOpen(false);
-      setStatus({ kind: 'success', message: 'Telegram notification settings removed.' });
-      toast.success('Telegram notification settings removed.');
-    } catch {
-      setRemoveDialogOpen(false);
-      setStatus({ kind: 'error', message: GENERIC_REMOVE_ERROR });
-      toast.error(GENERIC_REMOVE_ERROR);
-    } finally {
-      setIsRemoving(false);
     }
   };
 
@@ -265,16 +232,6 @@ export function NotificationsSettings({ settings }: NotificationsSettingsProps) 
             >
               {isTesting ? 'Testing...' : 'Test connection'}
             </Button>
-            {savedSnapshot && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => setRemoveDialogOpen(true)}
-                disabled={isBusy}
-              >
-                Remove configuration
-              </Button>
-            )}
           </div>
 
           {testHint && <p className="text-sm text-muted-foreground">{testHint}</p>}
@@ -305,28 +262,6 @@ export function NotificationsSettings({ settings }: NotificationsSettingsProps) 
           </p>
         </form>
       </CardContent>
-
-      <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Telegram configuration?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete your Telegram channel and bot token configuration. You
-              can add it again later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRemove}
-              disabled={isRemoving}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isRemoving ? 'Removing...' : 'Remove configuration'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }

@@ -12,9 +12,7 @@ vi.mock('convex-helpers/react/sessions', () => ({
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const saveSettings = vi.fn();
-const removeSettings = vi.fn();
 const testConnection = vi.fn();
-let mutationHookCall = 0;
 
 const savedSettings: NotificationSettingsValue = {
   provider: 'telegram',
@@ -24,12 +22,7 @@ const savedSettings: NotificationSettingsValue = {
 };
 
 function renderSettings(settings: NotificationSettingsValue | null = null) {
-  mutationHookCall = 0;
-  vi.mocked(useSessionMutation).mockImplementation(() => {
-    const mutation = mutationHookCall % 2 === 0 ? saveSettings : removeSettings;
-    mutationHookCall += 1;
-    return mutation as never;
-  });
+  vi.mocked(useSessionMutation).mockReturnValue(saveSettings as never);
   vi.mocked(useSessionAction).mockReturnValue(testConnection as never);
   return render(<NotificationsSettings settings={settings} />);
 }
@@ -46,7 +39,6 @@ describe('NotificationsSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     saveSettings.mockResolvedValue(savedSettings);
-    removeSettings.mockResolvedValue({ removed: true });
     testConnection.mockResolvedValue({
       success: true,
       message: 'Test notification sent successfully.',
@@ -128,19 +120,19 @@ describe('NotificationsSettings', () => {
     expect(screen.getByText('Test notification sent successfully.')).toBeInTheDocument();
   });
 
-  it('removes a saved configuration after confirmation and returns to first use', async () => {
-    renderSettings(savedSettings);
+  it('calls onSaved after successfully saving', async () => {
+    const onSaved = vi.fn();
+    const user = userEvent.setup();
+    vi.mocked(useSessionMutation).mockReturnValue(saveSettings as never);
+    vi.mocked(useSessionAction).mockReturnValue(testConnection as never);
+    render(<NotificationsSettings settings={null} onSaved={onSaved} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove configuration' }));
-    const dialog = await screen.findByRole('alertdialog');
-    expect(dialog).toHaveTextContent('channel and bot token configuration');
-    fireEvent.click(screen.getByRole('button', { name: 'Remove configuration' }));
+    await user.type(screen.getByLabelText('Channel ID or username'), '@builds');
+    await user.type(screen.getByLabelText('Bot token'), '123456:secret-token');
+    fireEvent.submit(getSettingsForm());
 
-    await waitFor(() => expect(removeSettings).toHaveBeenCalledWith({}));
-    expect(screen.getByLabelText('Channel ID or username')).toHaveValue('');
-    expect(screen.getByRole('button', { name: 'Test connection' })).toBeDisabled();
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole('button', { name: 'Remove configuration' })).not.toBeInTheDocument();
-    expect(screen.getByText('Telegram notification settings removed.')).toBeInTheDocument();
   });
 
   it('shows safe accessible errors without exposing thrown details', async () => {

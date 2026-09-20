@@ -16,7 +16,7 @@ vi.mock('next/link', () => ({
 
 describe('SettingsLayout', () => {
   beforeEach(() => {
-    vi.mocked(usePathname).mockReturnValue('/app/settings');
+    vi.mocked(usePathname).mockReturnValue('/app/settings/notifications');
   });
 
   it('renders the personal settings navigation and sparse future-facing note', () => {
@@ -53,7 +53,7 @@ describe('SettingsLayout', () => {
     expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Notifications' })).toHaveAttribute(
       'href',
-      '/app/settings'
+      '/app/settings/notifications'
     );
     expect(screen.getByRole('link', { name: 'Account' })).toHaveAttribute(
       'href',
