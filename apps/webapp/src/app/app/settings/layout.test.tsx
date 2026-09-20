@@ -66,4 +66,14 @@ describe('SettingsLayout', () => {
 
     expect(screen.getByRole('link', { name: 'Back to app' })).toHaveAttribute('href', '/app');
   });
+
+  it('places Back to App before the mobile module selector', () => {
+    vi.mocked(usePathname).mockReturnValue('/app/settings/account');
+    render(<SettingsLayout>Settings content</SettingsLayout>);
+
+    const backLink = screen.getByRole('link', { name: 'Back to app' });
+    const moduleSelector = screen.getByRole('button', { name: 'Account' });
+
+    expect(backLink.compareDocumentPosition(moduleSelector)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });
