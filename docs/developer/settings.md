@@ -6,15 +6,16 @@ own their data access and interaction details.
 
 ## Module map and URLs
 
-The current compatibility route is `/app/profile`. The target primary settings routes are:
+The primary settings routes are:
 
 1. User — `/app/settings/user`
 2. Appearance — `/app/settings/appearance`
 3. Notifications — `/app/settings/notifications`
 
-The primary module listing follows that order. Profile is a settings-owned content module in this
-phase, but it is not a primary navigation item. Phase 2 will decide how Profile content is exposed
-through the User settings experience without adding duplicate primary navigation.
+The Settings sidebar and mobile selector follow that order. The User route composes the canonical
+`UserSettings` and `ProfileSettings` modules, so Profile recovery remains available within User
+without becoming a fourth primary navigation item. The Appearance route composes the canonical
+`AppearanceSettings` module.
 
 ## Data flow
 
@@ -44,8 +45,10 @@ Use one route per primary module under `/app/settings/<module>`. Use `Link` for 
 and `router.push` after a successful submit when a flow returns to a listing. Keep Back to App and
 parent-section links explicit; do not implement a custom history stack.
 
-Preserve `/app/profile` as a compatibility route until Phase 2 completes the migration. Do not
-change OAuth return URLs or other callers as part of a module extraction phase.
+The canonical settings routes are the destinations for new links. The legacy `/app/profile` route
+and the former `/app/settings/account` route remain bookmark-safe compatibility redirects to
+`/app/settings/user`. Google account-connect OAuth returns to `/app/settings/user`; login flow
+defaults and callback validation remain unchanged.
 
 ## Submit/action conventions
 
