@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Bell, ChevronDown, UserRound, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Bell, ChevronDown, Palette, UserRound, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -24,8 +24,9 @@ interface SettingsModule {
 }
 
 const SETTINGS_MODULES: SettingsModule[] = [
+  { href: '/app/settings/user', label: 'User', icon: UserRound },
+  { href: '/app/settings/appearance', label: 'Appearance', icon: Palette },
   { href: '/app/settings/notifications', label: 'Notifications', icon: Bell },
-  { href: '/app/settings/account', label: 'Account', icon: UserRound },
 ];
 
 function getActiveSettingsModule(pathname: string): SettingsModule {

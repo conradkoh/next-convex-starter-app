@@ -34,10 +34,10 @@ export default function AppPage() {
                 <span className="font-semibold">Tip:</span> You're using an anonymous account. Visit
                 your{' '}
                 <Link
-                  href="/app/profile"
+                  href="/app/settings/user"
                   className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
                 >
-                  profile page
+                  User settings
                 </Link>{' '}
                 to personalize your display name.
               </p>
@@ -69,9 +69,9 @@ export default function AppPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Welcome to the App</h1>
 
-            <Link href="/app/profile">
+            <Link href="/app/settings/user">
               <Button variant="outline" size="sm">
-                View Profile
+                View User Settings
               </Button>
             </Link>
           </div>

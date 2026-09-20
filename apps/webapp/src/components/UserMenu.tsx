@@ -177,9 +177,6 @@ function _renderUserDropdownMenu(
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <Link href="/app/profile">
-            <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-          </Link>
           <Link href="/app/settings">
             <DropdownMenuItem className="cursor-pointer">
               <Settings2 className="h-4 w-4" />
