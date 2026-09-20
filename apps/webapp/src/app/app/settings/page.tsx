@@ -2,13 +2,11 @@
 
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionQuery } from 'convex-helpers/react/sessions';
-import Link from 'next/link';
 import { Component, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   NotificationsSettings,
   type NotificationSettingsValue,
@@ -83,42 +81,16 @@ function NotificationsSettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
-      <header>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Manage your account and system notification preferences.
+    <div className="space-y-4 md:space-y-6">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-bold md:text-3xl">Notifications</h1>
+        <p className="text-sm text-muted-foreground md:text-base">
+          Configure where your system notifications are delivered.
         </p>
       </header>
-
-      <Tabs defaultValue="notifications" className="space-y-6">
-        <TabsList aria-label="Settings sections">
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="notifications">
-          <NotificationsQueryErrorBoundary>
-            <NotificationsSettingsContent />
-          </NotificationsQueryErrorBoundary>
-        </TabsContent>
-
-        <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>
-                Manage your profile information and account preferences.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/app/profile">
-                <Button variant="outline">Manage profile</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </main>
+      <NotificationsQueryErrorBoundary>
+        <NotificationsSettingsContent />
+      </NotificationsQueryErrorBoundary>
+    </div>
   );
 }
