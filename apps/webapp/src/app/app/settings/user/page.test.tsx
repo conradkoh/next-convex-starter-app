@@ -11,10 +11,10 @@ vi.mock('@/modules/settings/profile/ProfileSettings', () => ({
 }));
 
 describe('UserSettingsPage', () => {
-  it('renders the User page with User and Profile modules', () => {
+  it('renders the User settings page with User and Profile modules', () => {
     render(<UserSettingsPage />);
 
-    expect(screen.getByRole('heading', { name: 'User' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'User settings' })).toBeInTheDocument();
     expect(
       screen.getByText('Manage your user information, account access, and recovery options.')
     ).toBeInTheDocument();

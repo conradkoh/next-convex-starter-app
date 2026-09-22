@@ -8,15 +8,15 @@ export class UserSettingsPage extends BasePage {
   }
 
   get heading(): Locator {
-    return this.page.getByRole('heading', { name: 'User', exact: true }).first();
+    return this.page.getByRole('heading', { name: 'User settings', exact: true });
   }
 
   get userSettingsHeading(): Locator {
-    return this.page.getByRole('heading', { name: 'User', exact: true }).nth(1);
+    return this.page.getByRole('heading', { name: 'User details', exact: true });
   }
 
-  get profileSettingsHeading(): Locator {
-    return this.page.getByRole('heading', { name: 'Profile', exact: true });
+  get accountRecoveryHeading(): Locator {
+    return this.page.getByRole('heading', { name: 'Account recovery', exact: true });
   }
 
   override async navigate(path = '/app/settings/user'): Promise<void> {

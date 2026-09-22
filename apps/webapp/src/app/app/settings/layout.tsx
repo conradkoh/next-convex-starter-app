@@ -68,12 +68,16 @@ function _renderDesktopSidebar(pathname: string) {
     <div className="hidden w-64 border-r bg-muted/10 p-4 lg:block">
       <div className="h-full space-y-4">
         <div className="space-y-2">
-          <Link href="/app">
-            <Button variant="ghost" size="sm" className="justify-start">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Back to App</span>
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="justify-start"
+            nativeButton={false}
+            render={<Link href="/app" role="link" />}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Back to App</span>
+          </Button>
           <div className="border-b pb-2">
             <h2 className="text-lg font-semibold">Settings</h2>
             <p className="text-sm text-muted-foreground">Personal settings</p>
@@ -119,11 +123,15 @@ function _renderMobileHeader(pathname: string) {
   return (
     <div className="shrink-0 border-b bg-background p-4 lg:hidden">
       <div className="flex items-center justify-between gap-2">
-        <Link href="/app" aria-label="Back to app" className="shrink-0">
-          <Button variant="ghost" size="sm" aria-label="Back to app">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0"
+          nativeButton={false}
+          render={<Link href="/app" aria-label="Back to app" role="link" />}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'max-w-[70%] gap-2')}
@@ -139,14 +147,14 @@ function _renderMobileHeader(pathname: string) {
                 const Icon = module.icon;
                 const isActive = module.href === activeModule.href;
                 return (
-                  <Link key={module.href} href={module.href}>
-                    <DropdownMenuItem
-                      className={cn('cursor-pointer gap-2', isActive && 'bg-muted font-medium')}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {module.label}
-                    </DropdownMenuItem>
-                  </Link>
+                  <DropdownMenuItem
+                    key={module.href}
+                    render={<Link href={module.href} />}
+                    className={cn('cursor-pointer gap-2', isActive && 'bg-muted font-medium')}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {module.label}
+                  </DropdownMenuItem>
                 );
               })}
             </DropdownMenuGroup>

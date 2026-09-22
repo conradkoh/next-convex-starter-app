@@ -27,9 +27,12 @@ export function ProfileSettings() {
     <section aria-labelledby="profile-settings-heading" className="space-y-6">
       <div>
         <h2 id="profile-settings-heading" className="text-xl font-semibold">
-          Profile
+          Account recovery
         </h2>
-        <p className="text-sm text-muted-foreground">Manage recovery options for your account.</p>
+        <p className="text-sm text-muted-foreground">
+          Manage recovery options for your account. Keep your recovery code in a safe place; it is
+          the only way to regain access to your anonymous account if you lose access.
+        </p>
       </div>
       <RecoveryCodeSection />
     </section>
@@ -91,11 +94,6 @@ function RecoveryCodeSection() {
 
   return (
     <div className="mt-6 border-t pt-6">
-      <h2 className="mb-2 text-xl font-semibold">Account Recovery</h2>
-      <p className="mb-4 text-sm text-muted-foreground">
-        Keep this recovery code in a safe place. It's the only way to regain access to your
-        anonymous account if you lose access.
-      </p>
       {!recoveryCode ? (
         <Button onClick={handleRevealCode} disabled={isLoading}>
           {buttonText}

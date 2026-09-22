@@ -29,7 +29,7 @@ describe('settings module composition', () => {
   it('composes the User module without duplicating its low-level components', () => {
     render(<UserSettings />);
 
-    expect(screen.getByRole('heading', { name: 'User' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'User details' })).toBeInTheDocument();
     expect(screen.getAllByTestId('name-edit-form')).toHaveLength(1);
     expect(screen.getAllByTestId('login-code-generator')).toHaveLength(1);
   });
@@ -44,7 +44,7 @@ describe('settings module composition', () => {
   it('renders the Profile recovery action without revealing a code by default', () => {
     render(<ProfileSettings />);
 
-    expect(screen.getByRole('heading', { name: 'Profile' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Account recovery' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reveal Recovery Code' })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(/recovery/i)).not.toBeInTheDocument();
   });

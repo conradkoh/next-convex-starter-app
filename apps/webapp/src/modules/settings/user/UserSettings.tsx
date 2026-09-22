@@ -8,7 +8,7 @@ export function UserSettings() {
     <section aria-labelledby="user-settings-heading" className="space-y-6">
       <div>
         <h2 id="user-settings-heading" className="text-xl font-semibold">
-          User
+          User details
         </h2>
         <p className="text-sm text-muted-foreground">
           Manage your display name, connected accounts, and access across devices.

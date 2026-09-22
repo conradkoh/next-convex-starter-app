@@ -1,18 +1,95 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import type * as ReactTypes from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import SettingsLayout from './layout';
 
 vi.mock('next/navigation', () => ({ usePathname: vi.fn() }));
 vi.mock('next/link', () => ({
-  default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
+  default: ({ href, children, ...props }: { href: string; children: ReactTypes.ReactNode }) => (
     <a href={href} {...props}>
       {children}
     </a>
   ),
 }));
+vi.mock('@/components/ui/dropdown-menu', async () => {
+  const React = (await vi.importActual('react')) as typeof ReactTypes;
+  const DropdownMenuContext = React.createContext<{
+    open: boolean;
+    setOpen: (open: boolean) => void;
+  } | null>(null);
+
+  function DropdownMenu({ children }: { children: React.ReactNode }) {
+    const [open, setOpen] = React.useState(false);
+    return (
+      <DropdownMenuContext.Provider value={{ open, setOpen }}>
+        {children}
+      </DropdownMenuContext.Provider>
+    );
+  }
+
+  function DropdownMenuTrigger({ children, ...props }: React.ComponentProps<'button'>) {
+    const menu = React.useContext(DropdownMenuContext);
+    if (!menu) throw new Error('DropdownMenuTrigger must be rendered inside DropdownMenu.');
+
+    return (
+      <button
+        type="button"
+        {...props}
+        onClick={() => menu.setOpen(!menu.open)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            menu.setOpen(true);
+          }
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  function DropdownMenuContent({ children }: { children: React.ReactNode }) {
+    const menu = React.useContext(DropdownMenuContext);
+    return menu?.open ? <div role="menu">{children}</div> : null;
+  }
+
+  function DropdownMenuItem({
+    children,
+    render,
+    className,
+    onSelect,
+  }: {
+    children: React.ReactNode;
+    render?: React.ReactElement<Record<string, unknown>>;
+    className?: string;
+    onSelect?: () => void;
+  }) {
+    if (render) {
+      return React.cloneElement(
+        render,
+        { className, role: 'menuitem', onClick: onSelect },
+        children
+      );
+    }
+    return (
+      <button type="button" role="menuitem" className={className} onClick={onSelect}>
+        {children}
+      </button>
+    );
+  }
+
+  return {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DropdownMenuItem,
+    DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DropdownMenuTrigger,
+  };
+});
 
 describe('SettingsLayout', () => {
   beforeEach(() => {
@@ -62,28 +139,56 @@ describe('SettingsLayout', () => {
     expect(appearanceLink).not.toHaveAttribute('aria-current', 'page');
   });
 
-  it('exposes the active module and both destinations for mobile navigation', () => {
+  it('opens the active module selector and exposes mobile destinations', async () => {
+    const user = userEvent.setup();
     vi.mocked(usePathname).mockReturnValue('/app/settings/appearance');
     render(<SettingsLayout>Settings content</SettingsLayout>);
 
-    expect(screen.getByRole('button', { name: 'Appearance' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'User' })).toHaveAttribute(
+    const trigger = screen.getByRole('button', { name: 'Appearance' });
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    await user.click(trigger);
+    const menu = screen.getByRole('menu');
+
+    expect(within(menu).getByRole('menuitem', { name: 'User' })).toHaveAttribute(
       'href',
       '/app/settings/user'
     );
-    expect(screen.getByRole('link', { name: 'Appearance' })).toHaveAttribute(
+    expect(within(menu).getByRole('menuitem', { name: 'Appearance' })).toHaveAttribute(
       'href',
       '/app/settings/appearance'
     );
-    expect(screen.getByRole('link', { name: 'Notifications' })).toHaveAttribute(
+    expect(within(menu).getByRole('menuitem', { name: 'Notifications' })).toHaveAttribute(
       'href',
       '/app/settings/notifications'
     );
   });
 
+  it('opens and activates a mobile destination with the keyboard', async () => {
+    const user = userEvent.setup();
+    vi.mocked(usePathname).mockReturnValue('/app/settings/appearance');
+    render(<SettingsLayout>Settings content</SettingsLayout>);
+
+    const trigger = screen.getByRole('button', { name: 'Appearance' });
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    const notifications = within(screen.getByRole('menu')).getByRole('menuitem', {
+      name: 'Notifications',
+    });
+    expect(notifications).toHaveAttribute('href', '/app/settings/notifications');
+    notifications.focus();
+    await user.keyboard('{Enter}');
+    expect(notifications).toHaveAttribute('href', '/app/settings/notifications');
+  });
+
   it('provides an accessible Back to App link', () => {
     render(<SettingsLayout>Settings content</SettingsLayout>);
 
+    const backLinks = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href') === '/app');
+    expect(backLinks).toHaveLength(2);
+    expect(backLinks.every((link) => link.querySelector('button') === null)).toBe(true);
     expect(screen.getByRole('link', { name: 'Back to app' })).toHaveAttribute('href', '/app');
   });
 
