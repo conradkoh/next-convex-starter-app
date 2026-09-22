@@ -41,6 +41,11 @@ export const UPSTREAM_FLOWS = {
     description: 'User information and account settings',
     specFile: 'specs/upstream/profile.spec.ts',
   },
+  notifications: {
+    path: '/app/settings/notifications',
+    description: 'Notification provider settings',
+    specFile: 'specs/upstream/notifications.spec.ts',
+  },
   adminDashboard: {
     path: '/app/system-admin',
     description: 'System admin dashboard',

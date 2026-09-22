@@ -69,6 +69,9 @@ tests/e2e/
     login.page.ts          # /login
     app-dashboard.page.ts  # /app
     user-settings.page.ts  # /app/settings/user
+    notifications.page.ts  # /app/settings/notifications
+    third-party-integrations.page.ts # /app/settings/notifications/third-party
+    telegram-settings.page.ts # /app/settings/notifications/third-party/telegram
     admin-dashboard.page.ts      # /app/system-admin
     admin-users.page.ts          # /app/admin/users
     admin-google-auth.page.ts    # /app/system-admin/google-auth
@@ -76,6 +79,7 @@ tests/e2e/
   specs/
     upstream/              # template-owned flows (tagged @upstream)
       markdown-editor.spec.ts    # /test/markdown-editor
+      notifications.spec.ts      # /app/settings/notifications
     downstream/            # fork-specific flows (tagged @downstream)
 ```
 
