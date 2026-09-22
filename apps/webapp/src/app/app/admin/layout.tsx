@@ -127,6 +127,11 @@ function _renderMobileHeader(pathname: string, visibleModules: AdminModule[]) {
   return (
     <div className="lg:hidden shrink-0 border-b bg-background p-4">
       <div className="flex items-center justify-between gap-2">
+        <Link href="/app" className="shrink-0">
+          <Button variant="ghost" size="sm" aria-label="Back to app">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 max-w-[70%]')}
@@ -135,7 +140,7 @@ function _renderMobileHeader(pathname: string, visibleModules: AdminModule[]) {
             <span className="truncate">{activeModule.label}</span>
             <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuGroup>
               <DropdownMenuLabel>Admin</DropdownMenuLabel>
               {visibleModules.map((module) => {
@@ -155,11 +160,6 @@ function _renderMobileHeader(pathname: string, visibleModules: AdminModule[]) {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Link href="/app">
-          <Button variant="ghost" size="sm" aria-label="Back to app">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
       </div>
     </div>
   );

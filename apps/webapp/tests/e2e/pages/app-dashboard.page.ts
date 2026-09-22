@@ -11,8 +11,8 @@ export class AppDashboardPage extends BasePage {
     return this.page.getByRole('heading', { name: 'Welcome to the App' });
   }
 
-  get viewProfileButton(): Locator {
-    return this.page.getByRole('link', { name: 'View Profile' });
+  get viewSettingsButton(): Locator {
+    return this.page.getByRole('link', { name: 'View User Settings', exact: true });
   }
 
   override async navigate(path = '/app'): Promise<void> {

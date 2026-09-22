@@ -159,7 +159,7 @@ export function NameEditForm() {
       // Create a connect request in the backend for connect flow
       const result = await createConnectRequest({ redirectUri });
 
-      const state = createOAuthState('connect', result.connectId, '/app/profile');
+      const state = createOAuthState('connect', result.connectId, '/app/settings/user');
       const authUrl = buildGoogleOAuthUrl({
         clientId: googleAuthAvailable?.clientId || '',
         redirectUri,

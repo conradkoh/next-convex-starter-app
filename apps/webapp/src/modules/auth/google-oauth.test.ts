@@ -46,9 +46,9 @@ describe('getOAuthCallbackReturnTo', () => {
     expect(getOAuthCallbackReturnTo(state)).toBe('/login');
   });
 
-  it('defaults to /app/profile for connect flow without returnTo', () => {
+  it('defaults to /app/settings/user for connect flow without returnTo', () => {
     const state = createOAuthState('connect', 'req-123');
-    expect(getOAuthCallbackReturnTo(state)).toBe('/app/profile');
+    expect(getOAuthCallbackReturnTo(state)).toBe('/app/settings/user');
   });
 
   it('returns /login for invalid state', () => {

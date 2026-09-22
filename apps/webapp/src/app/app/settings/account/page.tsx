@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function ProfileCompatibilityPage() {
+export default function AccountSettingsCompatibilityPage() {
   redirect('/app/settings/user');
 }

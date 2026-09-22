@@ -25,7 +25,7 @@ function parseOAuthStateReturnTo(encodedState: string): string | undefined {
 }
 
 function getDefaultOAuthReturnTo(flowType: OAuthFlowType): string {
-  return flowType === 'connect' ? '/app/profile' : '/login';
+  return flowType === 'connect' ? '/app/settings/user' : '/login';
 }
 
 function parseOAuthStateFlowType(encodedState: string): OAuthFlowType | undefined {
