@@ -36,9 +36,9 @@ export const UPSTREAM_FLOWS = {
     description: 'Unauthenticated visit shows UnauthorizedPage',
     specFile: 'specs/upstream/app-unauthorized.spec.ts',
   },
-  profile: {
-    path: '/app/profile',
-    description: 'User profile and account settings',
+  userSettings: {
+    path: '/app/settings/user',
+    description: 'User information and account settings',
     specFile: 'specs/upstream/profile.spec.ts',
   },
   adminDashboard: {

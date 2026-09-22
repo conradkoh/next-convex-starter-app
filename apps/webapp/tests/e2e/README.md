@@ -68,7 +68,7 @@ tests/e2e/
     home.page.ts           # public landing page
     login.page.ts          # /login
     app-dashboard.page.ts  # /app
-    profile.page.ts        # /app/profile
+    user-settings.page.ts  # /app/settings/user
     admin-dashboard.page.ts      # /app/system-admin
     admin-users.page.ts          # /app/admin/users
     admin-google-auth.page.ts    # /app/system-admin/google-auth
