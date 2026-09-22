@@ -4,7 +4,7 @@ import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
 import { CheckCircle2, ChevronLeft, CircleHelp, MoreHorizontal, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -35,6 +35,7 @@ import {
 } from '@/modules/settings/thirdPartyIntegrations';
 
 const GENERIC_REMOVE_ERROR = 'Unable to remove the Telegram connection. Please try again.';
+type RemovalStatus = { kind: 'success' | 'error'; message: string } | null;
 
 export default function ThirdPartyIntegrationsPage() {
   return (
@@ -50,19 +51,32 @@ function ThirdPartyIntegrationsContent() {
   const removeSettings = useSessionMutation(api.notifications.removeSettings);
   const [isRemoving, setIsRemoving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<RemovalStatus>(null);
+  const [justRemoved, setJustRemoved] = useState(false);
+  const availableHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    // Focus only after the query reflects deletion so the initial empty state keeps its natural focus.
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
+    if (settings === null && justRemoved) {
+      availableHeadingRef.current?.focus();
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates
+      setJustRemoved(false);
+    }
+  }, [justRemoved, settings]);
 
   const handleRemove = async () => {
     setIsRemoving(true);
     setStatus(null);
     try {
       await removeSettings({});
+      setJustRemoved(true);
       setDeleteDialogOpen(false);
-      setStatus('Telegram connection removed.');
+      setStatus({ kind: 'success', message: 'Telegram connection removed.' });
       toast.success('Telegram connection removed.');
     } catch {
       setDeleteDialogOpen(false);
-      setStatus(GENERIC_REMOVE_ERROR);
+      setStatus({ kind: 'error', message: GENERIC_REMOVE_ERROR });
       toast.error(GENERIC_REMOVE_ERROR);
     } finally {
       setIsRemoving(false);
@@ -73,6 +87,7 @@ function ThirdPartyIntegrationsContent() {
     <ThirdPartyIntegrationsView
       settings={settings}
       status={status}
+      availableHeadingRef={availableHeadingRef}
       isRemoving={isRemoving}
       deleteDialogOpen={deleteDialogOpen}
       onDelete={() => setDeleteDialogOpen(true)}
@@ -84,7 +99,8 @@ function ThirdPartyIntegrationsContent() {
 
 type ThirdPartyIntegrationsViewProps = {
   settings: NotificationSettingsValue | null | undefined;
-  status: string | null;
+  status: RemovalStatus;
+  availableHeadingRef: RefObject<HTMLHeadingElement | null>;
   isRemoving: boolean;
   deleteDialogOpen: boolean;
   onDelete: () => void;
@@ -95,6 +111,7 @@ type ThirdPartyIntegrationsViewProps = {
 function ThirdPartyIntegrationsView({
   settings,
   status,
+  availableHeadingRef,
   isRemoving,
   deleteDialogOpen,
   onDelete,
@@ -118,11 +135,23 @@ function ThirdPartyIntegrationsView({
         </p>
       </header>
 
-      <IntegrationSections settings={settings} onDelete={onDelete} />
+      <IntegrationSections
+        settings={settings}
+        availableHeadingRef={availableHeadingRef}
+        onDelete={onDelete}
+      />
 
       {status && (
-        <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
-          {status}
+        <p
+          role="status"
+          aria-live="polite"
+          className={
+            status.kind === 'error'
+              ? 'text-sm text-destructive'
+              : 'text-sm text-emerald-600 dark:text-emerald-400'
+          }
+        >
+          {status.message}
         </p>
       )}
 
@@ -138,9 +167,11 @@ function ThirdPartyIntegrationsView({
 
 function IntegrationSections({
   settings,
+  availableHeadingRef,
   onDelete,
 }: {
   settings: NotificationSettingsValue | null | undefined;
+  availableHeadingRef: RefObject<HTMLHeadingElement | null>;
   onDelete: () => void;
 }) {
   if (settings === undefined) {
@@ -152,7 +183,7 @@ function IntegrationSections({
       {settings ? (
         <ConnectedIntegrationsSection settings={settings} onDelete={onDelete} />
       ) : (
-        <AvailableIntegrationsSection />
+        <AvailableIntegrationsSection availableHeadingRef={availableHeadingRef} />
       )}
       <FutureIntegrationsCard />
     </>
@@ -181,11 +212,20 @@ function ConnectedIntegrationsSection({
   );
 }
 
-function AvailableIntegrationsSection() {
+function AvailableIntegrationsSection({
+  availableHeadingRef,
+}: {
+  availableHeadingRef: RefObject<HTMLHeadingElement | null>;
+}) {
   return (
     <section aria-labelledby="available-integrations-heading" className="space-y-3">
       <div>
-        <h2 id="available-integrations-heading" className="text-lg font-semibold">
+        <h2
+          id="available-integrations-heading"
+          ref={availableHeadingRef}
+          tabIndex={-1}
+          className="text-lg font-semibold"
+        >
           Available integrations
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -289,7 +329,11 @@ function getConnectionTestStatus(settings: NotificationSettingsValue) {
   }
 
   return settings.lastTestSucceeded
-    ? { label: 'Last test succeeded', icon: CheckCircle2, className: 'text-primary' }
+    ? {
+        label: 'Last test succeeded',
+        icon: CheckCircle2,
+        className: 'text-emerald-600 dark:text-emerald-400',
+      }
     : { label: 'Last test failed', icon: XCircle, className: 'text-destructive' };
 }
 
@@ -301,9 +345,13 @@ function AvailableProviderCard({ provider }: { provider: ThirdPartyProvider }) {
         <CardDescription>{provider.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Link href={provider.configureHref}>
-          <Button variant="outline">Configure</Button>
-        </Link>
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<Link href={provider.configureHref} role="link" />}
+        >
+          Configure
+        </Button>
       </CardContent>
     </Card>
   );

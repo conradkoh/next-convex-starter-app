@@ -20,8 +20,12 @@ const savedSettings: NotificationSettingsValue = {
   channelId: '@next_convex',
   hasBotToken: true,
 };
+const disabledSavedSettings: NotificationSettingsValue = {
+  ...savedSettings,
+  enabled: false,
+};
 
-function renderSettings(settings: NotificationSettingsValue | null = null) {
+function renderSettings(settings: NotificationSettingsValue | null | undefined = null) {
   vi.mocked(useSessionMutation).mockReturnValue(saveSettings as never);
   vi.mocked(useSessionAction).mockReturnValue(testConnection as never);
   return render(<NotificationsSettings settings={settings} />);
@@ -45,6 +49,26 @@ describe('NotificationsSettings', () => {
     });
   });
 
+  it('shows loading state before hydrating settings that resolve later', async () => {
+    const view = render(<NotificationsSettings settings={undefined} />);
+
+    expect(
+      document.querySelector('[aria-label="Loading notification settings"]')
+    ).toBeInTheDocument();
+
+    view.rerender(<NotificationsSettings settings={savedSettings} />);
+
+    expect(screen.getByLabelText('Channel ID or username')).toHaveValue('@next_convex');
+    expect(screen.getByRole('switch', { name: 'Enabled' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Test connection' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Test connection' })).not.toHaveAttribute(
+      'aria-describedby'
+    );
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
+    expect(screen.queryByText('Save a configuration before testing.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Save your changes before testing.')).not.toBeInTheDocument();
+  });
+
   it('renders the first-use Telegram form and setup guidance', () => {
     renderSettings();
 
@@ -52,6 +76,7 @@ describe('NotificationsSettings', () => {
     expect(screen.getByLabelText('Channel ID or username')).toBeInTheDocument();
     expect(screen.getByLabelText('Bot token')).toHaveAttribute('type', 'password');
     expect(screen.getByRole('switch', { name: 'Enabled' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeEnabled();
     expect(screen.getByText(/Add the bot to the target channel/i)).toBeInTheDocument();
     expect(screen.getByText('Save a configuration before testing.')).toBeInTheDocument();
   });
@@ -85,7 +110,8 @@ describe('NotificationsSettings', () => {
 
   it('sends a blank token when updating an existing configuration', async () => {
     const user = userEvent.setup();
-    renderSettings(savedSettings);
+    saveSettings.mockResolvedValueOnce(disabledSavedSettings);
+    renderSettings(disabledSavedSettings);
 
     await user.clear(screen.getByLabelText('Channel ID or username'));
     await user.type(screen.getByLabelText('Channel ID or username'), '@updated_channel');
@@ -95,9 +121,10 @@ describe('NotificationsSettings', () => {
       expect(saveSettings).toHaveBeenCalledWith({
         channelId: '@updated_channel',
         botToken: '',
-        enabled: true,
+        enabled: false,
       });
     });
+    expect(screen.getByRole('switch', { name: 'Enabled' })).not.toBeChecked();
   });
 
   it('keeps test disabled until a saved form is clean', async () => {
@@ -106,6 +133,11 @@ describe('NotificationsSettings', () => {
 
     const testButton = screen.getByRole('button', { name: 'Test connection' });
     expect(testButton).toBeDisabled();
+    expect(testButton).toHaveAttribute('aria-describedby', 'telegram-test-hint');
+    expect(screen.getByText('Save a configuration before testing.')).toHaveAttribute(
+      'id',
+      'telegram-test-hint'
+    );
     expect(testConnection).not.toHaveBeenCalled();
 
     await user.type(screen.getByLabelText('Channel ID or username'), '@builds');

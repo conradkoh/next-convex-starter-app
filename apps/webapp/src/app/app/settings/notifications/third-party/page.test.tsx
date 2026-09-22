@@ -59,12 +59,17 @@ describe('ThirdPartyIntegrationsPage', () => {
   it('shows Telegram as available when no connection is configured', () => {
     render(<ThirdPartyIntegrationsPage />);
 
-    expect(screen.getByRole('heading', { name: 'Available integrations' })).toBeInTheDocument();
+    const availableHeading = screen.getByRole('heading', { name: 'Available integrations' });
+    expect(availableHeading).toBeInTheDocument();
+    expect(availableHeading).toHaveAttribute('tabindex', '-1');
     expect(screen.getByText('Telegram')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Configure' })).toHaveAttribute(
+    const configureLink = screen.getByRole('link', { name: 'Configure' });
+    expect(configureLink).toHaveAttribute(
       'href',
       '/app/settings/notifications/third-party/telegram'
     );
+    expect(configureLink.tagName).toBe('A');
+    expect(configureLink.querySelector('button')).toBeNull();
     expect(
       screen.queryByRole('heading', { name: 'Connected integrations' })
     ).not.toBeInTheDocument();
@@ -77,7 +82,10 @@ describe('ThirdPartyIntegrationsPage', () => {
     expect(screen.getByRole('heading', { name: 'Connected integrations' })).toBeInTheDocument();
     expect(screen.getByText('@next_convex')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
-    expect(screen.getByText('Last test succeeded')).toBeInTheDocument();
+    expect(screen.getByText('Last test succeeded').closest('[data-slot="badge"]')).toHaveClass(
+      'text-emerald-600',
+      'dark:text-emerald-400'
+    );
     expect(
       screen.getByRole('button', { name: 'Actions for Telegram connection' })
     ).toBeInTheDocument();
@@ -105,7 +113,10 @@ describe('ThirdPartyIntegrationsPage', () => {
     await waitFor(() => expect(removeSettings).toHaveBeenCalledWith({}));
     queryValue = null;
     view.rerender(<ThirdPartyIntegrationsPage />);
-    expect(screen.getByRole('heading', { name: 'Available integrations' })).toBeInTheDocument();
+    const availableHeading = screen.getByRole('heading', { name: 'Available integrations' });
+    await waitFor(() => expect(availableHeading).toHaveFocus());
+    expect(screen.getByRole('status')).toHaveTextContent('Telegram connection removed.');
+    expect(screen.getByRole('status')).toHaveClass('text-emerald-600', 'dark:text-emerald-400');
   });
 
   it('shows safe deletion errors without provider details', async () => {
@@ -117,11 +128,12 @@ describe('ThirdPartyIntegrationsPage', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Delete connection' }));
     await user.click(screen.getByRole('button', { name: 'Delete connection' }));
 
-    await waitFor(() =>
+    await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent(
         'Unable to remove the Telegram connection.'
-      )
-    );
+      );
+      expect(screen.getByRole('status')).toHaveClass('text-destructive');
+    });
     expect(screen.queryByText('provider token leaked')).not.toBeInTheDocument();
   });
 });

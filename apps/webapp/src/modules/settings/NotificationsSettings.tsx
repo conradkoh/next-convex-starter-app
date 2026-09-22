@@ -2,7 +2,7 @@
 
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionAction, useSessionMutation } from 'convex-helpers/react/sessions';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,7 @@ export function NotificationsSettings({ settings, onSaved }: NotificationsSettin
         }
       : null
   );
+  const initializedFromServerRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [status, setStatus] = useState<Status>(null);
@@ -53,6 +54,19 @@ export function NotificationsSettings({ settings, onSaved }: NotificationsSettin
 
   const saveSettings = useSessionMutation(api.notifications.saveSettings);
   const testConnection = useSessionAction(api.notifications.telegram.testConnection);
+
+  if (!initializedFromServerRef.current && settings !== undefined) {
+    initializedFromServerRef.current = true;
+    if (settings) {
+      setChannelId(settings.channelId);
+      setEnabled(settings.enabled);
+      setSavedSnapshot({
+        channelId: settings.channelId,
+        enabled: settings.enabled,
+        hasBotToken: settings.hasBotToken,
+      });
+    }
+  }
 
   const isBusy = isSaving || isTesting;
   const isDirty = savedSnapshot
@@ -221,7 +235,7 @@ export function NotificationsSettings({ settings, onSaved }: NotificationsSettin
           )}
 
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={isBusy}>
+            <Button type="submit" disabled={isBusy || (savedSnapshot !== null && !isDirty)}>
               {isSaving ? 'Saving...' : 'Save settings'}
             </Button>
             <Button
@@ -229,12 +243,17 @@ export function NotificationsSettings({ settings, onSaved }: NotificationsSettin
               variant="outline"
               onClick={handleTest}
               disabled={isBusy || !savedSnapshot || isDirty}
+              aria-describedby={testHint ? 'telegram-test-hint' : undefined}
             >
               {isTesting ? 'Testing...' : 'Test connection'}
             </Button>
           </div>
 
-          {testHint && <p className="text-sm text-muted-foreground">{testHint}</p>}
+          {testHint && (
+            <p id="telegram-test-hint" className="text-sm text-muted-foreground">
+              {testHint}
+            </p>
+          )}
 
           {settings?.lastTestedAt !== undefined && (
             <p className="text-sm text-muted-foreground">
@@ -254,7 +273,7 @@ export function NotificationsSettings({ settings, onSaved }: NotificationsSettin
               status?.kind === 'error'
                 ? 'text-sm text-destructive'
                 : status?.kind === 'success'
-                  ? 'text-sm text-primary'
+                  ? 'text-sm text-emerald-600 dark:text-emerald-400'
                   : 'text-sm text-muted-foreground'
             }
           >
