@@ -9,7 +9,7 @@
     "deploy": "convex deploy",
     "migrate": "bun ../../scripts/migrate.ts",
     "typecheck": "tsc --build",
-    "test": "bash ../../scripts/kill-stale-vitest.sh \"$PWD\" && vitest run",
+    "test": "pnpm --filter @workspace/shared run build && bash ../../scripts/kill-stale-vitest.sh \"$PWD\" && vitest run",
     "test:watch": "bash ../../scripts/kill-stale-vitest.sh \"$PWD\" && vitest"
   },
   "keywords": [],
