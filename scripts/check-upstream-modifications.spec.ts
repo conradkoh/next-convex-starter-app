@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 
 import { TEMPLATE_REPO_URL } from './template-repo';
 
@@ -70,6 +71,8 @@ const BASELINE_FILES = {
   'package.json': '{"name":"root"}\n',
   'services/backend/package.json': '{"name":"backend"}\n',
   'src/app.ts': 'export const app = 1;\n',
+  'services/backend/convex/schema.ts': 'export default {};\n',
+  'services/backend/convex/sessions.ts': 'export const sessions = 1;\n',
 };
 
 describe('check-upstream-modifications gate', () => {
@@ -100,6 +103,23 @@ describe('check-upstream-modifications gate', () => {
     git(root, 'add', 'services/backend/package.json');
 
     expect(runGate(root).status).toBe(0);
+  });
+
+  it('does not block a staged convex schema', () => {
+    writeRepoFile(root, 'services/backend/convex/schema.ts', 'export default { tables: {} };\n');
+    git(root, 'add', 'services/backend/convex/schema.ts');
+
+    expect(runGate(root).status).toBe(0);
+  });
+
+  it('still blocks a staged convex file that is not the schema', () => {
+    writeRepoFile(root, 'services/backend/convex/sessions.ts', 'export const sessions = 2;\n');
+    git(root, 'add', 'services/backend/convex/sessions.ts');
+
+    const { status, output } = runGate(root);
+
+    expect(status).toBe(1);
+    expect(output).toContain('services/backend/convex/sessions.ts');
   });
 
   it('still blocks a staged upstream file that is not a package.json', () => {
