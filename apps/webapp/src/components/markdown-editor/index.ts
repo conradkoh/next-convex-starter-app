@@ -2,7 +2,6 @@ export { EditableMarkdown } from './components/EditableMarkdown';
 export { MarkdownEditor } from './components/MarkdownEditor';
 export { MarkdownViewer } from './components/MarkdownViewer';
 // fallow-ignore-next-line unused-export
-// fallow-ignore-next-line unused-export
 export { getNormalizedEditorMarkdown } from './utils/getNormalizedEditorMarkdown';
 export { defaultMarkdownEditorProseClassNames } from './utils/proseClassNames';
 // fallow-ignore-next-line unused-type

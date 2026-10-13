@@ -5,6 +5,7 @@ import { getWebappBaseUrl, getWebappPort } from './support/env';
 const port = getWebappPort();
 const baseURL = getWebappBaseUrl();
 
+// eslint-disable-next-line no-console -- intentional: logs the resolved port and baseURL once at config load to aid debugging of e2e target mismatches
 console.log(`[e2e] Using port ${port} (baseURL: ${baseURL})`);
 
 /**

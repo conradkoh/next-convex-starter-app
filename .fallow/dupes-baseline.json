@@ -1,0 +1,19 @@
+{
+  "clone_groups": [
+    "apps/webapp/src/app/developer/components/date-picker/page.tsx:426-440|apps/webapp/src/app/developer/components/date-picker/page.tsx:518-529",
+    "apps/webapp/src/app/developer/components/page.tsx:21-37|apps/webapp/src/app/developer/page.tsx:26-42",
+    "apps/webapp/src/app/developer/components/page.tsx:90-107|apps/webapp/src/app/developer/page.tsx:71-88",
+    "apps/webapp/src/app/test/password-protection/page.tsx:50-66|apps/webapp/src/app/test/password-protection/page.tsx:83-96",
+    "apps/webapp/src/app/test/shadcn-modal/page.tsx:245-264|apps/webapp/src/app/test/shadcn-modal/page.tsx:287-304",
+    "apps/webapp/src/components/markdown-editor/components/markdown-components.tsx:24-55|apps/webapp/src/mdx-components.tsx:39-72",
+    "apps/webapp/src/components/markdown-editor/components/markdown-components.tsx:61-129|apps/webapp/src/mdx-components.tsx:72-150",
+    "apps/webapp/src/modules/attendance/components/Attendance.tsx:248-268|apps/webapp/src/modules/attendance/components/Attendance.tsx:422-434",
+    "apps/webapp/src/modules/attendance/components/Attendance.tsx:253-275|apps/webapp/src/modules/attendance/components/Attendance.tsx:327-348",
+    "apps/webapp/src/modules/attendance/components/Attendance.tsx:271-302|apps/webapp/src/modules/attendance/components/Attendance.tsx:447-478",
+    "services/backend/convex/checklists.ts:29-69|services/backend/convex/discussions.ts:15-52",
+    "services/backend/convex/checklists.ts:160-173|services/backend/convex/checklists.ts:187-200",
+    "services/backend/convex/checklists.ts:214-225|services/backend/convex/checklists.ts:238-249",
+    "services/backend/convex/discussions.ts:146-174|services/backend/convex/discussions.ts:255-280",
+    "services/backend/convex/presentations.ts:111-123|services/backend/convex/presentations.ts:77-89"
+  ]
+}

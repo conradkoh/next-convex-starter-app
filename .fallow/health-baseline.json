@@ -1,0 +1,274 @@
+{
+  "finding_counts": {
+    "apps/webapp/scripts/generate-icons.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/app/app/profile/page.tsx": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/app/developer/components/date-picker/page.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/app/recover/page.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/components/markdown-editor/extensions/codeBlockLineBoundarySelection.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/components/markdown-editor/extensions/codeBlockVisualLines.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/components/markdown-editor/hooks/useMarkdownEditor.ts": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/components/markdown-editor/utils/emptyParagraph.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/components/markdown-editor/utils/pasteMarkdown.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/attendance/components/Attendance.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 3
+      }
+    },
+    "apps/webapp/src/modules/attendance/components/AttendanceCopyDialog.tsx": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/modules/attendance/components/AttendanceDialog.tsx": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/attendance/hooks/useAttendanceData.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "apps/webapp/src/modules/auth/AuthProvider.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/auth/LoginCodeGenerator.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/auth/LoginWithCode.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/auth/google-oauth-errors.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/checklist/checklist.tsx": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/modules/checklist/use-checklist-sync.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/discussion/discussion-conclusion.tsx": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/modules/discussion/discussion-form.tsx": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/modules/discussion/discussion.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/webapp/src/modules/discussion/use-discussion-sync.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/password-protection/PasswordProtect.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/password-protection/PasswordProtectContext.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/password-protection/PasswordProtectedConditionalRender.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/password-protection/password-utils.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/presentation/presentation-container.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/presentation/presentation-controls.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/webapp/src/modules/presentation/use-presentation-sync.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "apps/webapp/src/modules/profile/NameEditForm.tsx": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "packages/shared/src/utilities/markdown/decodeHtmlEntities.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/convex-dev-env.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/migrate-lib.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "services/backend/convex/appinfo.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "services/backend/convex/attendance.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "services/backend/convex/sessions.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "services/backend/convex/system/auth/google.ts": {
+      "crap_critical": {
+        "count": 2
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "apps/webapp/src/application/auth/resolve.ts:dead code",
+    "services/backend/application/auth/resolve.ts:dead code",
+    "scripts/package-versions.ts:dead code",
+    "services/backend/application/auth/requirePermission.ts:dead code",
+    "apps/webapp/src/modules/attendance/components/AttendanceDialog.tsx:complexity",
+    "apps/webapp/src/modules/checklist/use-checklist-sync.ts:complexity",
+    "apps/webapp/src/modules/presentation/presentation-controls.tsx:complexity",
+    "apps/webapp/src/modules/presentation/use-presentation-sync.ts:complexity"
+  ]
+}
