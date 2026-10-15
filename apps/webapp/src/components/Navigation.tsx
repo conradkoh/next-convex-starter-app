@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/UserMenu';
 import { useAuthState } from '@/modules/auth/AuthProvider';
 
+// Brand label shown in the header. Keep as a single literal: scripts/branding.ts
+// rewrites `const APP_SHORT_NAME = '...';` during branding setup.
+const APP_SHORT_NAME = 'Next Convex';
+
 /**
  * Main navigation header component with authentication state handling.
  * Shows login button for unauthenticated users and user menu for authenticated users.
@@ -30,14 +34,14 @@ export function Navigation() {
         <div className="mr-6 flex">
           {authStatus.isLoading ? (
             <span className="flex items-center whitespace-nowrap">
-              <span className="font-bold text-lg">Next Convex</span>
+              <span className="font-bold text-lg">{APP_SHORT_NAME}</span>
             </span>
           ) : (
             <Link
               href={authStatus.isAuthenticated ? '/app' : '/'}
               className="flex items-center whitespace-nowrap"
             >
-              <span className="font-bold text-lg">Next Convex</span>
+              <span className="font-bold text-lg">{APP_SHORT_NAME}</span>
             </Link>
           )}
         </div>
