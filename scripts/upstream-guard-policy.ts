@@ -25,6 +25,10 @@ const WARN_PATTERNS: readonly RegExp[] = [
   /(?:^|\/)(?:\.prettierrc|\.prettierignore|\.fallowrc\.jsonc|\.npmrc|\.gitignore)$/,
   /(?:^|\/)(?:turbo\.json|pnpm-workspace\.yaml)$/,
   /(?:^|\/)tsconfig[^/]*\.json$/,
+  /(?:^|\/)\.fallow\/[^/]+\.json$/, // dead-code and duplication baselines suppress gates
+  /\.css$/, // theme tokens a fork may restyle
+  /(?:^|\/)components\.json$/, // shadcn/ui tooling config
+  /(?:^|\/)services\/backend\/config\/[^/]+\.ts$/, // backend config modules, e.g. signupMethods.ts
 ];
 
 export function classifyUpstreamFile(filePath: string): UpstreamGuardTier {

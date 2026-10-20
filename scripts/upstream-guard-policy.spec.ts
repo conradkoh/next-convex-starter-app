@@ -31,6 +31,11 @@ const CASES: { tier: UpstreamGuardTier; filePaths: string[] }[] = [
       '.prettierrc',
       'scripts/devPort.ts',
       'apps/webapp/tsconfig.json',
+      '.fallow/baseline.json',
+      '.fallow/dupes-baseline.json',
+      'apps/webapp/src/app/globals.css',
+      'apps/webapp/components.json',
+      'services/backend/config/signupMethods.ts',
     ],
   },
   {
