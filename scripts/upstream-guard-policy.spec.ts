@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'bun:test';
+
+import { classifyUpstreamFile, type UpstreamGuardTier } from './upstream-guard-policy';
+
+const CASES: { tier: UpstreamGuardTier; filePaths: string[] }[] = [
+  {
+    tier: 'allow',
+    filePaths: [
+      'pnpm-lock.yaml',
+      'services/backend/convex/_generated/api.d.ts',
+      'package.json',
+      'services/backend/package.json',
+      'services/backend/convex/schema.ts',
+    ],
+  },
+  {
+    tier: 'warn',
+    filePaths: [
+      'README.md',
+      'AGENTS.md',
+      'docs/developer/setup.md',
+      '.github/workflows/ci.yml',
+      '.husky/pre-commit',
+      'eslint.config.mjs',
+      'apps/webapp/next.config.ts',
+      'turbo.json',
+      '.prettierrc',
+      'scripts/devPort.ts',
+      'apps/webapp/tsconfig.json',
+    ],
+  },
+  {
+    tier: 'block',
+    filePaths: [
+      'apps/webapp/src/app/page.tsx',
+      'services/backend/convex/sessions.ts',
+      'packages/shared/src/index.ts',
+    ],
+  },
+];
+
+describe('classifyUpstreamFile', () => {
+  for (const { tier, filePaths } of CASES) {
+    for (const filePath of filePaths) {
+      it(`classifies ${filePath} as ${tier}`, () => {
+        expect(classifyUpstreamFile(filePath)).toBe(tier);
+      });
+    }
+  }
+});
