@@ -165,12 +165,14 @@ function printWarningMessage(filePaths: string[]): void {
 
 function warnMissingUpstreamRef(): void {
   console.warn(
-    '⚠️  Skipping upstream file check: could not resolve an upstream branch ref (try `git fetch upstream`).'
+    'ℹ️  Skipping template file check: no upstream branch found. Run `git fetch upstream` to enable it.'
   );
 }
 
 function printBlockedMessage(upstreamRef: string, upstreamFiles: string[]): void {
-  console.error('\n❌ Pre-commit blocked: staged changes modify files from the template upstream.');
+  console.error(
+    '\n⚠️  This commit changes core files that also come from the template repository.'
+  );
   console.error(`   Template: ${TEMPLATE_OWNER_REPO}`);
   console.error(`   Upstream ref: ${upstreamRef}`);
   console.error('\n   Files:');
@@ -178,15 +180,16 @@ function printBlockedMessage(upstreamRef: string, upstreamFiles: string[]): void
     console.error(`   - ${filePath}`);
   }
 
-  console.error('\n   General fixes and improvements to these core files should be contributed');
-  console.error('   upstream via a pull request to the template repository.');
-  console.error('\n   If you still intend to modify them in this fork, re-run your commit with an');
-  console.error('   explicit acknowledgement using one of:');
+  console.error(
+    '\n   If this is a general fix, consider contributing it to the template via a pull request.'
+  );
+  console.error(
+    '   If the change is specific to this fork, acknowledge it and commit again with one of:'
+  );
   console.error(`     ${ACK_ENV_VAR}=1 git commit ...`);
   console.error(`     git -c ${ACK_GIT_CONFIG}=true commit ...`);
   console.error(`     bun scripts/check-upstream-modifications.ts ${ACK_CLI_FLAG}`);
-  console.error('\n   Passing this flag confirms you understand upstream is the right place for');
-  console.error('   general template changes, and your local edits are fork-specific.\n');
+  console.error('\n   Acknowledging means these edits are intentionally fork-specific.\n');
 }
 
 function shouldSkipCheck(): boolean {

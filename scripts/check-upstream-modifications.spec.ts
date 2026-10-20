@@ -138,6 +138,8 @@ describe('check-upstream-modifications gate', () => {
 
     expect(status).toBe(1);
     expect(output).toContain('src/app.ts');
+    expect(output).toContain('If this is a general fix');
+    expect(output).not.toContain('Pre-commit blocked');
   });
 
   it('allows a staged pnpm-lock.yaml without a notice', () => {
