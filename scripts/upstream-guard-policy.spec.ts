@@ -11,6 +11,10 @@ const CASES: { tier: UpstreamGuardTier; filePaths: string[] }[] = [
       'package.json',
       'services/backend/package.json',
       'services/backend/convex/schema.ts',
+      'apps/webapp/public/next.svg',
+      'apps/webapp/public/appicon-192x192.png',
+      'apps/webapp/src/app/favicon.ico',
+      'services/backend/config/featureFlags.ts',
     ],
   },
   {
