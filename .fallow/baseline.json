@@ -1,5 +1,5 @@
 {
-  "unused_files": ["scripts/convex-codegen.ts", "scripts/upstream-guard-policy.ts"],
+  "unused_files": ["scripts/convex-codegen.ts"],
   "unused_exports": [
     "apps/webapp/src/application/auth/resolve.ts:getRolesForUser",
     "apps/webapp/src/application/auth/resolve.ts:unionPermissionsForRoles",
