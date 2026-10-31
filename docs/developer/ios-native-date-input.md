@@ -16,6 +16,22 @@ Use custom Popover + Calendar pickers (see the date-picker story in the Componen
 
 ---
 
+## Enforcement
+
+The policy is enforced in two layers:
+
+- **ESLint** — `no-restricted-syntax` in `eslint.config.mjs` rejects literal temporal `type` attributes on any JSX element, including the `type={'date'}` expression form.
+- **Types** — `Input`'s `type` excludes temporal types at compile time. Use `DatePickerField` from `@/components/ui/date-picker` instead.
+
+`NativeTemporalInput` (from `@/components/ui/input`) is only for the developer harness and diagnostics. It must not appear in product UI.
+
+Known gaps:
+
+- Lint does not catch template literals or computed values on a raw `<input>`.
+- The type restriction covers only `Input`, not raw `<input>`.
+
+---
+
 ## Symptoms
 
 | Environment              | Typical behavior                                                 |
@@ -51,7 +67,7 @@ This is a long-standing WebKit quirk; see [Stack Overflow #26573346](https://sta
 
 ### `data-native-date-input` attribute
 
-`Input` automatically sets `data-native-date-input` when `type` is one of: `date`, `datetime-local`, `month`, `time`, `week`.
+`NativeTemporalInput` (from `@/components/ui/input`) sets `data-native-date-input` when `type` is one of: `date`, `datetime-local`, `month`, `time`, `week`. `Input` no longer accepts temporal types.
 
 File: `apps/webapp/src/components/ui/input.tsx`
 
@@ -72,11 +88,11 @@ Wrap constrained native date inputs in the flex utility when they sit inside fle
 
 ```tsx
 <div className="ios-date-input-flex w-full sm:max-w-md">
-  <Input type="datetime-local" value={value} onChange={onChange} />
+  <NativeTemporalInput type="datetime-local" value={value} onChange={onChange} />
 </div>
 ```
 
-Do **not** put `max-w-*` directly on the `Input` — put it on the wrapper.
+Do **not** put `max-w-*` directly on the `NativeTemporalInput` — put it on the wrapper.
 
 ---
 
