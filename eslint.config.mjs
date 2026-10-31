@@ -27,6 +27,7 @@ import globals from 'globals';
  * - @typescript-eslint/no-inferrable-types - Disallow explicit types for inferrable values
  * - no-else-return - Disallow unnecessary else blocks
  * - @typescript-eslint/array-type - Enforce consistent array type syntax
+ * - no-restricted-syntax (native temporal inputs) - Use DatePicker/DatePickerField instead of native date/time inputs
  */
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -290,6 +291,30 @@ export default [
     files: ['**/api/**/callback/**/*.{ts,tsx}'],
     rules: {
       'no-console': 'off',
+    },
+  },
+
+  // Native date/time inputs render unreliable controls on iOS Safari (dark-mode width,
+  // alignment, auto-modified values). Use DatePicker / DatePickerField from
+  // @/components/ui/date-picker. See docs/developer/ios-native-date-input.md.
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "JSXAttribute[name.name='type'][value.value=/^(date|datetime-local|month|time|week)$/]",
+          message:
+            'Native date/time inputs are not allowed. Use DatePicker or DatePickerField from @/components/ui/date-picker.',
+        },
+        {
+          selector:
+            "JSXAttribute[name.name='type'] > JSXExpressionContainer > Literal[value=/^(date|datetime-local|month|time|week)$/]",
+          message:
+            'Native date/time inputs are not allowed. Use DatePicker or DatePickerField from @/components/ui/date-picker.',
+        },
+      ],
     },
   },
 ];
