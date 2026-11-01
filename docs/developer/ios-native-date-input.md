@@ -18,17 +18,20 @@ Use custom Popover + Calendar pickers (see the date-picker story in the Componen
 
 ## Enforcement
 
-The policy is enforced in two layers:
+The policy is enforced in four layers:
 
-- **ESLint** — `no-restricted-syntax` in `eslint.config.mjs` rejects literal temporal `type` attributes on any JSX element, including the `type={'date'}` expression form.
-- **Types** — `Input`'s `type` excludes temporal types at compile time. Use `DatePickerField` from `@/components/ui/date-picker` instead.
+- **CI** — `.github/workflows/ci.yml` runs `pnpm lint` and `pnpm typecheck` on pull requests to `master`. Whether a failure blocks a merge depends on branch protection requiring the `tests` check; branch protection has not been verified.
+- **Raw inputs** — `react/forbid-elements` in `eslint.config.mjs` bans `<input>` elements in product code. Render inputs through `Input` from `@/components/ui/input`.
+- **Imports** — `no-restricted-imports` bans `@base-ui/react/input`, the `Input` and `Field` exports of the `@base-ui/react` root barrel, and `@base-ui/react/field`, outside `input.tsx`. It also bans importing `NativeTemporalInput` from `@/components/ui/input` or any relative path that resolves to it, outside the developer harness. `NativeTemporalInput` is only for the developer harness and diagnostics and must not appear in product UI.
+- **Temporal types** — `no-restricted-syntax` rejects literal temporal `type` values (`date`, `datetime-local`, `month`, `time`, `week`) on any JSX element, including the `type={'date'}` expression form. `Input`'s `type` union also excludes them at compile time. Use `DatePickerField` from `@/components/ui/date-picker` instead.
 
-`NativeTemporalInput` (from `@/components/ui/input`) is only for the developer harness and diagnostics. It must not appear in product UI.
+### Known gaps
 
-Known gaps:
-
-- Lint does not catch template literals or computed values on a raw `<input>`.
-- The type restriction covers only `Input`, not raw `<input>`.
+- Dynamic tags (`const Tag = 'input'` then `<Tag />`) are not detected.
+- `jsx('input', …)` from `react/jsx-runtime` is not detected.
+- Third-party components that render their own `<input>` are outside these rules.
+- `@ts-expect-error` or `as any` on `Input` defeats the compile-time type restriction.
+- Imperative DOM changes (`ref.current.type = …`, `setAttribute`) bypass both lint and types.
 
 ---
 
@@ -84,15 +87,13 @@ File: `apps/webapp/src/app/globals.css` (`@layer components`)
 
 ### Usage in consuming apps
 
-Wrap constrained native date inputs in the flex utility when they sit inside flex/grid layouts or have a `max-w-*` parent:
+Use `DatePickerField` for date fields in product forms:
 
 ```tsx
-<div className="ios-date-input-flex w-full sm:max-w-md">
-  <NativeTemporalInput type="datetime-local" value={value} onChange={onChange} />
-</div>
+<DatePickerField id="start" label="Start date" date={date} onSelect={setDate} />
 ```
 
-Do **not** put `max-w-*` directly on the `NativeTemporalInput` — put it on the wrapper.
+Do **not** render native temporal inputs in product UI. The flex wrapper and `data-native-date-input` styles exist only for the developer harness and diagnostic comparisons.
 
 ---
 

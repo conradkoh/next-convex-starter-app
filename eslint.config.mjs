@@ -298,7 +298,7 @@ export default [
   // alignment, auto-modified values). Use DatePicker / DatePickerField from
   // @/components/ui/date-picker. See docs/developer/ios-native-date-input.md.
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{ts,tsx,js,jsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -313,6 +313,99 @@ export default [
             "JSXAttribute[name.name='type'] > JSXExpressionContainer > Literal[value=/^(date|datetime-local|month|time|week)$/]",
           message:
             'Native date/time inputs are not allowed. Use DatePicker or DatePickerField from @/components/ui/date-picker.',
+        },
+      ],
+    },
+  },
+
+  // Raw <input> elements bypass Input's non-temporal type restriction. Render inputs through Input.
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'react/forbid-elements': [
+        'error',
+        {
+          forbid: [
+            {
+              element: 'input',
+              message:
+                'Use Input from @/components/ui/input (or DatePickerField from @/components/ui/date-picker for dates).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // Product code must not bypass Input by importing the Base UI primitive, and
+  // NativeTemporalInput is for the developer harness only. Relative imports are matched via patterns.
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@base-ui/react/input',
+              message: 'Use Input from @/components/ui/input.',
+            },
+            {
+              name: '@base-ui/react',
+              importNames: ['Input', 'Field'],
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
+            {
+              name: '@base-ui/react/field',
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
+          ],
+          patterns: [
+            {
+              regex: '(^|/)ui/input$|^\\./input$',
+              importNamePattern: '^NativeTemporalInput$',
+              message:
+                'NativeTemporalInput is for the developer component harness only. Use DatePickerField from @/components/ui/date-picker.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // The type test intentionally imports NativeTemporalInput to assert Input rejects it.
+  {
+    files: ['**/components/ui/input.type-test.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  // input.tsx is the one place that wraps the Base UI primitive.
+  {
+    files: ['**/components/ui/input.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  // The developer harness may use NativeTemporalInput. Re-declare the rule with only the Base UI entry,
+  // because a flat-config override replaces the rule's options.
+  {
+    files: ['**/app/developer/**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: '@base-ui/react/input', message: 'Use Input from @/components/ui/input.' },
+            {
+              name: '@base-ui/react',
+              importNames: ['Input', 'Field'],
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
+            {
+              name: '@base-ui/react/field',
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
+          ],
         },
       ],
     },
