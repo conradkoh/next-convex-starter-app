@@ -20,9 +20,9 @@ Use custom Popover + Calendar pickers (see the date-picker story in the Componen
 
 The policy is enforced in four layers:
 
-- **CI** — `.github/workflows/ci.yml` runs `pnpm lint` and `pnpm typecheck` on every pull request, so lint and type errors block merges.
+- **CI** — `.github/workflows/ci.yml` runs `pnpm lint` and `pnpm typecheck` on pull requests to `master`. Whether a failure blocks a merge depends on branch protection requiring the `tests` check; branch protection has not been verified.
 - **Raw inputs** — `react/forbid-elements` in `eslint.config.mjs` bans `<input>` elements in product code. Render inputs through `Input` from `@/components/ui/input`.
-- **Imports** — `no-restricted-imports` bans importing the Base UI primitive (`@base-ui/react/input`) outside `input.tsx`, and bans importing `NativeTemporalInput` outside the developer harness. `NativeTemporalInput` (from `@/components/ui/input`) is only for the developer harness and diagnostics and must not appear in product UI.
+- **Imports** — `no-restricted-imports` bans `@base-ui/react/input`, the `Input` and `Field` exports of the `@base-ui/react` root barrel, and `@base-ui/react/field`, outside `input.tsx`. It also bans importing `NativeTemporalInput` from `@/components/ui/input` or any relative path that resolves to it, outside the developer harness. `NativeTemporalInput` is only for the developer harness and diagnostics and must not appear in product UI.
 - **Temporal types** — `no-restricted-syntax` rejects literal temporal `type` values (`date`, `datetime-local`, `month`, `time`, `week`) on any JSX element, including the `type={'date'}` expression form. `Input`'s `type` union also excludes them at compile time. Use `DatePickerField` from `@/components/ui/date-picker` instead.
 
 ### Known gaps
