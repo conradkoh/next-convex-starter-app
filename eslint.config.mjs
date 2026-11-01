@@ -336,4 +336,51 @@ export default [
       ],
     },
   },
+
+  // Product code must not bypass Input by importing the Base UI primitive, and
+  // NativeTemporalInput is for the developer harness only. Relative imports are matched via patterns.
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@base-ui/react/input',
+              message: 'Use Input from @/components/ui/input.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@/components/ui/input', '**/components/ui/input'],
+              importNamePattern: '^NativeTemporalInput$',
+              message:
+                'NativeTemporalInput is for the developer component harness only. Use DatePickerField from @/components/ui/date-picker.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // input.tsx is the one place that wraps the Base UI primitive.
+  {
+    files: ['**/components/ui/input.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  // The developer harness may use NativeTemporalInput. Re-declare the rule with only the Base UI entry,
+  // because a flat-config override replaces the rule's options.
+  {
+    files: ['**/app/developer/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: '@base-ui/react/input', message: 'Use Input from @/components/ui/input.' },
+          ],
+        },
+      ],
+    },
+  },
 ];
