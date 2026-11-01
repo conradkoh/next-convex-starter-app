@@ -298,7 +298,7 @@ export default [
   // alignment, auto-modified values). Use DatePicker / DatePickerField from
   // @/components/ui/date-picker. See docs/developer/ios-native-date-input.md.
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{ts,tsx,js,jsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -313,6 +313,25 @@ export default [
             "JSXAttribute[name.name='type'] > JSXExpressionContainer > Literal[value=/^(date|datetime-local|month|time|week)$/]",
           message:
             'Native date/time inputs are not allowed. Use DatePicker or DatePickerField from @/components/ui/date-picker.',
+        },
+      ],
+    },
+  },
+
+  // Raw <input> elements bypass Input's non-temporal type restriction. Render inputs through Input.
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'react/forbid-elements': [
+        'error',
+        {
+          forbid: [
+            {
+              element: 'input',
+              message:
+                'Use Input from @/components/ui/input (or DatePickerField from @/components/ui/date-picker for dates).',
+            },
+          ],
         },
       ],
     },
