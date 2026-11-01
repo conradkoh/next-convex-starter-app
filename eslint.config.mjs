@@ -350,6 +350,17 @@ export default [
               name: '@base-ui/react/input',
               message: 'Use Input from @/components/ui/input.',
             },
+            {
+              name: '@base-ui/react',
+              importNames: ['Input', 'Field'],
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
+            {
+              name: '@base-ui/react/field',
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
           ],
           patterns: [
             {
@@ -378,6 +389,17 @@ export default [
         {
           paths: [
             { name: '@base-ui/react/input', message: 'Use Input from @/components/ui/input.' },
+            {
+              name: '@base-ui/react',
+              importNames: ['Input', 'Field'],
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
+            {
+              name: '@base-ui/react/field',
+              message:
+                'Use Input from @/components/ui/input. Do not render Base UI Field.Control directly.',
+            },
           ],
         },
       ],
