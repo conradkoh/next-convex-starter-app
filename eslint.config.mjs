@@ -364,7 +364,7 @@ export default [
           ],
           patterns: [
             {
-              group: ['@/components/ui/input', '**/components/ui/input'],
+              regex: '(^|/)ui/input$|^\\./input$',
               importNamePattern: '^NativeTemporalInput$',
               message:
                 'NativeTemporalInput is for the developer component harness only. Use DatePickerField from @/components/ui/date-picker.',
@@ -374,6 +374,11 @@ export default [
       ],
     },
   },
+  // The type test intentionally imports NativeTemporalInput to assert Input rejects it.
+  {
+    files: ['**/components/ui/input.type-test.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
   // input.tsx is the one place that wraps the Base UI primitive.
   {
     files: ['**/components/ui/input.tsx'],
@@ -382,7 +387,7 @@ export default [
   // The developer harness may use NativeTemporalInput. Re-declare the rule with only the Base UI entry,
   // because a flat-config override replaces the rule's options.
   {
-    files: ['**/app/developer/**/*.{ts,tsx}'],
+    files: ['**/app/developer/**/*.{ts,tsx,js,jsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
