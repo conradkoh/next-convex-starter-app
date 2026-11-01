@@ -37,7 +37,7 @@ export default function LuxonTestPage() {
           </CardHeader>
           <CardContent>
             <Input
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border bg-background dark:bg-background text-sm"
               value={isoInput}
               onChange={(e) => setIsoInput(e.target.value)}
               aria-label="ISO datetime input"

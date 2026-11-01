@@ -179,7 +179,7 @@ const AttendanceContentInner = ({
               <Input
                 type="text"
                 placeholder="Search names..."
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full border rounded-md"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -411,7 +411,7 @@ const AttendanceContentInner = ({
             <Input
               type="text"
               placeholder="Search names..."
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full border rounded-md"
               value={modalSearchQuery}
               onChange={(e) => setModalSearchQuery(e.target.value)}
             />

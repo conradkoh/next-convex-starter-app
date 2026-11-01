@@ -523,9 +523,9 @@ function _renderEditForm(
           id="name"
           value={name}
           onChange={handleNameChange}
-          className={`mt-1 block w-full px-3 py-2 border ${
+          className={`mt-1 block w-full border ${
             error ? 'border-destructive' : 'border-input'
-          } rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring`}
+          } rounded-md`}
           placeholder="Enter your display name"
           disabled={isLoading}
         />
