@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { useAuthState, useCurrentUser } from '@/modules/auth/AuthProvider';
 import { ConnectButton } from '@/modules/auth/ConnectButton';
 import {
@@ -517,7 +518,7 @@ function _renderEditForm(
         <label htmlFor="name" className="block text-sm font-medium">
           Display Name
         </label>
-        <input
+        <Input
           type="text"
           id="name"
           value={name}
