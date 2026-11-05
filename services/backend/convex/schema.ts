@@ -206,6 +206,22 @@ export default defineSchema({
   }).index('by_sessionId', ['sessionId']),
 
   /**
+   * User-owned notification provider settings.
+   * Bot tokens are server-only and must never be returned by public queries.
+   */
+  userNotificationSettings: defineTable({
+    userId: v.id('users'),
+    provider: v.literal('telegram'),
+    enabled: v.boolean(),
+    channelId: v.string(),
+    botToken: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastTestedAt: v.optional(v.number()),
+    lastTestSucceeded: v.optional(v.boolean()),
+  }).index('by_user_provider', ['userId', 'provider']),
+
+  /**
    * Temporary login codes for cross-device authentication.
    * Stores time-limited codes for secure device-to-device login.
    */

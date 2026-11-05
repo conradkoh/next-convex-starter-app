@@ -20,6 +20,8 @@ import type * as crypto from "../crypto.js";
 import type * as discussions from "../discussions.js";
 import type * as e2e from "../e2e.js";
 import type * as migrations from "../migrations.js";
+import type * as notifications from "../notifications.js";
+import type * as notifications_telegram from "../notifications/telegram.js";
 import type * as presentations from "../presentations.js";
 import type * as serviceDesk from "../serviceDesk.js";
 import type * as sessionActivity from "../sessionActivity.js";
@@ -45,6 +47,8 @@ declare const fullApi: ApiFromModules<{
   discussions: typeof discussions;
   e2e: typeof e2e;
   migrations: typeof migrations;
+  notifications: typeof notifications;
+  "notifications/telegram": typeof notifications_telegram;
   presentations: typeof presentations;
   serviceDesk: typeof serviceDesk;
   sessionActivity: typeof sessionActivity;

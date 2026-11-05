@@ -8,6 +8,6 @@ test.describe('App Dashboard', { tag: [TAG_UPSTREAM, TAG_NAV] }, () => {
   test('shows dashboard content when authenticated', async ({ authenticatedPage }) => {
     const dashboard = new AppDashboardPage(authenticatedPage);
     await expect(dashboard.heading).toBeVisible();
-    await expect(dashboard.viewProfileButton).toBeVisible();
+    await expect(dashboard.viewSettingsButton).toBeVisible();
   });
 });

@@ -1,0 +1,76 @@
+# Settings architecture
+
+Settings modules are the canonical home for user preferences and account-management surfaces. A
+module owns its section semantics and presentation while existing low-level components continue to
+own their data access and interaction details.
+
+## Module map and URLs
+
+The primary settings routes are:
+
+1. User — `/app/settings/user`
+2. Appearance — `/app/settings/appearance`
+3. Notifications — `/app/settings/notifications`
+
+The Settings sidebar and mobile selector follow that order. The User route composes the canonical
+`UserSettings` and `ProfileSettings` modules, so Profile recovery remains available within User
+without becoming a fourth primary navigation item. The Appearance route composes the canonical
+`AppearanceSettings` module.
+
+## Data flow
+
+Convex remains the server source of truth. Use the session-aware hooks according to the operation:
+
+- `useSessionQuery` for reactive authenticated reads.
+- `useSessionMutation` for authenticated writes.
+- `useSessionAction` for authenticated external or side-effecting actions.
+
+Keep server data redacted and keep secrets out of client state whenever possible. A settings wrapper
+should compose the low-level feature that owns its hooks rather than introducing a second fetch or
+mutation path.
+
+## Local state and lifecycle
+
+Local `useState` or `useReducer` is for drafts, pending flags, dialogs, transient feedback, and
+client-only presentation. Do not broadly mirror query data into local state with `useEffect`; use a
+narrow initialization guard when necessary and update state in explicit action-completion paths.
+
+Every module must define the states relevant to its behavior: loading, empty or unconfigured, error,
+pending, success, and destructive confirmation when applicable. Pending controls should remain
+usable and stable, while success and error feedback should be safe for display.
+
+## URL and history conventions
+
+Use one route per primary module under `/app/settings/<module>`. Use `Link` for ordinary navigation
+and `router.push` after a successful submit when a flow returns to a listing. Keep Back to App and
+parent-section links explicit; do not implement a custom history stack.
+
+The canonical settings routes are the destinations for new links. The legacy `/app/profile` route
+and the former `/app/settings/account` route remain bookmark-safe compatibility redirects to
+`/app/settings/user`. Google account-connect OAuth returns to `/app/settings/user`; login flow
+defaults and callback validation remain unchanged.
+
+## Submit/action conventions
+
+Use semantic forms and `onSubmit`: prevent the default browser submission, normalize and validate
+input, disable relevant controls while pending, and provide safe toast or inline feedback.
+
+Destructive actions require an `AlertDialog` confirmation and must close or reset their state on
+success or failure. Never render raw backend or provider errors when they may contain secrets.
+
+## Keyboard/accessibility conventions
+
+Prefer native buttons, inputs, labels, links, and forms. Enter submits forms, and Escape closes
+dropdowns or dialogs through the existing UI primitives. Do not add global shortcuts unless a module
+documents a real need.
+
+Keep visible focus states, connect headings and descriptions with `aria-labelledby` and
+`aria-describedby`, use `aria-live="polite"` for asynchronous status, and provide accessible names
+for icon-only controls.
+
+## Migration rule
+
+Establish a canonical settings module first, migrate every caller to it, and then delete legacy
+route or component code. Do not maintain parallel implementations. During an incremental migration,
+the compatibility route may compose the canonical modules, but it must not retain a second copy of
+their state machines or backend calls.

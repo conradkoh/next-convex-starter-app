@@ -77,7 +77,7 @@ describe('useScrollRestoration', () => {
     const { rerender } = renderHook(() => useScrollRestoration(ref, 'main'));
     container.scrollTop = 180;
 
-    usePathname.mockReturnValue('/app/profile');
+    usePathname.mockReturnValue('/app/settings/user');
     rerender();
 
     expect(sessionStorage.getItem('scroll-pos:/app:main')).toBe('180');

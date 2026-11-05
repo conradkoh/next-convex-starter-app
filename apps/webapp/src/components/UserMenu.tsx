@@ -2,7 +2,7 @@
 
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useSessionMutation } from 'convex-helpers/react/sessions';
-import { Download, Settings, UserCog } from 'lucide-react';
+import { Download, Settings, Settings2, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -177,8 +177,11 @@ function _renderUserDropdownMenu(
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <Link href="/app/profile">
-            <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
+          <Link href="/app/settings">
+            <DropdownMenuItem className="cursor-pointer">
+              <Settings2 className="h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
           </Link>
           <Link href="/app">
             <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>

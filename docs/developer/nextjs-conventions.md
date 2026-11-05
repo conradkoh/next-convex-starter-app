@@ -54,5 +54,5 @@ Use the built-in Next.js `Link` component for client-side navigation.
 ```tsx
 import Link from 'next/link';
 
-<Link href="/app/profile">Profile</Link>;
+<Link href="/app/settings/user">User settings</Link>;
 ```
