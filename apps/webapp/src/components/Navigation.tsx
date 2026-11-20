@@ -1,6 +1,7 @@
 'use client';
 
 import { featureFlags } from '@workspace/backend/config/featureFlags';
+import { isLoopbackUrl } from '@workspace/backend/config/localDevelopment';
 import Link from 'next/link';
 import { useMemo } from 'react';
 
@@ -59,6 +60,7 @@ export function Navigation() {
 /**
  * Renders the appropriate authentication section based on user state.
  */
+// fallow-ignore-next-line complexity
 function _renderAuthSection(isLoading: boolean, isAuthenticated: boolean) {
   if (isLoading) {
     return null;
@@ -68,7 +70,9 @@ function _renderAuthSection(isLoading: boolean, isAuthenticated: boolean) {
     return <UserMenu />;
   }
 
-  if (!featureFlags.disableLogin) {
+  // Local development always offers the Login link: /login shows anonymous login there even
+  // when disableLogin is set (see docs/features/local-dev-anonymous-login.md).
+  if (!featureFlags.disableLogin || isLoopbackUrl(process.env.NEXT_PUBLIC_CONVEX_URL)) {
     return (
       <Link href="/login">
         <Button size="sm" variant="outline">
