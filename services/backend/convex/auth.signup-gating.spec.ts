@@ -1,17 +1,26 @@
 import type { SessionId } from 'convex-helpers/server/sessions';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { t } from '../test.setup';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 
+const HOSTED_CONVEX_URL = 'https://happy-animal-123.convex.cloud';
+const LOCAL_CONVEX_URL = 'http://127.0.0.1:3210';
+
 const mockAllowedSignupMethods = vi.hoisted(() => ({
   value: ['self'] as string[] | null,
 }));
 
+const mockDisableLogin = vi.hoisted(() => ({
+  value: false,
+}));
+
 vi.mock('../config/featureFlags', () => ({
   featureFlags: {
-    disableLogin: false,
+    get disableLogin() {
+      return mockDisableLogin.value;
+    },
     get allowedSignupMethods() {
       return mockAllowedSignupMethods.value;
     },
@@ -59,11 +68,21 @@ async function enableGoogleAuth(configuredBy: Id<'users'>): Promise<void> {
 
 beforeEach(() => {
   mockAllowedSignupMethods.value = ['self'];
+  mockDisableLogin.value = false;
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+function anonSessionId(prefix = 'anon'): SessionId {
+  return `${prefix}-${Math.random().toString(36).slice(2)}` as SessionId;
+}
+
 test('loginAnon throws SIGNUP_DISABLED when allowedSignupMethods is null', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', HOSTED_CONVEX_URL);
   mockAllowedSignupMethods.value = null;
-  const sessionId = `anon-${Math.random().toString(36).slice(2)}` as SessionId;
+  const sessionId = anonSessionId();
 
   await expect(t.mutation(api.auth.loginAnon, { sessionId })).rejects.toMatchObject({
     data: {
@@ -74,8 +93,22 @@ test('loginAnon throws SIGNUP_DISABLED when allowedSignupMethods is null', async
 });
 
 test('loginAnon throws when only invite signup is allowed', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', HOSTED_CONVEX_URL);
   mockAllowedSignupMethods.value = ['invite'];
-  const sessionId = `anon-${Math.random().toString(36).slice(2)}` as SessionId;
+  const sessionId = anonSessionId();
+
+  await expect(t.mutation(api.auth.loginAnon, { sessionId })).rejects.toMatchObject({
+    data: {
+      code: 'SIGNUP_DISABLED',
+      message: 'Self-signup is not enabled',
+    },
+  });
+});
+
+test('loginAnon throws when allowedSignupMethods is null and no deployment URL is set', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', undefined);
+  mockAllowedSignupMethods.value = null;
+  const sessionId = anonSessionId();
 
   await expect(t.mutation(api.auth.loginAnon, { sessionId })).rejects.toMatchObject({
     data: {
@@ -87,7 +120,60 @@ test('loginAnon throws when only invite signup is allowed', async () => {
 
 test('loginAnon succeeds when self signup is allowed', async () => {
   mockAllowedSignupMethods.value = ['self'];
-  const sessionId = `anon-${Math.random().toString(36).slice(2)}` as SessionId;
+  const sessionId = anonSessionId();
+
+  const result = await t.mutation(api.auth.loginAnon, { sessionId });
+  expect(result.success).toBe(true);
+});
+
+test('loginAnon throws FEATURE_DISABLED on a hosted deployment when login is disabled', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', HOSTED_CONVEX_URL);
+  mockDisableLogin.value = true;
+  const sessionId = anonSessionId();
+
+  await expect(t.mutation(api.auth.loginAnon, { sessionId })).rejects.toMatchObject({
+    data: {
+      code: 'FEATURE_DISABLED',
+      message: 'Login functionality is currently disabled',
+    },
+  });
+});
+
+test('loginAnon throws FEATURE_DISABLED when login is disabled and no deployment URL is set', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', undefined);
+  mockDisableLogin.value = true;
+  const sessionId = anonSessionId();
+
+  await expect(t.mutation(api.auth.loginAnon, { sessionId })).rejects.toMatchObject({
+    data: {
+      code: 'FEATURE_DISABLED',
+      message: 'Login functionality is currently disabled',
+    },
+  });
+});
+
+test('loginAnon succeeds locally when login is disabled', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', LOCAL_CONVEX_URL);
+  mockDisableLogin.value = true;
+  const sessionId = anonSessionId('anon-local-disabled');
+
+  const result = await t.mutation(api.auth.loginAnon, { sessionId });
+  expect(result.success).toBe(true);
+});
+
+test('loginAnon succeeds locally when signups are fully disabled', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', LOCAL_CONVEX_URL);
+  mockAllowedSignupMethods.value = null;
+  const sessionId = anonSessionId('anon-local-null');
+
+  const result = await t.mutation(api.auth.loginAnon, { sessionId });
+  expect(result.success).toBe(true);
+});
+
+test('loginAnon succeeds locally when only invite signup is allowed', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', LOCAL_CONVEX_URL);
+  mockAllowedSignupMethods.value = ['invite'];
+  const sessionId = anonSessionId('anon-local-invite');
 
   const result = await t.mutation(api.auth.loginAnon, { sessionId });
   expect(result.success).toBe(true);
@@ -98,6 +184,26 @@ test('Google new user blocked when signups are fully disabled', async () => {
   const admin = await seedSystemAdmin();
   await enableGoogleAuth(admin.userId);
   const sessionId = `google-new-${Math.random().toString(36).slice(2)}` as SessionId;
+
+  await expect(
+    t.mutation(api.auth.google.loginWithGoogle, {
+      sessionId,
+      profile: googleProfile,
+    })
+  ).rejects.toMatchObject({
+    data: {
+      code: 'SIGNUP_DISABLED',
+      message: 'Sign-ups are currently disabled',
+    },
+  });
+});
+
+test('Google new user stays blocked locally when signups are fully disabled', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', LOCAL_CONVEX_URL);
+  mockAllowedSignupMethods.value = null;
+  const admin = await seedSystemAdmin();
+  await enableGoogleAuth(admin.userId);
+  const sessionId = `google-new-local-${Math.random().toString(36).slice(2)}` as SessionId;
 
   await expect(
     t.mutation(api.auth.google.loginWithGoogle, {
