@@ -1,6 +1,7 @@
 'use client';
 
 import { featureFlags } from '@workspace/backend/config/featureFlags';
+import { isLoopbackUrl } from '@workspace/backend/config/localDevelopment';
 import {
   isInviteSignupAllowed,
   isSelfSignupAllowed,
@@ -52,13 +53,19 @@ function LoginPageContent() {
     return _renderLoadingState();
   }
 
-  // Show disabled state when login is disabled
+  // The Convex backend and this bundle point at the same deployment, so a loopback URL
+  // means local development in both runtimes.
+  const localDevelopment = isLoopbackUrl(process.env.NEXT_PUBLIC_CONVEX_URL);
+  const returnTo = searchParams.get('returnTo');
+
   if (featureFlags.disableLogin) {
-    return _renderDisabledState();
+    // Hosted deployments keep the whole-page disabled card.
+    if (!localDevelopment) return _renderDisabledState();
+    // Locally only anonymous login works on the backend, so offer only that.
+    return _renderLocalAnonymousOnlyForm(sessionId);
   }
 
-  const returnTo = searchParams.get('returnTo');
-  return _renderLoginForm(sessionId, returnTo);
+  return _renderLoginForm(sessionId, returnTo, localDevelopment);
 }
 
 function _renderSignupDisabledBanner() {
@@ -74,6 +81,14 @@ function _renderInviteOnlyHint() {
   return (
     <p className="text-xs text-muted-foreground text-center">
       New users must sign up with an invite code. Google sign-in below is for returning users.
+    </p>
+  );
+}
+
+function _renderLocalDevHint() {
+  return (
+    <p className="text-xs text-muted-foreground text-center">
+      Local development: anonymous login is always available.
     </p>
   );
 }
@@ -160,11 +175,15 @@ function _renderDisabledState() {
 /**
  * Renders the main login form with authentication options.
  */
-function _renderLoginForm(sessionId: string | null, returnTo: string | null) {
+function _renderLoginForm(
+  sessionId: string | null,
+  returnTo: string | null,
+  localDevelopment: boolean
+) {
   const signupAllowed = isSignupAllowed();
   const selfSignupAllowed = isSelfSignupAllowed();
   const inviteSignupAllowed = isInviteSignupAllowed();
-  const inviteOnlyMode = inviteSignupAllowed && !selfSignupAllowed;
+  const anonymousLoginAllowed = selfSignupAllowed || localDevelopment;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
@@ -173,11 +192,50 @@ function _renderLoginForm(sessionId: string | null, returnTo: string | null) {
         {_renderHeader()}
         {_renderLoginOptions({
           sessionId,
-          selfSignupAllowed,
+          anonymousLoginAllowed,
           inviteSignupAllowed,
           returnTo,
         })}
-        {inviteOnlyMode && _renderInviteOnlyHint()}
+        {_renderSignupHints({ selfSignupAllowed, inviteSignupAllowed, localDevelopment })}
+        {_renderFooter()}
+      </div>
+    </main>
+  );
+}
+
+/**
+ * Renders the contextual hint below the login options, if any applies.
+ */
+// fallow-ignore-next-line complexity
+function _renderSignupHints(options: {
+  selfSignupAllowed: boolean;
+  inviteSignupAllowed: boolean;
+  localDevelopment: boolean;
+}) {
+  if (options.localDevelopment && !options.selfSignupAllowed) {
+    return _renderLocalDevHint();
+  }
+  if (options.inviteSignupAllowed && !options.selfSignupAllowed) {
+    return _renderInviteOnlyHint();
+  }
+  return null;
+}
+
+/**
+ * Renders the login page in local development when login is otherwise disabled.
+ * Only anonymous login works on the backend in that configuration, so nothing else is offered.
+ */
+function _renderLocalAnonymousOnlyForm(sessionId: string | null) {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
+      <div className="w-full max-w-md space-y-6">
+        {_renderHeader()}
+        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <div className="divide-y divide-border">
+            {sessionId && <AnonymousLoginButton variant="list" />}
+          </div>
+        </div>
+        {_renderLocalDevHint()}
         {_renderFooter()}
       </div>
     </main>
@@ -202,11 +260,11 @@ function _renderHeader() {
 // fallow-ignore-next-line complexity
 function _renderLoginOptions(options: {
   sessionId: string | null;
-  selfSignupAllowed: boolean;
+  anonymousLoginAllowed: boolean;
   inviteSignupAllowed: boolean;
   returnTo: string | null;
 }) {
-  const { sessionId, selfSignupAllowed, inviteSignupAllowed, returnTo } = options;
+  const { sessionId, anonymousLoginAllowed, inviteSignupAllowed, returnTo } = options;
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
@@ -226,7 +284,7 @@ function _renderLoginOptions(options: {
         {inviteSignupAllowed && _renderInviteSignupOption()}
 
         {/* Anonymous Login */}
-        {sessionId && selfSignupAllowed && <AnonymousLoginButton variant="list" />}
+        {sessionId && anonymousLoginAllowed && <AnonymousLoginButton variant="list" />}
       </div>
 
       {/* Recovery Section */}

@@ -2,6 +2,7 @@ import { ConvexError, v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { featureFlags } from '../config/featureFlags';
+import { isLocalDevelopment } from '../config/localDevelopment';
 import { isSelfSignupAllowed } from '../config/signupMethods';
 import { api, internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
@@ -70,19 +71,23 @@ export const loginAnon = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    // Check if login is disabled
-    if (featureFlags.disableLogin) {
-      throw new ConvexError({
-        code: 'FEATURE_DISABLED',
-        message: 'Login functionality is currently disabled',
-      });
-    }
+    // Local development always allows anonymous login so devs are never locked out by
+    // production-oriented feature flags. Hosted deployments keep both gates.
+    if (!isLocalDevelopment()) {
+      // Check if login is disabled
+      if (featureFlags.disableLogin) {
+        throw new ConvexError({
+          code: 'FEATURE_DISABLED',
+          message: 'Login functionality is currently disabled',
+        });
+      }
 
-    if (!isSelfSignupAllowed()) {
-      throw new ConvexError({
-        code: 'SIGNUP_DISABLED',
-        message: 'Self-signup is not enabled',
-      });
+      if (!isSelfSignupAllowed()) {
+        throw new ConvexError({
+          code: 'SIGNUP_DISABLED',
+          message: 'Self-signup is not enabled',
+        });
+      }
     }
 
     // Check if the session exists
