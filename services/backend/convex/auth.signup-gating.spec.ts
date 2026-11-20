@@ -170,6 +170,16 @@ test('loginAnon succeeds locally when signups are fully disabled', async () => {
   expect(result.success).toBe(true);
 });
 
+test('loginAnon succeeds locally when login is disabled and signups are fully disabled', async () => {
+  vi.stubEnv('CONVEX_CLOUD_URL', LOCAL_CONVEX_URL);
+  mockDisableLogin.value = true;
+  mockAllowedSignupMethods.value = null;
+  const sessionId = anonSessionId('anon-local-disabled-null');
+
+  const result = await t.mutation(api.auth.loginAnon, { sessionId });
+  expect(result.success).toBe(true);
+});
+
 test('loginAnon succeeds locally when only invite signup is allowed', async () => {
   vi.stubEnv('CONVEX_CLOUD_URL', LOCAL_CONVEX_URL);
   mockAllowedSignupMethods.value = ['invite'];
