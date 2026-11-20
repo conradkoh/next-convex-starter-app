@@ -102,6 +102,8 @@ describe('LoginPage local development handling', () => {
 
     expect(screen.queryByTestId('anonymous-login')).not.toBeInTheDocument();
     expect(screen.getByText('Sign up with Invite Code')).toBeInTheDocument();
+    expect(screen.getByText(INVITE_ONLY_HINT_TEXT)).toBeInTheDocument();
+    expect(screen.queryByText(LOCAL_DEV_HINT_TEXT)).not.toBeInTheDocument();
   });
 
   it('offers anonymous login on a hosted deployment when self signup is allowed', () => {
