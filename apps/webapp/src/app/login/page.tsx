@@ -188,7 +188,8 @@ function _renderLoginForm(
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24">
       <div className="w-full max-w-md space-y-6">
-        {!signupAllowed && _renderSignupDisabledBanner()}
+        {/* Locally anonymous login is always offered, so "sign-ups closed" would contradict it. */}
+        {!signupAllowed && !anonymousLoginAllowed && _renderSignupDisabledBanner()}
         {_renderHeader()}
         {_renderLoginOptions({
           sessionId,
