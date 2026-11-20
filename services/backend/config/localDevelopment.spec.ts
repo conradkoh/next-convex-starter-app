@@ -3,19 +3,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isLocalDevelopment, isLoopbackUrl } from './localDevelopment';
 
 describe('isLoopbackUrl', () => {
-  it.each([
-    'http://127.0.0.1:3210',
-    'http://localhost:3210',
-    'http://[::1]:3210',
-    'http://0.0.0.0:3210',
-  ])('returns true for loopback URL %s', (url) => {
-    expect(isLoopbackUrl(url)).toBe(true);
-  });
+  it.each(['http://127.0.0.1:3210', 'http://localhost:3210', 'http://[::1]:3210'])(
+    'returns true for loopback URL %s',
+    (url) => {
+      expect(isLoopbackUrl(url)).toBe(true);
+    }
+  );
 
   it.each([
     'https://happy-animal-123.convex.cloud',
     'https://127.0.0.1.evil.com',
     'https://example.com/127.0.0.1',
+    'http://0.0.0.0:3210',
     '',
     undefined,
     null,

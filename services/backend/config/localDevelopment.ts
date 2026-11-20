@@ -9,7 +9,7 @@
  *
  * Defaults to `false` when the URL is missing or unparseable (hosted deployments, tests).
  */
-const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0']);
+const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
 /** True when `url` parses and its hostname is a loopback address. */
 export function isLoopbackUrl(url: string | undefined | null): boolean {
