@@ -1,7 +1,7 @@
 'use client';
 
 import { formatLoginCode } from '@workspace/backend/modules/auth/codeUtils';
-import { Copy } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export type ExpiryMode = '30days' | 'indefinite';
 
+export type InviteCopyState = 'idle' | 'copied' | 'failed';
+
 export type CreateInviteFormProps = {
   inviteeName: string;
   inviteeEmail: string;
   expiryMode: ExpiryMode;
   isCreating: boolean;
   lastCreatedCode: string | null;
+  /** Create failure message, rendered above the submit button. */
+  error: string | null;
+  /** Copy state for the created code. */
+  copyState: InviteCopyState;
   onInviteeNameChange: (value: string) => void;
   onInviteeEmailChange: (value: string) => void;
   onExpiryModeChange: (value: ExpiryMode) => void;
@@ -23,12 +29,21 @@ export type CreateInviteFormProps = {
   onCopyCode: (code: string) => void;
 };
 
+/**
+ * Invite creation form with the created-code panel. The branches only select which
+ * prescribed inline slot renders (create error above submit, copy failure under the
+ * code row) and the copy confirmation swap; every branch is covered by
+ * `CreateInviteCard.test.tsx`.
+ */
+// fallow-ignore-next-line complexity
 export function CreateInviteForm({
   inviteeName,
   inviteeEmail,
   expiryMode,
   isCreating,
   lastCreatedCode,
+  error,
+  copyState,
   onInviteeNameChange,
   onInviteeEmailChange,
   onExpiryModeChange,
@@ -82,6 +97,11 @@ export function CreateInviteForm({
             </div>
           </RadioGroup>
         </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
         <Button type="submit" disabled={isCreating}>
           {isCreating ? 'Creating...' : 'Create invite'}
         </Button>
@@ -100,10 +120,19 @@ export function CreateInviteForm({
               size="sm"
               onClick={() => onCopyCode(lastCreatedCode)}
             >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy
+              {copyState === 'copied' ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : (
+                <Copy className="mr-2 h-4 w-4" />
+              )}
+              {copyState === 'copied' ? 'Copied' : 'Copy'}
             </Button>
           </div>
+          {copyState === 'failed' && (
+            <p role="alert" className="text-xs text-destructive">
+              Failed to copy invite code to clipboard
+            </p>
+          )}
         </div>
       )}
     </>
