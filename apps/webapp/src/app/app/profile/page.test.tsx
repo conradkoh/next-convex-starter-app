@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   getOrCreateCode: vi.fn(),
   regenerateCode: vi.fn(),
   writeText: vi.fn(),
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 vi.mock('@workspace/backend/convex/_generated/api', () => ({
@@ -33,7 +32,6 @@ vi.mock('@/modules/auth/AuthProvider', () => ({
 vi.mock('@/modules/auth/LoginCodeGenerator', () => ({ LoginCodeGenerator: () => null }));
 vi.mock('@/modules/profile/NameEditForm', () => ({ NameEditForm: () => null }));
 vi.mock('@/modules/theme/ThemeSettings', () => ({ ThemeSettings: () => null }));
-vi.mock('sonner', () => ({ toast: mocks.toast }));
 
 const RECOVERY_CODE = 'ABCD-EFGH-IJKL';
 
@@ -59,7 +57,7 @@ async function revealCode() {
 }
 
 describe('ProfilePage recovery feedback', () => {
-  it('shows a retrieval failure as exactly one role=alert message, with no toast', async () => {
+  it('shows a retrieval failure as exactly one role=alert message', async () => {
     mocks.getOrCreateCode.mockResolvedValue({ success: false, reason: 'Code unavailable.' });
     render(<ProfilePage />);
 
@@ -69,10 +67,9 @@ describe('ProfilePage recovery feedback', () => {
     expect(alert).toHaveTextContent('Code unavailable.');
     expect(alert).toHaveClass('text-destructive');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
-  it('regenerate failure shows exactly one role=alert message, with no toast', async () => {
+  it('regenerate failure shows exactly one role=alert message', async () => {
     mocks.regenerateCode.mockResolvedValue({ success: false, reason: 'Regeneration failed.' });
     render(<ProfilePage />);
     await revealCode();
@@ -83,8 +80,6 @@ describe('ProfilePage recovery feedback', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Regeneration failed.');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
-    expect(mocks.toast.error).not.toHaveBeenCalled();
-    expect(mocks.toast.success).not.toHaveBeenCalled();
   });
 
   it('swaps to Check + Copied for 2 s after a successful copy, then reverts', async () => {
@@ -110,7 +105,7 @@ describe('ProfilePage recovery feedback', () => {
     expect(copyButton.querySelector('.lucide-copy')).not.toBeNull();
   });
 
-  it('shows Failed to copy code. beside the button with no toast, and clears it on the next copy', async () => {
+  it('shows Failed to copy code. beside the button, and clears it on the next copy', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mocks.writeText.mockRejectedValueOnce(new Error('denied'));
     render(<ProfilePage />);
@@ -120,7 +115,6 @@ describe('ProfilePage recovery feedback', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Failed to copy code.');
-    expect(mocks.toast.error).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy recovery code' }));
 

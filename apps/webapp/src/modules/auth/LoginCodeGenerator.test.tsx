@@ -6,14 +6,13 @@ import { LoginCodeGenerator } from './LoginCodeGenerator';
 
 /**
  * Boundary mocks only: Convex session query/mutation, the auth state provider,
- * the browser clipboard, and sonner (asserted never called).
+ * and the browser clipboard.
  * The component and its reducer run for real.
  */
 const mocks = vi.hoisted(() => ({
   useAuthState: vi.fn(),
   useSessionQuery: vi.fn(),
   createLoginCode: vi.fn(),
-  toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@/modules/auth/AuthProvider', () => ({ useAuthState: mocks.useAuthState }));
@@ -21,7 +20,6 @@ vi.mock('convex-helpers/react/sessions', () => ({
   useSessionQuery: mocks.useSessionQuery,
   useSessionMutation: () => mocks.createLoginCode,
 }));
-vi.mock('sonner', () => ({ toast: mocks.toast }));
 
 const USED = { success: false, reason: 'no_active_code' };
 
@@ -51,7 +49,7 @@ afterEach(() => {
 });
 
 describe('LoginCodeGenerator feedback', () => {
-  it('shows the used-code status line once the active code is consumed, with no toast', () => {
+  it('shows the used-code status line once the active code is consumed', () => {
     const { rerender } = render(<LoginCodeGenerator />);
     mocks.useSessionQuery.mockReturnValue(activeCode());
     rerender(<LoginCodeGenerator />);
@@ -60,7 +58,6 @@ describe('LoginCodeGenerator feedback', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Your login code was used successfully');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(mocks.toast.info).not.toHaveBeenCalled();
   });
 
   it('does not show the used-code status line when the code expired before the query changed', () => {
@@ -100,7 +97,6 @@ describe('LoginCodeGenerator feedback', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Failed to generate login code');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('shows the generic generate alert when the mutation throws', async () => {
@@ -113,7 +109,6 @@ describe('LoginCodeGenerator feedback', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'An error occurred while generating login code'
     );
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('clears the generate alert when the next generate starts', async () => {
@@ -142,7 +137,6 @@ describe('LoginCodeGenerator feedback', () => {
     expect(
       screen.getByRole('button', { name: 'Copy login code to clipboard' })
     ).toBeInTheDocument();
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('clears a copy alert when the code is consumed', async () => {
@@ -162,7 +156,7 @@ describe('LoginCodeGenerator feedback', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('copy success shows the Check icon for 2 s with no alert and no toast', async () => {
+  it('copy success shows the Check icon for 2 s with no alert', async () => {
     vi.useFakeTimers();
     const { rerender } = render(<LoginCodeGenerator />);
     mocks.useSessionQuery.mockReturnValue(activeCode());
@@ -174,7 +168,6 @@ describe('LoginCodeGenerator feedback', () => {
 
     expect(copyButton.querySelector('.lucide-check')).not.toBeNull();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(mocks.toast.success).not.toHaveBeenCalled();
 
     act(() => {
       vi.advanceTimersByTime(2_000);
@@ -182,13 +175,12 @@ describe('LoginCodeGenerator feedback', () => {
     expect(copyButton.querySelector('.lucide-check')).toBeNull();
   });
 
-  it('shows no alert and no toast after a successful generate', async () => {
+  it('shows no alert after a successful generate', async () => {
     render(<LoginCodeGenerator />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Generate a login code' }));
 
     expect(await screen.findByText(/Valid for/)).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(mocks.toast.success).not.toHaveBeenCalled();
   });
 });

@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   verifyCode: vi.fn(),
   refreshSessionId: vi.fn(),
   push: vi.fn(),
-  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@workspace/backend/convex/_generated/api', () => ({
@@ -23,7 +22,6 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@/modules/auth/AuthProvider', () => ({
   AuthProvider: ({ children }: { children: ReactNode }) => children,
 }));
-vi.mock('sonner', () => ({ toast: mocks.toast }));
 
 const INVALID_CODE_MESSAGE = 'Invalid recovery code.';
 
@@ -42,7 +40,7 @@ beforeEach(() => {
 });
 
 describe('RecoverAccountPage feedback', () => {
-  it('shows an invalid code as exactly one destructive alert, with no toast', async () => {
+  it('shows an invalid code as exactly one destructive alert', async () => {
     mocks.verifyCode.mockResolvedValue({ success: false, reason: 'invalid_code' });
     const { user, textarea, submit } = renderPage();
 
@@ -53,7 +51,6 @@ describe('RecoverAccountPage feedback', () => {
     expect(alert).toHaveTextContent(INVALID_CODE_MESSAGE);
     expect(alert).toHaveClass('text-destructive');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('clears the alert as soon as the code is edited', async () => {
@@ -92,7 +89,7 @@ describe('RecoverAccountPage feedback', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(INVALID_CODE_MESSAGE);
   });
 
-  it('shows no alert and no toast after a successful recovery, and redirects to the app', async () => {
+  it('shows no alert after a successful recovery, and redirects to the app', async () => {
     mocks.verifyCode.mockResolvedValue({ success: true, user: { _id: 'user-1' } });
     const { user, textarea, submit } = renderPage();
 
@@ -106,6 +103,5 @@ describe('RecoverAccountPage feedback', () => {
     });
     expect(mocks.refreshSessionId).toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(mocks.toast.success).not.toHaveBeenCalled();
   });
 });

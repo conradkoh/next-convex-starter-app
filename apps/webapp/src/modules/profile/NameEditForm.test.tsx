@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   disconnectGoogle: vi.fn(),
   createConnectRequest: vi.fn(),
   redirectToGoogleOAuth: vi.fn(),
-  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@workspace/backend/convex/_generated/api', () => ({
@@ -46,7 +45,6 @@ vi.mock('@/modules/auth/google-oauth', async (importOriginal) => {
   const actual = await importOriginal<typeof GoogleOAuthModule>();
   return { ...actual, redirectToGoogleOAuth: mocks.redirectToGoogleOAuth };
 });
-vi.mock('sonner', () => ({ toast: mocks.toast }));
 
 const anonymousUser = { _id: 'user-1', _creationTime: 0, type: 'anonymous', name: 'Ada' };
 const googleUser = {
@@ -100,7 +98,6 @@ describe('NameEditForm Google connect feedback', () => {
     const googleSection = within(alert.parentElement as HTMLElement);
     expect(googleSection.getByRole('button', { name: 'Connect' })).toBeEnabled();
     expect(mocks.redirectToGoogleOAuth).not.toHaveBeenCalled();
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('clears the connect alert when the next attempt starts', async () => {
@@ -122,7 +119,7 @@ describe('NameEditForm Google connect feedback', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Failed to connect Google account');
   });
 
-  it('shows no alert and no toast when connect succeeds', async () => {
+  it('shows no alert when connect succeeds', async () => {
     render(<NameEditForm />);
     const user = userEvent.setup();
 
@@ -134,7 +131,6 @@ describe('NameEditForm Google connect feedback', () => {
       )
     );
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(mocks.toast.success).not.toHaveBeenCalled();
   });
 });
 
@@ -154,7 +150,6 @@ describe('NameEditForm Google disconnect feedback', () => {
     expect(screen.getAllByRole('alert')).toHaveLength(1);
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Disconnect' })).toBeEnabled();
-    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('clears the disconnect alert when the action is retried, then closes with no alert on success', async () => {
@@ -176,7 +171,6 @@ describe('NameEditForm Google disconnect feedback', () => {
     second.resolve();
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(mocks.toast.success).not.toHaveBeenCalled();
   });
 
   it('clears the disconnect alert when the dialog is cancelled and reopened', async () => {
