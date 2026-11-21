@@ -170,7 +170,6 @@ export function useChecklistSync({ key, title }: UseChecklistSyncProps) {
   const addItem = useCallback(
     async (text: string): Promise<boolean> => {
       if (!text.trim()) {
-        toast.error('Item text is required');
         return false;
       }
 
@@ -205,7 +204,6 @@ export function useChecklistSync({ key, title }: UseChecklistSyncProps) {
 
         // Success - remove the optimistic item
         setOptimisticItems((prev) => prev.filter((item) => item._id !== optimisticId));
-        toast.success('Item added successfully');
         return true;
       } catch (error) {
         console.error('Failed to add item:', error);
@@ -216,7 +214,6 @@ export function useChecklistSync({ key, title }: UseChecklistSyncProps) {
         // Store the failed text for recovery
         setLastFailedText(text.trim());
 
-        toast.error('Failed to add item. Text restored for retry.');
         return false;
       }
     },
