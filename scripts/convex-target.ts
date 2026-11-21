@@ -45,8 +45,12 @@ type EnvInput = {
 const ENV_ASSIGNMENT = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/;
 
 /**
- * Value of `name` in dotenv-style text (first assignment wins). Single line only:
- * an empty `NAME=` is undefined, never the next line.
+ * Value of `name` in dotenv-style text. Deliberate limits, not the full dotenv grammar:
+ * - Callers read services/backend/.env.local only, never `.env`.
+ * - The first assignment of `name` wins. dotenv keeps the last one, so a duplicated name can be
+ *   classified differently from the Convex CLI. This is not modelled.
+ * - Multi-line quoted values are unsupported. A quote left open on its line yields undefined.
+ * Single line only: an empty `NAME=` is undefined, never the next line.
  */
 export function readEnvValue(envFile: string, name: string): string | undefined {
   for (const line of envFile.split(/\r?\n/)) {

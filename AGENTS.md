@@ -138,12 +138,12 @@ pnpm dev
 pnpm setup
 ```
 
-`pnpm dev` starts the backend dev wrapper (`services/backend` → `scripts/start-convex-dev.ts`) alongside the webapp. The wrapper resolves the development deployment from the process environment first, then `services/backend/.env.local` (the Convex CLI's precedence), and then:
+`pnpm dev` starts the backend dev wrapper (`services/backend` → `scripts/start-convex-dev.ts`) alongside the webapp. The wrapper resolves the development deployment from the process environment first, then `services/backend/.env.local`, and then:
 
-1. **Refuses to start** when `CONVEX_DEPLOYMENT` selects a `prod:` deployment and `CONVEX_DEPLOY_KEY` is not set. It prints the reason, exits non-zero, and starts nothing.
+1. **Refuses to start** when `CONVEX_DEPLOYMENT` selects a `prod:` deployment (dev never runs against production), or when `CONVEX_DEPLOY_KEY` is set in the process environment or in `services/backend/.env.local`. It prints the reason, exits non-zero, and starts nothing.
 2. Runs `convex dev --once` to push the code. If the push fails, it skips migrations with a warning and still starts the watcher.
 3. Starts the `convex dev` watcher.
-4. Runs pending migrations against that same deployment in the background, once the deployment accepts `convex run` (bounded wait of 120 seconds). It prints the migration plan and the result. A failed migration prints a warning naming the migration and the target; the watcher keeps running.
+4. Runs pending migrations against that same deployment in the background, once the deployment accepts `convex run` (bounded wait of 120 seconds). It prints the migration plan and the result. A failed migration prints a warning naming the migration and the target; the watcher keeps running. For a local deployment the wait probes the target URL (`CONVEX_URL`), or else `ports.cloud` in `services/backend/.convex/local/default/config.json`; if neither is known, migrations are skipped with a warning and nothing is run.
 
 These cases skip migrations and still start the watcher:
 
@@ -162,7 +162,7 @@ pnpm migrate
 ```
 
 - Uses `scripts/migrate-lib.ts` → `migrations:runAll`.
-- Targets the development deployment in `services/backend/.env.local` (local or hosted) when `CONVEX_DEPLOY_KEY` is unset. Targets production (`--prod`) when `CONVEX_DEPLOY_KEY` is set (CI only). The first printed line, `🎯 Migration target: …`, shows which one ran.
+- Targets the development deployment in `services/backend/.env.local` (local or hosted) when `CONVEX_DEPLOY_KEY` is unset. Targets production (`--prod`) when `CONVEX_DEPLOY_KEY` is set in the process environment (CI only). Refuses to run when `CONVEX_DEPLOY_KEY` is set only in `services/backend/.env.local`. The first printed line, `🎯 Migration target: …`, shows which one ran.
 - Exits non-zero when a migration fails.
 - Idempotent — safe to re-run.
 
