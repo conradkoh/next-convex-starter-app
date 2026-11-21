@@ -55,6 +55,32 @@ export function describeMigrationError(err: unknown): string {
   return stderrText(err) ?? (err instanceof Error ? err.message : String(err));
 }
 
+type AcceptOptions = { timeoutMs: number; intervalMs: number };
+
+/**
+ * Call `probe` until it resolves. Fail after `timeoutMs` with the last probe error.
+ * `probe` is the only port to the deployment: the Convex CLI in production, a fake in tests.
+ */
+export async function waitForAcceptance(
+  probe: () => Promise<unknown>,
+  { timeoutMs, intervalMs }: AcceptOptions
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    try {
+      await probe();
+      return;
+    } catch (error) {
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for the deployment to accept convex run: ${describeMigrationError(error)}`
+        );
+      }
+    }
+    await Bun.sleep(intervalMs);
+  }
+}
+
 function getPendingMigrations(statuses: MigrationStatus[]): MigrationStatus[] {
   const firstIncompleteIndex = statuses.findIndex((status) => !status.isDone);
   return firstIncompleteIndex === -1

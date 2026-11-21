@@ -19,4 +19,16 @@ describe('Convex dev command selection', () => {
       'dev',
     ]);
   });
+
+  it('appends extra args such as --once after the pinned version', () => {
+    expect(buildConvexDevArgs(true, 'precompiled-test', ['--once'])).toEqual([
+      'pnpm',
+      'exec',
+      'convex',
+      'dev',
+      '--local-backend-version',
+      'precompiled-test',
+      '--once',
+    ]);
+  });
 });
