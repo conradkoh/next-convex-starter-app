@@ -172,14 +172,14 @@ describe('LoginCodeGenerator feedback', () => {
     fireEvent.click(copyButton);
     await act(async () => {});
 
-    expect(copyButton.querySelector('.text-green-600')).not.toBeNull();
+    expect(copyButton.querySelector('.lucide-check')).not.toBeNull();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(mocks.toast.success).not.toHaveBeenCalled();
 
     act(() => {
       vi.advanceTimersByTime(2_000);
     });
-    expect(copyButton.querySelector('.text-green-600')).toBeNull();
+    expect(copyButton.querySelector('.lucide-check')).toBeNull();
   });
 
   it('shows no alert and no toast after a successful generate', async () => {
