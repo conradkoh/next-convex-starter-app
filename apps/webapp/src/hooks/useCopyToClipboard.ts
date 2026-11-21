@@ -23,7 +23,7 @@ function clearTimer(timerRef: TimerRef): void {
 
 /**
  * Shared copy feedback. A success marks `copiedKey` for `resetMs` (drives an icon swap).
- * A failure marks `failedKey` until the next copy attempt. No toasts.
+ * A failure marks `failedKey` until the next copy attempt; the caller renders it inline.
  */
 export function useCopyToClipboard(resetMs = 2000): UseCopyToClipboardResult {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
