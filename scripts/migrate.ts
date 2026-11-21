@@ -25,7 +25,7 @@
  */
 
 import { describeConvexTarget, unrunnableReason } from './convex-target';
-import { resolveMigrationTarget, runMigrations } from './migrate-lib';
+import { describeMigrationError, resolveMigrationTarget, runMigrations } from './migrate-lib';
 
 const target = await resolveMigrationTarget();
 
@@ -48,8 +48,6 @@ try {
   await runMigrations(target);
   console.log('\n✅ All migrations completed successfully.\n');
 } catch (err) {
-  const error = err as { stderr?: Buffer; message?: string };
-  const stderr = error.stderr?.toString().trim() ?? error.message ?? String(err);
-  console.error(`\n❌ Migration failed:\n   ${stderr}\n`);
+  console.error(`\n❌ Migration failed:\n   ${describeMigrationError(err)}\n`);
   process.exit(1);
 }

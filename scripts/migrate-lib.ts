@@ -35,9 +35,24 @@ function convexRun(target: ConvexTarget, functionName: string) {
   return $`npx convex ${buildConvexRunArgs(target, functionName)}`.cwd(BACKEND_DIR);
 }
 
-async function getMigrationStatus(target: ConvexTarget): Promise<MigrationStatus[]> {
+export async function getMigrationStatus(target: ConvexTarget): Promise<MigrationStatus[]> {
   const output = await convexRun(target, 'migrations:getRunAllStatus').text();
   return JSON.parse(output) as MigrationStatus[];
+}
+
+function isRecordWithStderr(err: unknown): err is { stderr: unknown } {
+  return typeof err === 'object' && err !== null && 'stderr' in err;
+}
+
+/** Trimmed stderr of a failed `convex run`, when the error carries one. */
+function stderrText(err: unknown): string | undefined {
+  const stderr = isRecordWithStderr(err) ? String(err.stderr).trim() : '';
+  return stderr || undefined;
+}
+
+/** Text for a failed `convex run`: its stderr when present, else the error message. */
+export function describeMigrationError(err: unknown): string {
+  return stderrText(err) ?? (err instanceof Error ? err.message : String(err));
 }
 
 function getPendingMigrations(statuses: MigrationStatus[]): MigrationStatus[] {
