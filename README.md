@@ -52,7 +52,7 @@ This is a starter application using NextJS and Convex, managed with Turbo for mo
 
 3. Run `pnpm dev` in the root directory to start the NextJS application and Convex backend
 
-   After pulling schema changes, run `pnpm migrate` while `convex dev` is running (see [AGENTS.md](AGENTS.md#database-migrations)).
+   `pnpm dev` pushes the Convex code and runs pending migrations against the development deployment in `services/backend/.env.local`. To re-run migrations by hand, use `pnpm migrate` (see [AGENTS.md](AGENTS.md#database-migrations)). Set `SKIP_DEV_MIGRATIONS=1` to skip them for one run.
 
 #### Manual Setup (Alternative)
 
