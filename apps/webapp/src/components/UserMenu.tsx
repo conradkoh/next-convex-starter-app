@@ -70,10 +70,16 @@ export function UserMenu() {
     setShowLogoutConfirm(true);
   }, []);
 
-  const handleLogoutConfirmChange = useCallback((open: boolean) => {
-    setLogoutError(null);
-    setShowLogoutConfirm(open);
-  }, []);
+  const handleLogoutConfirmChange = useCallback(
+    (open: boolean) => {
+      // Ignore close requests (Cancel, Escape, overlay click) while logout is in flight so a
+      // rejection lands in a dialog that is still open and the failure stays visible.
+      if (isLoggingOut) return;
+      setLogoutError(null);
+      setShowLogoutConfirm(open);
+    },
+    [isLoggingOut]
+  );
 
   return !authState || authState.state !== 'authenticated' ? null : (
     <>
@@ -150,7 +156,7 @@ function _renderLogoutConfirmDialog(
           </p>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoggingOut}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleLogout}
             disabled={isLoggingOut}

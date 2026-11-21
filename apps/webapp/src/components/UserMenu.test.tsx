@@ -200,5 +200,37 @@ describe('UserMenu', () => {
 
       expect(screen.queryByRole('alert')).toBeNull();
     });
+
+    it('blocks Cancel, Escape, and overlay dismissal while logging out, then shows the failure', async () => {
+      let rejectLogout!: (reason: unknown) => void;
+      mocks.logout.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectLogout = reject;
+        })
+      );
+      const user = userEvent.setup();
+      render(<UserMenu />);
+
+      const dialog = await openLogoutDialog(user);
+      await user.click(within(dialog).getByRole('button', { name: 'Log out' }));
+      expect(within(dialog).getByRole('button', { name: 'Logging out...' })).toBeDisabled();
+      expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+      await user.keyboard('{Escape}');
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+      const overlay = document.querySelector('[data-slot="alert-dialog-overlay"]');
+      expect(overlay).not.toBeNull();
+      await user.click(overlay as Element);
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+      rejectLogout(new Error('network'));
+
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+        'Failed to logout. Please try again.'
+      );
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+      expect(mocks.push).not.toHaveBeenCalled();
+    });
   });
 });
