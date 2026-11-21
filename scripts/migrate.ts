@@ -24,12 +24,19 @@
  *                        deployment from services/backend/.env.local
  */
 
-import { describeConvexTarget } from './convex-target';
+import { describeConvexTarget, unrunnableReason } from './convex-target';
 import { resolveMigrationTarget, runMigrations } from './migrate-lib';
 
 const target = await resolveMigrationTarget();
 
 console.log(`🎯 Migration target: ${describeConvexTarget(target)}`);
+
+const blockedReason = unrunnableReason(target);
+if (blockedReason) {
+  console.error(`\n❌ ${blockedReason}\n`);
+  process.exit(1);
+}
+
 if (target.kind === 'local') {
   console.log('   Requires `convex dev` to be running (no restart needed).');
 }

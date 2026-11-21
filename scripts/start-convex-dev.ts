@@ -11,7 +11,13 @@ import { appendFile, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 import { applyConvexDevEnvDefaults } from './convex-dev-env';
-import { backendEnvPath, readBackendEnvFile, resolveDevTarget } from './convex-target';
+import {
+  backendEnvPath,
+  describeConvexTarget,
+  readBackendEnvFile,
+  readEnvValue,
+  resolveDevTarget,
+} from './convex-target';
 
 const repoRoot = resolve(dirname(import.meta.path), '..');
 const backendDir = resolve(repoRoot, 'services/backend');
@@ -35,13 +41,11 @@ export function buildConvexDevArgs(
 }
 
 async function readBackendVersion(): Promise<string> {
-  const env = await readFile(backendEnvPath, 'utf8').catch(() => '');
-  const envMatch = env.match(
-    new RegExp(`^\\s*${backendVersionEnvName}\\s*=\\s*([^#\\r\\n]+?)\\s*(?:#.*)?$`, 'm')
-  );
+  const env = await readBackendEnvFile();
+  const envValue = readEnvValue(env, backendVersionEnvName);
 
-  if (envMatch?.[1]) {
-    return envMatch[1].trim();
+  if (envValue) {
+    return envValue;
   }
 
   let config: LocalConfig;
@@ -76,7 +80,7 @@ async function main(): Promise<void> {
   const args = buildConvexDevArgs(isLocalDeployment, backendVersion, process.argv.slice(2));
 
   console.log(
-    `Starting ${isLocalDeployment ? 'local' : 'hosted'} Convex dev${backendVersion ? ` with local backend version ${backendVersion}` : ''}`
+    `Starting Convex dev for ${describeConvexTarget(target)}${backendVersion ? ` with local backend version ${backendVersion}` : ''}`
   );
 
   const child = Bun.spawn(args, {

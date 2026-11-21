@@ -10,12 +10,17 @@ export const backendEnvPath = resolve(
   '.env.local'
 );
 
-/** A development deployment: the one `convex dev` uses. `deployment` and `url` are not secrets. */
-type DevTarget = {
-  kind: 'local' | 'hosted-dev';
-  deployment?: string;
-  url?: string;
-};
+/**
+ * The development deployment `convex dev` uses, or a state that must never be migrated.
+ * `deployment` and `url` are not secrets.
+ */
+export type DevTarget =
+  | { kind: 'local'; deployment?: string; url?: string }
+  | { kind: 'hosted-dev'; deployment?: string; url?: string }
+  /** CONVEX_DEPLOYMENT selects production but CONVEX_DEPLOY_KEY is not set. */
+  | { kind: 'prod-without-key'; deployment: string }
+  /** No usable CONVEX_DEPLOYMENT selector and no CONVEX_URL / VITE_CONVEX_URL. */
+  | { kind: 'unconfigured' };
 
 type EnvInput = {
   /** Process environment. Takes precedence over `envFile`, as the Convex CLI does. */
@@ -24,17 +29,45 @@ type EnvInput = {
   envFile?: string;
 };
 
-function readEnvValue(envFile: string, name: string): string | undefined {
-  const match = envFile.match(new RegExp(`^\\s*${name}\\s*=\\s*([^#\\r\\n]+?)\\s*(?:#.*)?$`, 'm'));
-  return match?.[1]?.trim() || undefined;
+/** `NAME=rest-of-line`, optional `export ` prefix. Matches one line only. */
+const ENV_ASSIGNMENT = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/;
+
+/**
+ * Value of `name` in dotenv-style text (first assignment wins). Single line only:
+ * an empty `NAME=` is undefined, never the next line.
+ */
+export function readEnvValue(envFile: string, name: string): string | undefined {
+  for (const line of envFile.split(/\r?\n/)) {
+    const match = ENV_ASSIGNMENT.exec(line);
+    if (!match) continue;
+    if (match[1] !== name) continue;
+    return parseEnvValue(match[2]);
+  }
+  return undefined;
+}
+
+/** Quoted: text between matching quotes (rest ignored). Unquoted: text before an inline ` #` comment. */
+function parseEnvValue(rawValue: string): string | undefined {
+  const value = rawValue.trim();
+  const quote = value.charAt(0);
+  if (quote === '"' || quote === "'") return unquote(value, quote);
+  return stripInlineComment(value);
+}
+
+function unquote(value: string, quote: string): string | undefined {
+  const closing = value.indexOf(quote, 1);
+  if (closing === -1) return undefined;
+  return value.slice(1, closing).trim() || undefined;
+}
+
+function stripInlineComment(value: string): string | undefined {
+  return value.replace(/(^|\s)#.*$/, '').trim() || undefined;
 }
 
 /** Hostnames that only a local Convex deployment exposes its endpoint on. */
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0']);
 
-/** Convex local deployments expose their endpoint on loopback. */
-function isLoopbackUrl(url: string | undefined): boolean {
-  if (!url) return false;
+function isLoopbackUrl(url: string): boolean {
   try {
     return LOOPBACK_HOSTS.has(new URL(url).hostname.toLowerCase());
   } catch {
@@ -42,9 +75,23 @@ function isLoopbackUrl(url: string | undefined): boolean {
   }
 }
 
-/** First non-empty candidate; mirrors the `a || b || c` precedence used for env lookups. */
+/** First non-empty candidate. */
 function firstNonEmpty(...candidates: (string | undefined)[]): string | undefined {
   return candidates.find((candidate) => Boolean(candidate));
+}
+
+/** An explicit selector is authoritative. The URL is not consulted here. */
+function targetFromSelector(deployment: string, url: string | undefined): DevTarget {
+  if (deployment.startsWith('prod:')) return { kind: 'prod-without-key', deployment };
+  const devKind = devKindFromSelector(deployment);
+  return devKind ? { kind: devKind, deployment, url } : { kind: 'unconfigured' };
+}
+
+/** `local:` and `anonymous:` are local deployments; `dev:` is hosted. */
+function devKindFromSelector(deployment: string): 'local' | 'hosted-dev' | undefined {
+  if (deployment.startsWith('local:') || deployment.startsWith('anonymous:')) return 'local';
+  if (deployment.startsWith('dev:')) return 'hosted-dev';
+  return undefined;
 }
 
 /** Classify the development deployment `convex dev` uses. Ignores CONVEX_DEPLOY_KEY. */
@@ -59,8 +106,9 @@ export function resolveDevTarget({ env = {}, envFile = '' }: EnvInput = {}): Dev
     readEnvValue(envFile, 'VITE_CONVEX_URL'),
     readEnvValue(envFile, 'CONVEX_URL')
   );
-  const isLocal = Boolean(deployment?.startsWith('local:')) || isLoopbackUrl(url);
-  return { kind: isLocal ? 'local' : 'hosted-dev', deployment, url };
+  if (deployment) return targetFromSelector(deployment, url);
+  if (url) return { kind: isLoopbackUrl(url) ? 'local' : 'hosted-dev', url };
+  return { kind: 'unconfigured' };
 }
 
 export async function readBackendEnvFile(): Promise<string> {
@@ -83,25 +131,68 @@ export function resolveConvexTarget({ deployKey, ...input }: ConvexTargetInput =
   return deployKey ? { kind: 'production' } : resolveDevTarget(input);
 }
 
+/** Why migrations must not run against this target, or undefined when they may run. */
+export function unrunnableReason(target: ConvexTarget): string | undefined {
+  switch (target.kind) {
+    case 'prod-without-key':
+      return `CONVEX_DEPLOYMENT=${target.deployment} selects PRODUCTION, but CONVEX_DEPLOY_KEY is not set. Nothing was run. To migrate production, run with CONVEX_DEPLOY_KEY set (CI). To migrate development, point CONVEX_DEPLOYMENT in services/backend/.env.local at a dev: or local: deployment.`;
+    case 'unconfigured':
+      return 'No development deployment is configured. Nothing was run. Run `npx convex dev` in services/backend once to configure a deployment, or set CONVEX_DEPLOY_KEY to target production.';
+    default:
+      return undefined;
+  }
+}
+
 /**
  * Arguments for `npx convex <args>`. `--prod` only for production. Without it the Convex CLI
  * resolves the development deployment from services/backend/.env.local, as `convex dev` does.
+ * Throws for targets that must not run (see `unrunnableReason`).
  */
 export function buildConvexRunArgs(target: ConvexTarget, functionName: string): string[] {
+  const reason = unrunnableReason(target);
+  if (reason) throw new Error(reason);
   return target.kind === 'production' ? ['run', functionName, '--prod'] : ['run', functionName];
 }
 
-/** Human-readable migration target. Contains deployment name and URL only, never keys. */
-const describeTargetByKind: Record<
-  ConvexTarget['kind'],
-  (target: { deployment?: string; url?: string }) => string
-> = {
-  production: () => 'PRODUCTION deployment (CONVEX_DEPLOY_KEY is set)',
-  local: ({ deployment }) => `LOCAL development server${deployment ? ` (${deployment})` : ''}`,
-  'hosted-dev': ({ deployment, url }) =>
-    `HOSTED development deployment${deployment ? ` ${deployment}` : ''}${url ? ` at ${url}` : ''}`,
-};
+const PRODUCTION_LABEL = 'PRODUCTION deployment (CONVEX_DEPLOY_KEY is set)';
+const UNCONFIGURED_LABEL =
+  'UNCONFIGURED: no usable CONVEX_DEPLOYMENT or CONVEX_URL in the environment or services/backend/.env.local';
 
+/**
+ * Human-readable migration target. Contains deployment name and URL only, never keys.
+ * Split into small helpers so each stays simple and the strings stay exhaustive.
+ */
 export function describeConvexTarget(target: ConvexTarget): string {
-  return describeTargetByKind[target.kind](target);
+  if (target.kind === 'prod-without-key') return describeProdWithoutKey(target.deployment);
+  if (target.kind === 'unconfigured') return UNCONFIGURED_LABEL;
+  return describeRunnableTarget(target);
+}
+
+function describeRunnableTarget(
+  target: Extract<ConvexTarget, { kind: 'production' | 'local' | 'hosted-dev' }>
+): string {
+  if (target.kind === 'production') return PRODUCTION_LABEL;
+  return describeDevelopmentTarget(target);
+}
+
+function describeDevelopmentTarget(
+  target: Extract<DevTarget, { kind: 'local' | 'hosted-dev' }>
+): string {
+  if (target.kind === 'local') return describeLocalTarget(target.deployment);
+  return describeHostedDevTarget(target.deployment, target.url);
+}
+
+function describeLocalTarget(deployment: string | undefined): string {
+  return deployment ? `LOCAL development server (${deployment})` : 'LOCAL development server';
+}
+
+function describeHostedDevTarget(deployment: string | undefined, url: string | undefined): string {
+  const name = deployment
+    ? `HOSTED development deployment ${deployment}`
+    : 'HOSTED development deployment';
+  return url ? `${name} at ${url}` : name;
+}
+
+function describeProdWithoutKey(deployment: string): string {
+  return `PRODUCTION deployment ${deployment} selected by CONVEX_DEPLOYMENT; CONVEX_DEPLOY_KEY is not set`;
 }
