@@ -11,6 +11,16 @@ export interface UseCopyToClipboardResult {
   copy: (text: string, key?: string) => Promise<boolean>;
 }
 
+type TimerRef = { current: ReturnType<typeof setTimeout> | null };
+
+/** Cancels a pending reset timer, if any. */
+function clearTimer(timerRef: TimerRef): void {
+  if (timerRef.current !== null) {
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }
+}
+
 /**
  * Shared copy feedback. A success marks `copiedKey` for `resetMs` (drives an icon swap).
  * A failure marks `failedKey` until the next copy attempt. No toasts.
@@ -25,40 +35,43 @@ export function useCopyToClipboard(resetMs = 2000): UseCopyToClipboardResult {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (resetTimerRef.current !== null) {
-        clearTimeout(resetTimerRef.current);
-        resetTimerRef.current = null;
-      }
+      clearTimer(resetTimerRef);
     };
   }, []);
 
+  const markFailed = useCallback((key: string) => {
+    if (!isMountedRef.current) return;
+    setCopiedKey(null);
+    setFailedKey(key);
+  }, []);
+
+  const markCopied = useCallback(
+    (key: string) => {
+      if (!isMountedRef.current) return;
+      setCopiedKey(key);
+      resetTimerRef.current = setTimeout(() => {
+        resetTimerRef.current = null;
+        setCopiedKey(null);
+      }, resetMs);
+    },
+    [resetMs]
+  );
+
   const copy = useCallback(
     async (text: string, key: string = DEFAULT_COPY_KEY): Promise<boolean> => {
-      if (resetTimerRef.current !== null) {
-        clearTimeout(resetTimerRef.current);
-        resetTimerRef.current = null;
-      }
+      clearTimer(resetTimerRef);
       setFailedKey(null);
       try {
         await navigator.clipboard.writeText(text);
       } catch (error) {
         console.error('Failed to copy text: ', error);
-        if (isMountedRef.current) {
-          setCopiedKey(null);
-          setFailedKey(key);
-        }
+        markFailed(key);
         return false;
       }
-      if (isMountedRef.current) {
-        setCopiedKey(key);
-        resetTimerRef.current = setTimeout(() => {
-          resetTimerRef.current = null;
-          setCopiedKey(null);
-        }, resetMs);
-      }
+      markCopied(key);
       return true;
     },
-    [resetMs]
+    [markFailed, markCopied]
   );
 
   return { copiedKey, failedKey, copy };
