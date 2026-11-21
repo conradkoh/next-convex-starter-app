@@ -66,7 +66,7 @@ const noToast = {
   create(context) {
     const { filename } = context;
 
-    /** @param {import('estree').Node | null | undefined} sourceNode */
+    /** @param {import('eslint').Rule.Node | null | undefined} sourceNode */
     function checkSource(sourceNode) {
       if (!sourceNode || sourceNode.type !== 'Literal' || typeof sourceNode.value !== 'string') {
         return;
