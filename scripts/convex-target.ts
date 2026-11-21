@@ -80,11 +80,23 @@ function firstNonEmpty(...candidates: (string | undefined)[]): string | undefine
   return candidates.find((candidate) => Boolean(candidate));
 }
 
-/** An explicit selector is authoritative. The URL is not consulted here. */
+/** An explicit selector is authoritative. The URL is only consulted to drop a stale loopback. */
 function targetFromSelector(deployment: string, url: string | undefined): DevTarget {
   if (deployment.startsWith('prod:')) return { kind: 'prod-without-key', deployment };
   const devKind = devKindFromSelector(deployment);
-  return devKind ? { kind: devKind, deployment, url } : { kind: 'unconfigured' };
+  if (devKind === 'local') return { kind: 'local', deployment, url };
+  if (devKind === 'hosted-dev') return hostedDevTarget(deployment, url);
+  return { kind: 'unconfigured' };
+}
+
+/**
+ * A loopback URL is stale under an explicit `dev:` selector, because `dev:` is always hosted.
+ * Drop it instead of labelling a hosted deployment with a local address.
+ */
+function hostedDevTarget(deployment: string, url: string | undefined): DevTarget {
+  return url && !isLoopbackUrl(url)
+    ? { kind: 'hosted-dev', deployment, url }
+    : { kind: 'hosted-dev', deployment };
 }
 
 /** `local:` and `anonymous:` are local deployments; `dev:` is hosted. */

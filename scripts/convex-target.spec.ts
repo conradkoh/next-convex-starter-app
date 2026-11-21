@@ -65,17 +65,26 @@ describe('resolveDevTarget', () => {
     });
   });
 
-  it('keeps an explicit dev: deployment hosted even with a stale loopback URL', () => {
+  it('keeps an explicit dev: deployment hosted and drops a stale loopback URL', () => {
     const target = resolveDevTarget({
       envFile: 'CONVEX_DEPLOYMENT=dev:happy-animal-123\nVITE_CONVEX_URL=http://127.0.0.1:3210\n',
     });
-    expect(target).toEqual({
+    expect(target).toEqual({ kind: 'hosted-dev', deployment: 'dev:happy-animal-123' });
+    expect(describeConvexTarget(target)).toBe('HOSTED development deployment dev:happy-animal-123');
+    expect(describeConvexTarget(target)).not.toContain('127.0.0.1');
+  });
+
+  it('keeps a remote URL for an explicit dev: deployment', () => {
+    expect(
+      resolveDevTarget({
+        envFile:
+          'CONVEX_DEPLOYMENT=dev:happy-animal-123\nVITE_CONVEX_URL=https://happy-animal-123.convex.cloud\n',
+      })
+    ).toEqual({
       kind: 'hosted-dev',
       deployment: 'dev:happy-animal-123',
-      url: 'http://127.0.0.1:3210',
+      url: 'https://happy-animal-123.convex.cloud',
     });
-    expect(describeConvexTarget(target)).toContain('dev:happy-animal-123');
-    expect(describeConvexTarget(target)).not.toContain('LOCAL');
   });
 
   it('keeps an explicit local: deployment local even with a remote URL', () => {
