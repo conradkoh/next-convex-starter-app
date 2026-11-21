@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import type { ConvexTarget } from './convex-target';
+import { type ConvexTarget, resolveDevTarget } from './convex-target';
 import { devMigrationSkipReason, devStartRefusal } from './dev-migrations';
 import { waitForAcceptance } from './migrate-lib';
 
@@ -16,6 +16,7 @@ const hosted: ConvexTarget = {
 };
 const prod: ConvexTarget = { kind: 'prod-without-key', deployment: 'prod:happy-animal-123' };
 const unconfigured: ConvexTarget = { kind: 'unconfigured' };
+const deployKeyFile: ConvexTarget = { kind: 'deploy-key-in-file' };
 
 describe('devMigrationSkipReason', () => {
   it('runs migrations for local and hosted development deployments', () => {
@@ -35,16 +36,45 @@ describe('devMigrationSkipReason', () => {
     );
     expect(devMigrationSkipReason(hosted, { SKIP_DEV_MIGRATIONS: '0' })).toBeUndefined();
   });
+
+  it('skips when the key is only in .env.local', () => {
+    expect(devMigrationSkipReason(deployKeyFile, {})).toContain(
+      'CONVEX_DEPLOY_KEY is set in services/backend/.env.local'
+    );
+  });
 });
 
 describe('devStartRefusal', () => {
-  it('refuses to start dev for a production deployment selected without a deploy key', () => {
-    const message = devStartRefusal(prod);
-    expect(message).toContain('Refusing to start Convex dev');
-    expect(message).toContain('prod:happy-animal-123');
+  it('refuses a prod: selector with the production wording, with or without a key', () => {
+    for (const key of [undefined, 'process environment' as const]) {
+      const message = devStartRefusal(prod, key);
+      expect(message).toContain('Refusing to start Convex dev');
+      expect(message).toContain('prod:happy-animal-123');
+      expect(message).toContain('pnpm dev never runs against production');
+      expect(message).not.toContain('is not set');
+    }
   });
 
-  it('lets dev start for local, hosted, and unconfigured targets', () => {
+  it('gives the corrected production refusal when CONVEX_DEPLOY_KEY is also set', () => {
+    const target = resolveDevTarget({
+      env: { CONVEX_DEPLOYMENT: 'prod:happy-animal-123', CONVEX_DEPLOY_KEY: 'test-key' },
+    });
+    const message = devStartRefusal(target, 'process environment');
+    expect(message).toContain('pnpm dev never runs against production');
+    expect(message).not.toContain('is not set');
+    expect(message).not.toContain('test-key');
+  });
+
+  it('refuses to start when CONVEX_DEPLOY_KEY is set in the process env or .env.local', () => {
+    expect(devStartRefusal(hosted, 'process environment')).toContain(
+      'CONVEX_DEPLOY_KEY is set in process environment'
+    );
+    expect(devStartRefusal(local, 'services/backend/.env.local')).toContain(
+      'CONVEX_DEPLOY_KEY is set in services/backend/.env.local'
+    );
+  });
+
+  it('lets dev start for local, hosted, and unconfigured targets when no key is set', () => {
     expect(devStartRefusal(local)).toBeUndefined();
     expect(devStartRefusal(hosted)).toBeUndefined();
     expect(devStartRefusal(unconfigured)).toBeUndefined();

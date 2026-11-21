@@ -6,7 +6,7 @@
  * startup. A successful upgrade can still update config.json, so the pin
  * follows the deployment's recorded version automatically.
  *
- * Flow: refuse production → `convex dev --once` pushes the code → watcher starts →
+ * Flow: refuse production or a deploy key → `convex dev --once` pushes the code → watcher starts →
  * pending migrations run in the background against the same deployment.
  */
 
@@ -16,6 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { applyConvexDevEnvDefaults } from './convex-dev-env';
 import {
   backendEnvPath,
+  deployKeySource,
   describeConvexTarget,
   readBackendEnvFile,
   readEnvValue,
@@ -88,9 +89,10 @@ function spawnConvexDev(args: string[]) {
 async function main(): Promise<void> {
   applyConvexDevEnvDefaults();
   const env = process.env;
-  const target = resolveDevTarget({ env, envFile: await readBackendEnvFile() });
+  const envFile = await readBackendEnvFile();
+  const target = resolveDevTarget({ env, envFile });
 
-  const refusal = devStartRefusal(target);
+  const refusal = devStartRefusal(target, deployKeySource({ env, envFile }));
   if (refusal) {
     console.error(`❌ ${refusal}`);
     process.exit(1);

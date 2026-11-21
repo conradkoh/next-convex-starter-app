@@ -1,4 +1,4 @@
-import { type ConvexTarget, describeConvexTarget } from './convex-target';
+import { type ConvexTarget, type DeployKeySource, describeConvexTarget } from './convex-target';
 import {
   describeMigrationError,
   getMigrationStatus,
@@ -22,22 +22,43 @@ export function devMigrationSkipReason(
   return targetSkipReason(target);
 }
 
+const UNCONFIGURED_SKIP_REASON =
+  'no development deployment is configured yet (run `npx convex dev` once in services/backend to set one up)';
+const PRODUCTION_SKIP_REASON = 'the target is production, which dev never migrates';
+const DEPLOY_KEY_IN_FILE_SKIP_REASON =
+  'CONVEX_DEPLOY_KEY is set in services/backend/.env.local, and dev never migrates a deploy-key deployment';
+
 function targetSkipReason(target: ConvexTarget): string | undefined {
-  switch (target.kind) {
-    case 'unconfigured':
-      return 'no development deployment is configured yet (run `npx convex dev` once in services/backend to set one up)';
-    case 'production':
-    case 'prod-without-key':
-      return 'the target is production, which dev never migrates';
-    default:
-      return undefined;
-  }
+  if (target.kind === 'unconfigured') return UNCONFIGURED_SKIP_REASON;
+  if (target.kind === 'deploy-key-in-file') return DEPLOY_KEY_IN_FILE_SKIP_REASON;
+  return isProductionTarget(target) ? PRODUCTION_SKIP_REASON : undefined;
 }
 
-/** Message to print before refusing to start `convex dev`, or undefined when dev may start. */
-export function devStartRefusal(target: ConvexTarget): string | undefined {
-  if (target.kind !== 'prod-without-key') return undefined;
-  return `Refusing to start Convex dev: ${describeConvexTarget(target)}. Nothing was started and no migrations ran. Set CONVEX_DEPLOYMENT in your shell or services/backend/.env.local to a dev: or local: deployment.`;
+/** Both production kinds are refused identically by dev. */
+function isProductionTarget(target: ConvexTarget): boolean {
+  return target.kind === 'production' || target.kind === 'prod-without-key';
+}
+
+/**
+ * Message to print before refusing to start `convex dev`, or undefined when dev may start.
+ * A `prod:` selector is refused first, with or without a key. Then a set deploy key is refused.
+ */
+export function devStartRefusal(
+  target: ConvexTarget,
+  deployKey?: DeployKeySource
+): string | undefined {
+  if (target.kind === 'prod-without-key') {
+    return `Refusing to start Convex dev: ${describeConvexTarget(target)}. pnpm dev never runs against production. Nothing was started and no migrations ran. Set CONVEX_DEPLOYMENT in your shell or services/backend/.env.local to a dev: or local: deployment.`;
+  }
+  return deployKey ? deployKeyRefusal(deployKey) : undefined;
+}
+
+function deployKeyRefusal(source: DeployKeySource): string {
+  const fix =
+    source === 'process environment'
+      ? 'run `unset CONVEX_DEPLOY_KEY` in your shell'
+      : 'remove CONVEX_DEPLOY_KEY from services/backend/.env.local';
+  return `Refusing to start Convex dev: CONVEX_DEPLOY_KEY is set in ${source}. A deploy key selects its own deployment, which may be production, and dev never starts or migrates one. Nothing was started and no migrations ran. To fix: ${fix}, then run pnpm dev again.`;
 }
 
 /** Wait for the deployment to accept `convex run`, then run pending migrations. Throws on failure. */

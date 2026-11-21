@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 
 import {
   buildConvexRunArgs,
+  deployKeySource,
   describeConvexTarget,
   readEnvValue,
   resolveConvexTarget,
@@ -121,8 +122,10 @@ describe('resolveDevTarget', () => {
   it('classifies a prod: deployment without a key as prod-without-key, never hosted dev', () => {
     const target = resolveDevTarget({ envFile: prodEnvFile });
     expect(target).toEqual({ kind: 'prod-without-key', deployment: 'prod:happy-animal-123' });
-    expect(describeConvexTarget(target)).toContain('PRODUCTION');
-    expect(describeConvexTarget(target)).toContain('CONVEX_DEPLOY_KEY is not set');
+    expect(describeConvexTarget(target)).toBe(
+      'PRODUCTION deployment prod:happy-animal-123 selected by CONVEX_DEPLOYMENT'
+    );
+    expect(describeConvexTarget(target)).not.toContain('is not set');
     expect(describeConvexTarget(target)).not.toContain('HOSTED');
   });
 
@@ -206,6 +209,41 @@ describe('resolveConvexTarget', () => {
     expect(
       describeConvexTarget(resolveConvexTarget({ deployKey: 'secret-key-123' }))
     ).not.toContain('secret-key-123');
+  });
+
+  it('refuses to migrate when CONVEX_DEPLOY_KEY is only in .env.local, and names the file not the key', () => {
+    const target = resolveConvexTarget({
+      envFile: 'CONVEX_DEPLOY_KEY=file-key-123\nCONVEX_DEPLOYMENT=dev:happy-animal-123\n',
+    });
+    expect(target).toEqual({ kind: 'deploy-key-in-file' });
+    expect(unrunnableReason(target)).toContain('services/backend/.env.local');
+    expect(() => buildConvexRunArgs(target, 'migrations:runAll')).toThrow(
+      'services/backend/.env.local'
+    );
+    expect(describeConvexTarget(target)).not.toContain('file-key-123');
+  });
+
+  it('still targets production for a process-env key even when .env.local has one', () => {
+    expect(
+      resolveConvexTarget({ deployKey: 'env-key', envFile: 'CONVEX_DEPLOY_KEY=file-key\n' })
+    ).toEqual({ kind: 'production' });
+  });
+});
+
+describe('deployKeySource', () => {
+  it('reports the process environment before .env.local', () => {
+    expect(
+      deployKeySource({ env: { CONVEX_DEPLOY_KEY: 'k' }, envFile: 'CONVEX_DEPLOY_KEY=f\n' })
+    ).toBe('process environment');
+    expect(deployKeySource({ envFile: 'CONVEX_DEPLOY_KEY=f\n' })).toBe(
+      'services/backend/.env.local'
+    );
+  });
+
+  it('treats an empty value as unset', () => {
+    expect(
+      deployKeySource({ env: { CONVEX_DEPLOY_KEY: '' }, envFile: 'CONVEX_DEPLOY_KEY=\n' })
+    ).toBeUndefined();
   });
 });
 
