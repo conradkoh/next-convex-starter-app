@@ -5,8 +5,10 @@
  *
  * Runs all pending Convex database migrations using the @convex-dev/migrations framework.
  * Automatically targets:
- *   - LOCAL development server — when CONVEX_DEPLOY_KEY is not set (default)
  *   - PRODUCTION deployment    — when CONVEX_DEPLOY_KEY is set (e.g. in CI)
+ *   - DEVELOPMENT deployment   — otherwise: the one `convex dev` uses, read from
+ *                                services/backend/.env.local (local or hosted).
+ *                                The target is printed before anything runs.
  *
  * All migrations are idempotent and track their own progress — safe to run multiple times.
  * If interrupted, they resume from where they left off on the next run.
@@ -18,24 +20,25 @@
  * Agents: use this one-off command after schema changes that include backfill migrations.
  *
  * Environment:
- *   CONVEX_DEPLOY_KEY  — when set, targets production; otherwise targets local dev
+ *   CONVEX_DEPLOY_KEY  — when set, targets production; otherwise targets the development
+ *                        deployment from services/backend/.env.local
  */
 
-import { isLocalMigrationTarget, runMigrations } from './migrate-lib';
+import { describeConvexTarget } from './convex-target';
+import { resolveMigrationTarget, runMigrations } from './migrate-lib';
 
-const isLocal = isLocalMigrationTarget();
+const target = await resolveMigrationTarget();
 
-if (isLocal) {
-  console.log('🏠 Running migrations against LOCAL development server.');
-  console.log('   Requires `convex dev` to be running (no restart needed).\n');
-} else {
-  console.log('☁️  Running migrations against PRODUCTION deployment.\n');
+console.log(`🎯 Migration target: ${describeConvexTarget(target)}`);
+if (target.kind === 'local') {
+  console.log('   Requires `convex dev` to be running (no restart needed).');
 }
+console.log('');
 
 console.log('🔎 Checking migration plan...\n');
 
 try {
-  await runMigrations();
+  await runMigrations(target);
   console.log('\n✅ All migrations completed successfully.\n');
 } catch (err) {
   const error = err as { stderr?: Buffer; message?: string };

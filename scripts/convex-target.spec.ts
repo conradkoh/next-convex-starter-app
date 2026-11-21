@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 
-import { resolveDevTarget } from './convex-target';
+import {
+  buildConvexRunArgs,
+  describeConvexTarget,
+  resolveConvexTarget,
+  resolveDevTarget,
+} from './convex-target';
 
 const hostedEnvFile = [
   'CONVEX_DEPLOYMENT=dev:happy-animal-123 # team: acme, project: demo',
@@ -56,5 +61,51 @@ describe('resolveDevTarget', () => {
       deployment: 'local:other-2',
       url: 'https://happy-animal-123.convex.cloud',
     });
+  });
+});
+
+describe('resolveConvexTarget', () => {
+  it('targets production and passes --prod when CONVEX_DEPLOY_KEY is set, even with a dev .env.local', () => {
+    const target = resolveConvexTarget({ deployKey: 'test-deploy-key', envFile: hostedEnvFile });
+    expect(target).toEqual({ kind: 'production' });
+    expect(buildConvexRunArgs(target, 'migrations:runAll')).toEqual([
+      'run',
+      'migrations:runAll',
+      '--prod',
+    ]);
+  });
+
+  it('treats an empty CONVEX_DEPLOY_KEY as unset', () => {
+    expect(resolveConvexTarget({ deployKey: '', envFile: hostedEnvFile }).kind).toBe('hosted-dev');
+  });
+
+  it('targets a hosted dev deployment from .env.local without --prod, and does not call it local', () => {
+    const target = resolveConvexTarget({ envFile: hostedEnvFile });
+    expect(target.kind).toBe('hosted-dev');
+    expect(buildConvexRunArgs(target, 'migrations:runAll')).toEqual(['run', 'migrations:runAll']);
+  });
+
+  it('targets a local deployment from .env.local without --prod', () => {
+    const target = resolveConvexTarget({ envFile: localEnvFile });
+    expect(target.kind).toBe('local');
+    expect(buildConvexRunArgs(target, 'migrations:runAll')).toEqual(['run', 'migrations:runAll']);
+  });
+});
+
+describe('describeConvexTarget', () => {
+  it('labels production', () => {
+    expect(describeConvexTarget({ kind: 'production' })).toContain('PRODUCTION');
+  });
+
+  it('labels a hosted dev deployment with its name and URL, never as LOCAL', () => {
+    const label = describeConvexTarget(resolveConvexTarget({ envFile: hostedEnvFile }));
+    expect(label).toContain('HOSTED');
+    expect(label).toContain('dev:happy-animal-123');
+    expect(label).toContain('https://happy-animal-123.convex.cloud');
+    expect(label).not.toContain('LOCAL');
+  });
+
+  it('labels a local deployment as LOCAL', () => {
+    expect(describeConvexTarget(resolveConvexTarget({ envFile: localEnvFile }))).toContain('LOCAL');
   });
 });

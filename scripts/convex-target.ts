@@ -66,3 +66,42 @@ export function resolveDevTarget({ env = {}, envFile = '' }: EnvInput = {}): Dev
 export async function readBackendEnvFile(): Promise<string> {
   return readFile(backendEnvPath, 'utf8').catch(() => '');
 }
+
+/** What a migration run targets: production (CI, deploy key set) or the development deployment. */
+export type ConvexTarget = { kind: 'production' } | DevTarget;
+
+type ConvexTargetInput = EnvInput & {
+  /** CONVEX_DEPLOY_KEY. When set (non-empty) the target is production. */
+  deployKey?: string;
+};
+
+/**
+ * Target for `pnpm migrate`. Production iff a deploy key is set (CI); otherwise the
+ * development deployment `convex dev` uses. The deploy key is never used to classify dev.
+ */
+export function resolveConvexTarget({ deployKey, ...input }: ConvexTargetInput = {}): ConvexTarget {
+  return deployKey ? { kind: 'production' } : resolveDevTarget(input);
+}
+
+/**
+ * Arguments for `npx convex <args>`. `--prod` only for production. Without it the Convex CLI
+ * resolves the development deployment from services/backend/.env.local, as `convex dev` does.
+ */
+export function buildConvexRunArgs(target: ConvexTarget, functionName: string): string[] {
+  return target.kind === 'production' ? ['run', functionName, '--prod'] : ['run', functionName];
+}
+
+/** Human-readable migration target. Contains deployment name and URL only, never keys. */
+const describeTargetByKind: Record<
+  ConvexTarget['kind'],
+  (target: { deployment?: string; url?: string }) => string
+> = {
+  production: () => 'PRODUCTION deployment (CONVEX_DEPLOY_KEY is set)',
+  local: ({ deployment }) => `LOCAL development server${deployment ? ` (${deployment})` : ''}`,
+  'hosted-dev': ({ deployment, url }) =>
+    `HOSTED development deployment${deployment ? ` ${deployment}` : ''}${url ? ` at ${url}` : ''}`,
+};
+
+export function describeConvexTarget(target: ConvexTarget): string {
+  return describeTargetByKind[target.kind](target);
+}
