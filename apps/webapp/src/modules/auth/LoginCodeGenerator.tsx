@@ -46,6 +46,7 @@ function codeReducer(state: CodeState, action: CodeAction): CodeState {
         expiresAt: null,
         isExpired: false,
         isCopied: false,
+        error: null,
         wasUsed: true,
       };
     case 'CLEAR_CODE':
@@ -55,6 +56,7 @@ function codeReducer(state: CodeState, action: CodeAction): CodeState {
         expiresAt: null,
         isExpired: false,
         isCopied: false,
+        error: null,
         wasUsed: false,
       };
     case 'SET_EXPIRED':

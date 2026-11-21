@@ -145,6 +145,23 @@ describe('LoginCodeGenerator feedback', () => {
     expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
+  it('clears a copy alert when the code is consumed', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockClipboard(vi.fn().mockRejectedValue(new Error('denied')));
+    const { rerender } = render(<LoginCodeGenerator />);
+    mocks.useSessionQuery.mockReturnValue(activeCode());
+    rerender(<LoginCodeGenerator />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copy login code to clipboard' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Failed to copy code to clipboard');
+
+    mocks.useSessionQuery.mockReturnValue(USED);
+    rerender(<LoginCodeGenerator />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Your login code was used successfully');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('copy success shows the Check icon for 2 s with no alert and no toast', async () => {
     vi.useFakeTimers();
     const { rerender } = render(<LoginCodeGenerator />);
