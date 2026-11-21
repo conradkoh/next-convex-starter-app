@@ -144,12 +144,6 @@ function RecoveryCodeSection() {
     });
   }, [sessionId, regenerateCode]);
 
-  const { copiedKey, failedKey, copy } = useCopyToClipboard();
-
-  const handleCopyCode = useCallback(() => {
-    if (recoveryCode) void copy(recoveryCode, 'recovery');
-  }, [copy, recoveryCode]);
-
   const buttonText = useMemo(() => {
     return isLoading ? 'Revealing...' : 'Reveal Recovery Code';
   }, [isLoading]);
@@ -164,9 +158,6 @@ function RecoveryCodeSection() {
       {recoveryCode ? (
         <RecoveryCodeDisplay
           recoveryCode={recoveryCode}
-          isCopied={copiedKey === 'recovery'}
-          isCopyFailed={failedKey === 'recovery'}
-          onCopy={handleCopyCode}
           isRegenerating={isRegenerating}
           dialogOpen={dialogOpen}
           onDialogOpenChange={setDialogOpen}
@@ -188,9 +179,6 @@ function RecoveryCodeSection() {
 
 interface RecoveryCodeDisplayProps {
   recoveryCode: string;
-  isCopied: boolean;
-  isCopyFailed: boolean;
-  onCopy: () => void;
   isRegenerating: boolean;
   dialogOpen: boolean;
   onDialogOpenChange: (open: boolean) => void;
@@ -198,39 +186,19 @@ interface RecoveryCodeDisplayProps {
 }
 
 /**
- * The revealed recovery code: read-only field, copy control, and regenerate dialog.
+ * The revealed recovery code: copy control and regenerate dialog.
  */
 function RecoveryCodeDisplay({
   recoveryCode,
-  isCopied,
-  isCopyFailed,
-  onCopy,
   isRegenerating,
   dialogOpen,
   onDialogOpenChange,
   onRegenerate,
 }: RecoveryCodeDisplayProps) {
-  const handleTextareaClick = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
-    // Select all text when clicked for easy copying
-    e.currentTarget.select();
-  }, []);
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-col space-y-2">
-        <Textarea
-          value={recoveryCode}
-          readOnly
-          className="font-mono text-sm whitespace-normal break-all h-auto min-h-[100px] resize-none"
-          onClick={handleTextareaClick}
-        />
-        <CopyRecoveryCodeButton isCopied={isCopied} onCopy={onCopy} />
-        {isCopyFailed && (
-          <p role="alert" className="self-end text-sm text-destructive">
-            Failed to copy code.
-          </p>
-        )}
-      </div>
+      {/* Keyed by code: a regenerated code starts with no copy feedback from the old one. */}
+      <RecoveryCodeCopy key={recoveryCode} recoveryCode={recoveryCode} />
 
       <RegenerateRecoveryCodeDialog
         open={dialogOpen}
@@ -238,6 +206,44 @@ function RecoveryCodeDisplay({
         isRegenerating={isRegenerating}
         onRegenerate={onRegenerate}
       />
+    </div>
+  );
+}
+
+interface RecoveryCodeCopyProps {
+  recoveryCode: string;
+}
+
+/**
+ * Read-only recovery code field, copy control, and copy-failure message.
+ * Owns the copy feedback state. The parent keys it by code so feedback resets on regenerate.
+ */
+function RecoveryCodeCopy({ recoveryCode }: RecoveryCodeCopyProps) {
+  const { copiedKey, failedKey, copy } = useCopyToClipboard();
+
+  const handleTextareaClick = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
+    // Select all text when clicked for easy copying
+    e.currentTarget.select();
+  }, []);
+
+  const handleCopyCode = useCallback(() => {
+    void copy(recoveryCode, 'recovery');
+  }, [copy, recoveryCode]);
+
+  return (
+    <div className="flex flex-col space-y-2">
+      <Textarea
+        value={recoveryCode}
+        readOnly
+        className="font-mono text-sm whitespace-normal break-all h-auto min-h-[100px] resize-none"
+        onClick={handleTextareaClick}
+      />
+      <CopyRecoveryCodeButton isCopied={copiedKey === 'recovery'} onCopy={handleCopyCode} />
+      {failedKey === 'recovery' && (
+        <p role="alert" className="self-end text-sm text-destructive">
+          Failed to copy code.
+        </p>
+      )}
     </div>
   );
 }

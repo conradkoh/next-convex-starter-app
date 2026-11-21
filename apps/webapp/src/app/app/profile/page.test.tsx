@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProfilePage from './page';
@@ -32,6 +32,7 @@ vi.mock('@/modules/profile/NameEditForm', () => ({ NameEditForm: () => null }));
 vi.mock('@/modules/theme/ThemeSettings', () => ({ ThemeSettings: () => null }));
 
 const RECOVERY_CODE = 'ABCD-EFGH-IJKL';
+const NEW_RECOVERY_CODE = 'WXYZ-1234-QRST';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -120,5 +121,45 @@ describe('ProfilePage recovery feedback', () => {
       'Copied'
     );
     expect(screen.queryByText('Failed to copy code.')).not.toBeInTheDocument();
+  });
+
+  it('regenerating the code clears a prior Failed to copy code. message', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.writeText.mockRejectedValueOnce(new Error('denied'));
+    mocks.regenerateCode.mockResolvedValue({ success: true, recoveryCode: NEW_RECOVERY_CODE });
+    render(<ProfilePage />);
+    await revealCode();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy recovery code' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Failed to copy code.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Regenerate Code' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Regenerate' }));
+    await screen.findByDisplayValue(NEW_RECOVERY_CODE);
+
+    expect(screen.queryByText('Failed to copy code.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('regenerating the code resets a Copied state left over from the old code', async () => {
+    mocks.regenerateCode.mockResolvedValue({ success: true, recoveryCode: NEW_RECOVERY_CODE });
+    render(<ProfilePage />);
+    await revealCode();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy recovery code' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Copy recovery code' })).toHaveTextContent('Copied')
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Regenerate Code' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Regenerate' }));
+    await screen.findByDisplayValue(NEW_RECOVERY_CODE);
+
+    expect(screen.getByRole('button', { name: 'Copy recovery code' })).toHaveTextContent(
+      'Copy Code'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Copy recovery code' }).querySelector('.lucide-copy')
+    ).not.toBeNull();
   });
 });
