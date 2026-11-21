@@ -66,11 +66,16 @@ export default function InvitesPage() {
     setDeleteTarget(invite);
   }, []);
 
-  const handleDeleteOpenChange = useCallback((open: boolean) => {
-    if (open) return;
-    setDeleteError(null);
-    setDeleteTarget(null);
-  }, []);
+  const handleDeleteOpenChange = useCallback(
+    (open: boolean) => {
+      // Ignore close requests (Escape, overlay click) while the delete is in flight so the
+      // failure message stays visible. Cancel is disabled for the same reason.
+      if (open || isDeleting) return;
+      setDeleteError(null);
+      setDeleteTarget(null);
+    },
+    [isDeleting]
+  );
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;

@@ -192,6 +192,31 @@ describe('InvitesPage delete failure feedback', () => {
     expect(reopened).not.toHaveTextContent('ada@example.com');
   });
 
+  it('keeps the dialog open and shows the failure when Escape is pressed mid-delete', async () => {
+    let rejectDelete!: (e: unknown) => void;
+    mocks.deleteInvite.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectDelete = reject;
+      })
+    );
+    const user = userEvent.setup();
+    render(<InvitesPage />);
+    const dialog = await openDeleteDialog(user);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(within(dialog).getByRole('button', { name: 'Deleting...' })).toBeDisabled();
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    rejectDelete(new Error('Cannot delete'));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('alert')).toHaveTextContent('Cannot delete')
+    );
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+  });
+
   it('renders no message and leaves the row to the live query on successful delete', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<InvitesPage />);
