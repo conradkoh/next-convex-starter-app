@@ -8,7 +8,9 @@ import {
 } from 'convex-helpers/react/sessions';
 import {
   AlertCircle,
+  Check,
   CheckCircle,
+  Copy,
   ExternalLink,
   Eye,
   EyeOff,
@@ -28,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { useAppInfo } from '@/modules/app/useAppInfo';
 
 /**
@@ -45,6 +48,7 @@ export default function GoogleAuthConfigPage() {
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [clientSecretFocused, setClientSecretFocused] = useState(false);
   const [showClientSecret, setShowClientSecret] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   // Convex queries and mutations
   const configData = useSessionQuery(api.system.auth.google.getConfig);
@@ -52,6 +56,7 @@ export default function GoogleAuthConfigPage() {
   const toggleEnabled = useSessionMutation(api.system.auth.google.toggleEnabled);
   const testConfig = useSessionAction(api.system.auth.google.testConfig);
   const resetConfig = useSessionMutation(api.system.auth.google.resetConfig);
+  const { copiedKey, failedKey, copy } = useCopyToClipboard();
 
   // Computed values - generate redirect URIs on frontend
   const redirectUris = useMemo(() => {
@@ -92,7 +97,7 @@ export default function GoogleAuthConfigPage() {
 
   const handleToggleEnabled = useCallback(
     async (newEnabled: boolean) => {
-      await _handleToggleEnabled(newEnabled, toggleEnabled, setEnabled);
+      await _handleToggleEnabled(newEnabled, toggleEnabled, setEnabled, setToggleError);
     },
     [toggleEnabled]
   );
@@ -129,9 +134,12 @@ export default function GoogleAuthConfigPage() {
     await _handleReset(resetConfig, setProjectId, setClientId, setClientSecret, setIsConfigured);
   }, [resetConfig]);
 
-  const handleCopyToClipboard = useCallback(async (text: string) => {
-    await _copyToClipboard(text);
-  }, []);
+  const handleCopy = useCallback(
+    (text: string) => {
+      void copy(text, text);
+    },
+    [copy]
+  );
 
   // Show loading state while data is being fetched
   if (isPageLoading) {
@@ -319,6 +327,11 @@ export default function GoogleAuthConfigPage() {
               onCheckedChange={handleToggleEnabled}
             />
           </div>
+          {toggleError && (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              {toggleError}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -506,12 +519,13 @@ export default function GoogleAuthConfigPage() {
 
             <div className="space-y-2">
               {javascriptOrigins.map((origin) => (
-                <div key={origin} className="flex gap-2">
-                  <Input value={origin} readOnly className="font-mono text-sm" />
-                  <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(origin)}>
-                    Copy
-                  </Button>
-                </div>
+                <CopyValueRow
+                  key={origin}
+                  value={origin}
+                  isCopied={copiedKey === origin}
+                  isFailed={failedKey === origin}
+                  onCopy={handleCopy}
+                />
               ))}
             </div>
 
@@ -535,12 +549,13 @@ export default function GoogleAuthConfigPage() {
 
             <div className="space-y-2">
               {redirectUris.map((uri) => (
-                <div key={uri} className="flex gap-2">
-                  <Input value={uri} readOnly className="font-mono text-sm" />
-                  <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(uri)}>
-                    Copy
-                  </Button>
-                </div>
+                <CopyValueRow
+                  key={uri}
+                  value={uri}
+                  isCopied={copiedKey === uri}
+                  isFailed={failedKey === uri}
+                  onCopy={handleCopy}
+                />
               ))}
             </div>
 
@@ -644,17 +659,34 @@ export default function GoogleAuthConfigPage() {
   );
 }
 
+interface CopyValueRowProps {
+  value: string;
+  isCopied: boolean;
+  isFailed: boolean;
+  onCopy: (value: string) => void;
+}
+
 /**
- * Copies text to clipboard and shows success/error toast notification.
+ * Read-only value with a Copy control. Success swaps to Check + "Copied" (the hook resets it after 2 s).
+ * A failed copy shows an inline message under this row until the next copy.
  */
-async function _copyToClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
-  } catch (error: unknown) {
-    console.error('Failed to copy to clipboard:', error);
-    toast.error('Failed to copy to clipboard');
-  }
+function CopyValueRow({ value, isCopied, isFailed, onCopy }: CopyValueRowProps) {
+  return (
+    <div className="space-y-1">
+      <div className="flex gap-2">
+        <Input value={value} readOnly className="font-mono text-sm" />
+        <Button variant="outline" size="sm" onClick={() => onCopy(value)}>
+          {isCopied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
+          {isCopied ? 'Copied' : 'Copy'}
+        </Button>
+      </div>
+      {isFailed && (
+        <p role="alert" className="text-xs text-destructive">
+          Failed to copy to clipboard
+        </p>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -780,15 +812,16 @@ function _handleClientSecretBlur(setClientSecretFocused: (focused: boolean) => v
 async function _handleToggleEnabled(
   newEnabled: boolean,
   toggleEnabled: (params: { enabled: boolean }) => Promise<{ success: boolean; message: string }>,
-  setEnabled: (enabled: boolean) => void
+  setEnabled: (enabled: boolean) => void,
+  setToggleError: (message: string | null) => void
 ): Promise<void> {
+  setToggleError(null);
   try {
     await toggleEnabled({ enabled: newEnabled });
     setEnabled(newEnabled);
-    toast.success(`Google Auth ${newEnabled ? 'enabled' : 'disabled'} successfully`);
   } catch (error: unknown) {
     console.error('Failed to toggle Google Auth:', error);
-    toast.error('Failed to toggle Google Auth. Please try again.');
+    setToggleError('Failed to toggle Google Auth. Please try again.');
   }
 }
 
