@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getFunctionName } from 'convex/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,6 +23,7 @@ vi.mock('convex-helpers/react/sessions', () => ({
 }));
 
 type FunctionReference = Parameters<typeof getFunctionName>[0];
+type User = ReturnType<typeof userEvent.setup>;
 
 function functionName(reference: FunctionReference): string {
   return getFunctionName(reference).split(':').pop() ?? '';
@@ -46,6 +47,11 @@ function renderChecklist() {
 
 async function findAddInput() {
   return screen.findByPlaceholderText('Add new item...');
+}
+
+async function openMenuAndClick(user: User, name: string) {
+  await user.click(await screen.findByRole('button', { name: 'Checklist actions' }));
+  await user.click(await screen.findByRole('menuitem', { name }));
 }
 
 beforeEach(() => {
@@ -172,5 +178,117 @@ describe('Checklist add failures', () => {
 
     expect(mocks.mutations.addChecklistItem).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Checklist sync failures', () => {
+  it('shows a toggle failure as one card alert above the list', async () => {
+    const user = userEvent.setup();
+    mocks.mutations.toggleChecklistItem.mockRejectedValueOnce(new Error('Offline'));
+    renderChecklist();
+
+    await user.click(await screen.findByRole('checkbox'));
+
+    const alert = await screen.findByText('Failed to update item. Please try again.');
+    expect(alert).toBeInTheDocument();
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toHaveTextContent('Failed to update item. Please try again.');
+    expect(
+      alerts[0].compareDocumentPosition(screen.getByRole('list')) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('clears the card alert when the next checklist action starts', async () => {
+    const user = userEvent.setup();
+    mocks.mutations.toggleChecklistItem.mockRejectedValueOnce(new Error('Offline'));
+    renderChecklist();
+
+    await user.click(await screen.findByRole('checkbox'));
+    await screen.findByText('Failed to update item. Please try again.');
+
+    await user.click(screen.getByRole('checkbox'));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  });
+
+  it('shows a conclude failure as a card alert', async () => {
+    const user = userEvent.setup();
+    mocks.mutations.concludeChecklist.mockRejectedValueOnce(new Error('Offline'));
+    renderChecklist();
+
+    await openMenuAndClick(user, 'Conclude Checklist');
+
+    expect(
+      await screen.findByText('Failed to conclude checklist. Please try again.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText(ADD_FAILED_MESSAGE)).toBeNull();
+  });
+
+  it('shows a reopen failure as a card alert', async () => {
+    const user = userEvent.setup();
+    mocks.state = { exists: true, isActive: false };
+    mocks.items = [milk];
+    mocks.mutations.reopenChecklist.mockRejectedValueOnce(new Error('Offline'));
+    renderChecklist();
+
+    await openMenuAndClick(user, 'Reopen Checklist');
+
+    expect(
+      await screen.findByText('Failed to reopen checklist. Please try again.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows a clear-completed failure as a card alert', async () => {
+    const user = userEvent.setup();
+    mocks.items = [{ ...milk, isCompleted: true }];
+    mocks.mutations.clearCompletedItems.mockRejectedValueOnce(new Error('Offline'));
+    renderChecklist();
+
+    await openMenuAndClick(user, 'Clear Completed');
+
+    expect(
+      await screen.findByText('Failed to clear completed items. Please try again.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows a delete failure as a card alert', async () => {
+    const user = userEvent.setup();
+    mocks.mutations.deleteChecklistItem.mockRejectedValueOnce(new Error('Offline'));
+    renderChecklist();
+
+    const listItem = await screen.findByRole('listitem');
+    await user.click(within(listItem).getByRole('button'));
+
+    expect(await screen.findByText('Failed to delete item. Please try again.')).toBeInTheDocument();
+  });
+
+  it('hides Clear Completed and shows no alert when nothing is completed', async () => {
+    const user = userEvent.setup();
+    mocks.items = [milk];
+    renderChecklist();
+
+    await screen.findByRole('listitem');
+    await user.click(screen.getByRole('button', { name: 'Checklist actions' }));
+
+    await screen.findByRole('menuitem', { name: 'Conclude Checklist' });
+    expect(screen.queryByRole('menuitem', { name: 'Clear Completed' })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('renders a concluded checklist without drag handles, input, or Clear Completed', async () => {
+    const user = userEvent.setup();
+    mocks.state = { exists: true, isActive: false };
+    mocks.items = [{ ...milk, isCompleted: true }];
+    const { container } = renderChecklist();
+
+    const listItem = await screen.findByRole('listitem');
+    expect(listItem).toHaveAttribute('draggable', 'false');
+    expect(container.querySelector('.lucide-grip-vertical')).toBeNull();
+    expect(screen.queryByPlaceholderText('Add new item...')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Checklist actions' }));
+    await screen.findByRole('menuitem', { name: 'Reopen Checklist' });
+    expect(screen.queryByRole('menuitem', { name: 'Clear Completed' })).toBeNull();
   });
 });
