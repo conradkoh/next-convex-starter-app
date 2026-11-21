@@ -7,7 +7,6 @@ import { Check, CopyIcon, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
-import { SearchParamsErrorHandler } from '@/components/SearchParamsErrorHandler';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,7 +104,6 @@ function ProfilePageLoading() {
 export default function ProfilePage() {
   return (
     <Suspense fallback={<ProfilePageLoading />}>
-      <SearchParamsErrorHandler />
       <ProfilePageContent />
     </Suspense>
   );

@@ -24,8 +24,6 @@ vi.mock('convex/react', () => ({
 vi.mock('convex-helpers/react/sessions', () => ({
   useSessionId: () => ['session-1', vi.fn()],
 }));
-const NO_PARAMS = new URLSearchParams();
-vi.mock('next/navigation', () => ({ useSearchParams: () => NO_PARAMS }));
 vi.mock('@/modules/auth/AuthProvider', () => ({
   useAuthState: () => ({ state: 'authenticated', user: { _id: 'user1' } }),
 }));
