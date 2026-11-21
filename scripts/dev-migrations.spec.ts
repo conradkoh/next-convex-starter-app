@@ -74,4 +74,10 @@ describe('waitForAcceptance', () => {
       )
     ).rejects.toThrow(/Timed out.*connection refused/);
   });
+
+  it('fails within its timeout when a probe never settles', async () => {
+    await expect(
+      waitForAcceptance(() => new Promise<never>(() => {}), { timeoutMs: 30, intervalMs: 1 })
+    ).rejects.toThrow(/Timed out/);
+  });
 });

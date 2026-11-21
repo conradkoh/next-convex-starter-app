@@ -13,4 +13,12 @@ describe('describeMigrationError', () => {
     expect(describeMigrationError(new Error('plain'))).toBe('plain');
     expect(describeMigrationError('text')).toBe('text');
   });
+
+  it('treats an undefined stderr as absent and keeps the error message', () => {
+    expect(
+      describeMigrationError(
+        Object.assign(new Error('connect ECONNREFUSED'), { stderr: undefined })
+      )
+    ).toBe('connect ECONNREFUSED');
+  });
 });

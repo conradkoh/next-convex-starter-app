@@ -41,7 +41,7 @@ export async function getMigrationStatus(target: ConvexTarget): Promise<Migratio
 }
 
 function isRecordWithStderr(err: unknown): err is { stderr: unknown } {
-  return typeof err === 'object' && err !== null && 'stderr' in err;
+  return typeof err === 'object' && err !== null && (err as { stderr?: unknown }).stderr != null;
 }
 
 /** Trimmed stderr of a failed `convex run`, when the error carries one. */
@@ -57,9 +57,23 @@ export function describeMigrationError(err: unknown): string {
 
 type AcceptOptions = { timeoutMs: number; intervalMs: number };
 
+/** Reject if `work` does not settle within `ms`. The timer is cleared either way. */
+async function settleWithin<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer within ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([work, expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Call `probe` until it resolves. Fail after `timeoutMs` with the last probe error.
  * `probe` is the only port to the deployment: the Convex CLI in production, a fake in tests.
+ * Every probe is bounded by the remaining time, so a probe that never settles cannot hang the wait.
  */
 export async function waitForAcceptance(
   probe: () => Promise<unknown>,
@@ -68,7 +82,7 @@ export async function waitForAcceptance(
   const deadline = Date.now() + timeoutMs;
   while (true) {
     try {
-      await probe();
+      await settleWithin(probe(), Math.max(1, deadline - Date.now()));
       return;
     } catch (error) {
       if (Date.now() >= deadline) {
