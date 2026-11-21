@@ -1,4 +1,12 @@
-import { type ConvexTarget, type DeployKeySource, describeConvexTarget } from './convex-target';
+import { readFile } from 'node:fs/promises';
+
+import {
+  type ConvexTarget,
+  type DeployKeySource,
+  describeConvexTarget,
+  localBackendConfigPath,
+  localBackendProbeUrl,
+} from './convex-target';
 import {
   describeMigrationError,
   getMigrationStatus,
@@ -65,6 +73,8 @@ function deployKeyRefusal(source: DeployKeySource): string {
 async function runDevMigrations(target: ConvexTarget): Promise<void> {
   console.log(`🗂️  Dev migrations against ${describeConvexTarget(target)}`);
   await waitForLocalBackend(target);
+  // known limitation: a probe that times out is not killed. Its `npx convex run` child may still
+  // be running after this throws. The watcher is unaffected.
   await waitForAcceptance(() => getMigrationStatus(target), {
     timeoutMs: ACCEPT_TIMEOUT_MS,
     intervalMs: ACCEPT_INTERVAL_MS,
@@ -73,13 +83,21 @@ async function runDevMigrations(target: ConvexTarget): Promise<void> {
 }
 
 /**
- * A local backend must be listening before the first `convex run`: otherwise the CLI
- * starts its own backend for the probe and stops it on exit, taking the watcher's
- * deployment down with it. Hosted deployments are always reachable.
+ * A local backend must answer before the first `convex run`. Otherwise the CLI may start its own
+ * backend for the probe and stop it on exit, taking the watcher's deployment down with it.
+ * Waits on the target's URL, or on the port the local deployment recorded. Refuses to probe when
+ * neither is known, so no migration runs before the backend is known to answer.
+ * Hosted deployments are always reachable.
  */
 async function waitForLocalBackend(target: ConvexTarget): Promise<void> {
-  if (target.kind !== 'local' || !target.url) return;
-  const url = target.url;
+  if (target.kind !== 'local') return;
+  const configText = await readFile(localBackendConfigPath, 'utf8').catch(() => '');
+  const url = localBackendProbeUrl(target, configText);
+  if (!url) {
+    throw new Error(
+      `No local backend port is known. Set CONVEX_URL in services/backend/.env.local, or run \`npx convex dev\` once to create ${localBackendConfigPath}. Migrations were not run.`
+    );
+  }
   await waitForAcceptance(() => fetch(url), {
     timeoutMs: ACCEPT_TIMEOUT_MS,
     intervalMs: ACCEPT_INTERVAL_MS,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { type ConvexTarget, resolveDevTarget } from './convex-target';
+import { type ConvexTarget, localBackendProbeUrl, resolveDevTarget } from './convex-target';
 import { devMigrationSkipReason, devStartRefusal } from './dev-migrations';
 import { waitForAcceptance } from './migrate-lib';
 
@@ -8,6 +8,11 @@ const local: ConvexTarget = {
   kind: 'local',
   deployment: 'local:local-acme-demo-2',
   url: 'http://127.0.0.1:3210',
+};
+const localWithUrl: ConvexTarget = {
+  kind: 'local',
+  deployment: 'local:local-acme-demo-2',
+  url: 'http://127.0.0.1:4000',
 };
 const hosted: ConvexTarget = {
   kind: 'hosted-dev',
@@ -17,6 +22,7 @@ const hosted: ConvexTarget = {
 const prod: ConvexTarget = { kind: 'prod-without-key', deployment: 'prod:happy-animal-123' };
 const unconfigured: ConvexTarget = { kind: 'unconfigured' };
 const deployKeyFile: ConvexTarget = { kind: 'deploy-key-in-file' };
+const configJson = '{"ports":{"cloud":3210,"site":3211},"backendVersion":"precompiled-test"}';
 
 describe('devMigrationSkipReason', () => {
   it('runs migrations for local and hosted development deployments', () => {
@@ -78,6 +84,29 @@ describe('devStartRefusal', () => {
     expect(devStartRefusal(local)).toBeUndefined();
     expect(devStartRefusal(hosted)).toBeUndefined();
     expect(devStartRefusal(unconfigured)).toBeUndefined();
+  });
+});
+
+describe('localBackendProbeUrl', () => {
+  it('prefers the target URL over the recorded port', () => {
+    expect(localBackendProbeUrl(localWithUrl, configJson)).toBe('http://127.0.0.1:4000');
+  });
+
+  it('uses the recorded ports.cloud when the local target has no URL', () => {
+    expect(
+      localBackendProbeUrl({ kind: 'local', deployment: 'local:local-acme-demo-2' }, configJson)
+    ).toBe('http://127.0.0.1:3210');
+  });
+
+  it('is undefined when neither a URL nor a recorded port is known', () => {
+    const noUrl: ConvexTarget = { kind: 'local', deployment: 'local:local-acme-demo-2' };
+    expect(localBackendProbeUrl(noUrl, '')).toBeUndefined();
+    expect(localBackendProbeUrl(noUrl, '{}')).toBeUndefined();
+    expect(localBackendProbeUrl(noUrl, 'not json')).toBeUndefined();
+  });
+
+  it('is undefined for hosted targets', () => {
+    expect(localBackendProbeUrl(hosted, configJson)).toBeUndefined();
   });
 });
 

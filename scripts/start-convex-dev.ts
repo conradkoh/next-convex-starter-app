@@ -18,6 +18,7 @@ import {
   backendEnvPath,
   deployKeySource,
   describeConvexTarget,
+  localBackendConfigPath,
   readBackendEnvFile,
   readEnvValue,
   resolveDevTarget,
@@ -26,7 +27,6 @@ import { devMigrationSkipReason, devStartRefusal, runDevMigrationsSafely } from 
 
 const repoRoot = resolve(dirname(import.meta.path), '..');
 const backendDir = resolve(repoRoot, 'services/backend');
-const configPath = resolve(backendDir, '.convex/local/default/config.json');
 const backendVersionEnvName = 'CONVEX_LOCAL_BACKEND_VERSION';
 
 type LocalConfig = {
@@ -56,16 +56,16 @@ async function readBackendVersion(): Promise<string> {
   let config: LocalConfig;
 
   try {
-    config = JSON.parse(await readFile(configPath, 'utf8')) as LocalConfig;
+    config = JSON.parse(await readFile(localBackendConfigPath, 'utf8')) as LocalConfig;
   } catch (error) {
     throw new Error(
-      `Could not read local Convex config at ${configPath}. Run Convex setup first.`,
+      `Could not read local Convex config at ${localBackendConfigPath}. Run Convex setup first.`,
       { cause: error }
     );
   }
 
   if (typeof config.backendVersion !== 'string' || config.backendVersion.length === 0) {
-    throw new Error(`No backendVersion is configured in ${configPath}.`);
+    throw new Error(`No backendVersion is configured in ${localBackendConfigPath}.`);
   }
 
   const separator = env.length > 0 && !env.endsWith('\n') ? '\n' : '';

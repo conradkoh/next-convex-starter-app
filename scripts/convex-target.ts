@@ -10,6 +10,18 @@ export const backendEnvPath = resolve(
   '.env.local'
 );
 
+/** services/backend/.convex/local/default/config.json — written by the local backend. `ports.cloud` is its API port. */
+export const localBackendConfigPath = resolve(
+  dirname(import.meta.path),
+  '..',
+  'services',
+  'backend',
+  '.convex',
+  'local',
+  'default',
+  'config.json'
+);
+
 /**
  * The development deployment `convex dev` uses, or a state that must never be migrated.
  * `deployment` and `url` are not secrets.
@@ -147,6 +159,27 @@ export type ConvexTarget =
    */
   | { kind: 'deploy-key-in-file' }
   | DevTarget;
+
+/**
+ * URL to probe for a local backend: the target's URL, else `ports.cloud` in the deployment's
+ * config.json. Undefined when neither is known, and for every non-local target.
+ */
+export function localBackendProbeUrl(target: ConvexTarget, configText: string): string | undefined {
+  if (target.kind !== 'local') return undefined;
+  if (target.url) return target.url;
+  const port = recordedCloudPort(configText);
+  return port === undefined ? undefined : `http://127.0.0.1:${port}`;
+}
+
+/** `ports.cloud` from a local deployment's config.json, when present and a number. */
+function recordedCloudPort(configText: string): number | undefined {
+  try {
+    const port = (JSON.parse(configText) as { ports?: { cloud?: unknown } }).ports?.cloud;
+    return typeof port === 'number' ? port : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 type ConvexTargetInput = EnvInput & {
   /** CONVEX_DEPLOY_KEY. When set (non-empty) the target is production. */
