@@ -1,0 +1,132 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import ProfilePage from './page';
+
+const mocks = vi.hoisted(() => ({
+  getOrCreateCode: vi.fn(),
+  regenerateCode: vi.fn(),
+  writeText: vi.fn(),
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+
+vi.mock('@workspace/backend/convex/_generated/api', () => ({
+  api: {
+    auth: {
+      getOrCreateRecoveryCode: 'auth:getOrCreateRecoveryCode',
+      regenerateRecoveryCode: 'auth:regenerateRecoveryCode',
+    },
+  },
+}));
+vi.mock('convex/react', () => ({
+  useAction: (ref: string) =>
+    ref === 'auth:getOrCreateRecoveryCode' ? mocks.getOrCreateCode : mocks.regenerateCode,
+}));
+vi.mock('convex-helpers/react/sessions', () => ({
+  useSessionId: () => ['session-1', vi.fn()],
+}));
+const NO_PARAMS = new URLSearchParams();
+vi.mock('next/navigation', () => ({ useSearchParams: () => NO_PARAMS }));
+vi.mock('@/modules/auth/AuthProvider', () => ({
+  useAuthState: () => ({ state: 'authenticated', user: { _id: 'user1' } }),
+}));
+vi.mock('@/modules/auth/LoginCodeGenerator', () => ({ LoginCodeGenerator: () => null }));
+vi.mock('@/modules/profile/NameEditForm', () => ({ NameEditForm: () => null }));
+vi.mock('@/modules/theme/ThemeSettings', () => ({ ThemeSettings: () => null }));
+vi.mock('sonner', () => ({ toast: mocks.toast }));
+
+const RECOVERY_CODE = 'ABCD-EFGH-IJKL';
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.getOrCreateCode.mockResolvedValue({ success: true, recoveryCode: RECOVERY_CODE });
+  mocks.writeText.mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText: mocks.writeText },
+    configurable: true,
+  });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+/** Reveals the recovery code and waits for the textarea to show it. */
+async function revealCode() {
+  fireEvent.click(screen.getByRole('button', { name: 'Reveal Recovery Code' }));
+  await screen.findByDisplayValue(RECOVERY_CODE);
+}
+
+describe('ProfilePage recovery feedback', () => {
+  it('shows a retrieval failure as exactly one role=alert message, with no toast', async () => {
+    mocks.getOrCreateCode.mockResolvedValue({ success: false, reason: 'Code unavailable.' });
+    render(<ProfilePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal Recovery Code' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Code unavailable.');
+    expect(alert).toHaveClass('text-destructive');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(mocks.toast.error).not.toHaveBeenCalled();
+  });
+
+  it('regenerate failure shows exactly one role=alert message, with no toast', async () => {
+    mocks.regenerateCode.mockResolvedValue({ success: false, reason: 'Regeneration failed.' });
+    render(<ProfilePage />);
+    await revealCode();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Regenerate Code' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Regenerate' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Regeneration failed.');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(mocks.toast.error).not.toHaveBeenCalled();
+    expect(mocks.toast.success).not.toHaveBeenCalled();
+  });
+
+  it('swaps to Check + Copied for 2 s after a successful copy, then reverts', async () => {
+    vi.useFakeTimers();
+    render(<ProfilePage />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reveal Recovery Code' }));
+    });
+    const copyButton = screen.getByRole('button', { name: 'Copy recovery code' });
+    expect(copyButton.querySelector('.lucide-copy')).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.click(copyButton);
+    });
+    expect(mocks.writeText).toHaveBeenCalledWith(RECOVERY_CODE);
+    expect(copyButton).toHaveTextContent('Copied');
+    expect(copyButton.querySelector('.lucide-check')).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(copyButton).toHaveTextContent('Copy Code');
+    expect(copyButton.querySelector('.lucide-copy')).not.toBeNull();
+  });
+
+  it('shows Failed to copy code. beside the button with no toast, and clears it on the next copy', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.writeText.mockRejectedValueOnce(new Error('denied'));
+    render(<ProfilePage />);
+    await revealCode();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy recovery code' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Failed to copy code.');
+    expect(mocks.toast.error).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy recovery code' }));
+
+    expect(await screen.findByRole('button', { name: 'Copy recovery code' })).toHaveTextContent(
+      'Copied'
+    );
+    expect(screen.queryByText('Failed to copy code.')).not.toBeInTheDocument();
+  });
+});

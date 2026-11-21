@@ -3,10 +3,9 @@
 import { api } from '@workspace/backend/convex/_generated/api';
 import { useAction } from 'convex/react';
 import { useSessionId } from 'convex-helpers/react/sessions';
-import { CopyIcon, RefreshCw } from 'lucide-react';
+import { Check, CopyIcon, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useCallback, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 
 import { SearchParamsErrorHandler } from '@/components/SearchParamsErrorHandler';
 import {
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { cn } from '@/lib/utils';
 import { useAuthState } from '@/modules/auth/AuthProvider';
 import { LoginCodeGenerator } from '@/modules/auth/LoginCodeGenerator';
@@ -146,9 +146,11 @@ function RecoveryCodeSection() {
     });
   }, [sessionId, regenerateCode]);
 
+  const { copiedKey, failedKey, copy } = useCopyToClipboard();
+
   const handleCopyCode = useCallback(() => {
-    _handleCopyCode(recoveryCode);
-  }, [recoveryCode]);
+    if (recoveryCode) void copy(recoveryCode, 'recovery');
+  }, [copy, recoveryCode]);
 
   const handleTextareaClick = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
     // Select all text when clicked for easy copying
@@ -191,9 +193,18 @@ function RecoveryCodeSection() {
               title="Copy to clipboard"
               className="self-end"
             >
-              <CopyIcon className="h-4 w-4 mr-2" />
-              Copy Code
+              {copiedKey === 'recovery' ? (
+                <Check className="h-4 w-4 mr-2" />
+              ) : (
+                <CopyIcon className="h-4 w-4 mr-2" />
+              )}
+              {copiedKey === 'recovery' ? 'Copied' : 'Copy Code'}
             </Button>
+            {failedKey === 'recovery' && (
+              <p role="alert" className="self-end text-sm text-destructive">
+                Failed to copy code.
+              </p>
+            )}
           </div>
 
           <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -229,7 +240,11 @@ function RecoveryCodeSection() {
           </AlertDialog>
         </div>
       )}
-      {error && <p className="text-destructive text-sm mt-2">{error}</p>}
+      {error && (
+        <p role="alert" className="text-destructive text-sm mt-2">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -250,7 +265,6 @@ async function _handleRevealCode(params: _RevealCodeParams): Promise<void> {
 
   if (!sessionId) {
     setError('Session not found. Cannot fetch recovery code.');
-    toast.error('Session not found.');
     return;
   }
 
@@ -263,12 +277,10 @@ async function _handleRevealCode(params: _RevealCodeParams): Promise<void> {
       setRecoveryCode(result.recoveryCode);
     } else {
       setError(result.reason || 'Failed to retrieve recovery code.');
-      toast.error(result.reason || 'Failed to retrieve recovery code.');
     }
   } catch (error) {
     console.error('Error revealing recovery code:', error);
     setError('An unexpected error occurred.');
-    toast.error('An unexpected error occurred.');
   } finally {
     setIsLoading(false);
   }
@@ -292,7 +304,6 @@ async function _handleRegenerateCode(params: _RegenerateCodeParams): Promise<voi
 
   if (!sessionId) {
     setError('Session not found. Cannot regenerate recovery code.');
-    toast.error('Session not found.');
     return;
   }
 
@@ -303,34 +314,14 @@ async function _handleRegenerateCode(params: _RegenerateCodeParams): Promise<voi
     const result = await regenerateCode({ sessionId });
     if (result.success && result.recoveryCode) {
       setRecoveryCode(result.recoveryCode);
-      toast.success('Recovery code regenerated successfully!');
     } else {
       setError(result.reason || 'Failed to regenerate recovery code.');
-      toast.error(result.reason || 'Failed to regenerate recovery code.');
     }
   } catch (error) {
     console.error('Error regenerating recovery code:', error);
     setError('An unexpected error occurred.');
-    toast.error('An unexpected error occurred.');
   } finally {
     setIsRegenerating(false);
     setDialogOpen(false);
-  }
-}
-
-/**
- * Handles copying the recovery code to clipboard with user feedback.
- */
-function _handleCopyCode(recoveryCode: string | null): void {
-  if (recoveryCode) {
-    navigator.clipboard
-      .writeText(recoveryCode)
-      .then(() => {
-        toast.success('Recovery code copied to clipboard!');
-      })
-      .catch((error) => {
-        console.error('Failed to copy text: ', error);
-        toast.error('Failed to copy code.');
-      });
   }
 }
