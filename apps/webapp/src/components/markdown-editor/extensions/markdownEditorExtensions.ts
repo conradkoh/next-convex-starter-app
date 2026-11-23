@@ -14,8 +14,7 @@ const BLOCK_START_PATTERN = /^( {0,3})(?:(-{3,}|-|\+|#{1,6})(?=\s|$)|(\d{1,9})([
 
 // `rendered` is the already-encoded output of one plain text node. `atLineStart` says whether the
 // node begins a line; line starts after a `\n` inside the node are always checked.
-// fallow-ignore-next-line unused-export
-export function escapeBlockStarts(rendered: string, atLineStart: boolean): string {
+function escapeBlockStarts(rendered: string, atLineStart: boolean): string {
   return rendered.replace(
     BLOCK_START_PATTERN,
     (
