@@ -19,16 +19,32 @@ Edit this content in the editor and watch the live preview update.
 - [Links](https://example.com) and lists
 - Code blocks and tables
 
+Loose list, two paragraphs in one item:
+
+- Loose item one
+
+  Second paragraph of item one.
+
+- Loose item two
+
 \`\`\`typescript
 function greet(name: string) {
   return 'Hello!';
 }
 \`\`\`
 
+\`\`\`
+plain fence, no language
+\`\`\`
+
 | Feature | Status |
 | ------- | ------ |
 | Editor  | Ready  |
 | Viewer  | Ready  |
+
+---
+
+Closing paragraph after the rule.
 `;
 
 const STATIC_MARKDOWN = `## Read-only example
