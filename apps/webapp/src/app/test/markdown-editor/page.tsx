@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   MarkdownEditor,
@@ -69,6 +69,12 @@ Click anywhere on this rendered markdown to open the WYSIWYG editor.
 `;
 
 export default function MarkdownEditorTestPage() {
+  // E2E hydration cue: set after React commits the page, so the click-to-edit
+  // handlers are attached by the time this attribute appears.
+  useEffect(() => {
+    document.documentElement.dataset.markdownHydrated = 'true';
+  }, []);
+
   const [content, setContent] = useState(SAMPLE_MARKDOWN);
   const [editableContent, setEditableContent] = useState(EDITABLE_MARKDOWN);
 

@@ -70,4 +70,9 @@ export class MarkdownEditorTestPage extends BasePage {
     await expect(this.pageHeading).toBeVisible();
     await expect(this.interactiveEditor).toBeVisible({ timeout: 15_000 });
   }
+
+  /** SSR markup is visible before the client mount settles; wait for the hydration cue. */
+  async waitForHydration(): Promise<void> {
+    await expect(this.page.locator('html')).toHaveAttribute('data-markdown-hydrated', 'true');
+  }
 }

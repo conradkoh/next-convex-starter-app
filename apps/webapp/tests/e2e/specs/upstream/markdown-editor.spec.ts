@@ -123,6 +123,7 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
   test('click to edit: view → edit → save returns to pristine rendered view', async ({ page }) => {
     const markdownPage = new MarkdownEditorTestPage(page);
     await markdownPage.navigate();
+    await markdownPage.waitForHydration();
 
     const view = markdownPage.clickToEditView;
     await expect(view).toBeVisible();
