@@ -109,20 +109,23 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
   test('toolbar bold toggle applies formatting', async ({ page }) => {
     const markdownPage = new MarkdownEditorTestPage(page);
     await markdownPage.navigate();
+    await markdownPage.waitForHydration();
     const editor = markdownPage.livePreviewSection.getByTestId('markdown-editor');
     const editable = editor.locator('.ProseMirror');
     await editable.click();
     const boldButton = editor.locator('button[title="Bold"]');
     await boldButton.click();
-    await editable.click();
+    await expect(editable).toBeFocused();
     await page.keyboard.type('Bold E2E marker');
     await expect(editable).toContainText('Bold E2E marker');
-    await expect(boldButton).toHaveClass(/bg-muted/);
+    await expect(editable.locator('strong', { hasText: 'Bold E2E marker' })).toHaveCount(1);
+    await expect(boldButton).toHaveClass(/bg-foreground\/10/);
   });
 
   test('click to edit: view → edit → save returns to pristine rendered view', async ({ page }) => {
     const markdownPage = new MarkdownEditorTestPage(page);
     await markdownPage.navigate();
+    await markdownPage.waitForHydration();
 
     const view = markdownPage.clickToEditView;
     await expect(view).toBeVisible();

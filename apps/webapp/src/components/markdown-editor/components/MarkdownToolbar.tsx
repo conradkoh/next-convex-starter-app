@@ -1,5 +1,5 @@
 'use client';
-import type { Editor } from '@tiptap/react';
+import { type Editor, useEditorState } from '@tiptap/react';
 import {
   Bold,
   Check,
@@ -21,8 +21,25 @@ import { getNormalizedEditorMarkdown } from '../utils/getNormalizedEditorMarkdow
 import { cn } from '@/lib/utils';
 
 const toolbarButtonClass =
-  'flex items-center justify-center w-7 h-7 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted transition-colors outline-none focus:outline-none focus-visible:outline-none';
-const activeButtonClass = 'bg-muted text-foreground';
+  'flex items-center justify-center w-7 h-7 cursor-pointer rounded-sm text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors outline-none focus:outline-none focus-visible:outline-none';
+const activeButtonClass = 'bg-foreground/10 text-foreground hover:bg-foreground/10';
+
+/** One toolbar toggle's active state; `attrs` narrows nodes that carry a level, such as headings. */
+const isActiveMark = (editor: Editor | null, name: string, attrs?: Record<string, unknown>) =>
+  editor?.isActive(name, attrs) ?? false;
+
+/** Used until the editor instance exists, so the selector result is never null after the guard. */
+const noActiveMarks = {
+  bold: false,
+  italic: false,
+  h1: false,
+  h2: false,
+  h3: false,
+  bulletList: false,
+  orderedList: false,
+  code: false,
+  link: false,
+};
 export function MarkdownToolbar({
   editor,
   normalizeContent,
@@ -41,6 +58,21 @@ export function MarkdownToolbar({
       console.error('Failed to copy markdown:', error);
     }
   }, [editor, normalizeContent]);
+  const active =
+    useEditorState({
+      editor,
+      selector: ({ editor: e }) => ({
+        bold: isActiveMark(e, 'bold'),
+        italic: isActiveMark(e, 'italic'),
+        h1: isActiveMark(e, 'heading', { level: 1 }),
+        h2: isActiveMark(e, 'heading', { level: 2 }),
+        h3: isActiveMark(e, 'heading', { level: 3 }),
+        bulletList: isActiveMark(e, 'bulletList'),
+        orderedList: isActiveMark(e, 'orderedList'),
+        code: isActiveMark(e, 'code'),
+        link: isActiveMark(e, 'link'),
+      }),
+    }) ?? noActiveMarks;
   if (!editor) return null;
   const addLink = () => {
     const previousUrl = editor.getAttributes('link').href;
@@ -65,54 +97,54 @@ export function MarkdownToolbar({
         'Bold',
         <Bold size={14} />,
         () => editor.chain().focus().toggleBold().run(),
-        editor.isActive('bold')
+        active.bold
       )}
       {button(
         'Italic',
         <Italic size={14} />,
         () => editor.chain().focus().toggleItalic().run(),
-        editor.isActive('italic')
+        active.italic
       )}
       <div className="w-px h-5 mx-1 bg-border" />
       {button(
         'Heading 1',
         <Heading1 size={14} />,
         () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-        editor.isActive('heading', { level: 1 })
+        active.h1
       )}
       {button(
         'Heading 2',
         <Heading2 size={14} />,
         () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-        editor.isActive('heading', { level: 2 })
+        active.h2
       )}
       {button(
         'Heading 3',
         <Heading3 size={14} />,
         () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-        editor.isActive('heading', { level: 3 })
+        active.h3
       )}
       <div className="w-px h-5 mx-1 bg-border" />
       {button(
         'Bullet list',
         <List size={14} />,
         () => editor.chain().focus().toggleBulletList().run(),
-        editor.isActive('bulletList')
+        active.bulletList
       )}
       {button(
         'Ordered list',
         <ListOrdered size={14} />,
         () => editor.chain().focus().toggleOrderedList().run(),
-        editor.isActive('orderedList')
+        active.orderedList
       )}
       <div className="w-px h-5 mx-1 bg-border" />
       {button(
         'Inline code',
         <Code size={14} />,
         () => editor.chain().focus().toggleCode().run(),
-        editor.isActive('code')
+        active.code
       )}
-      {button('Link', <Link size={14} />, addLink, editor.isActive('link'))}
+      {button('Link', <Link size={14} />, addLink, active.link)}
       <div className="w-px h-5 mx-1 bg-border" />
       {button('Copy markdown', copied ? <Check size={14} /> : <Copy size={14} />, copyMarkdown)}
     </div>

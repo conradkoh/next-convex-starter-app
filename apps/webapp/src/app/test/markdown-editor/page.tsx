@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   MarkdownEditor,
@@ -19,16 +19,36 @@ Edit this content in the editor and watch the live preview update.
 - [Links](https://example.com) and lists
 - Code blocks and tables
 
+Loose list, two paragraphs in one item:
+
+- Loose item one
+
+  Second paragraph of item one.
+
+- Loose item two
+
 \`\`\`typescript
 function greet(name: string) {
   return 'Hello!';
 }
 \`\`\`
 
+\`\`\`
+plain fence, no language
+\`\`\`
+
 | Feature | Status |
 | ------- | ------ |
 | Editor  | Ready  |
 | Viewer  | Ready  |
+
+---
+
+Closing paragraph after the rule.
+
+### Quoted text
+
+> A blockquote sits on a 3px foreground bar, with normal-colour text.
 `;
 
 const STATIC_MARKDOWN = `## Read-only example
@@ -49,6 +69,12 @@ Click anywhere on this rendered markdown to open the WYSIWYG editor.
 `;
 
 export default function MarkdownEditorTestPage() {
+  // E2E hydration cue: set after React commits the page, so the click-to-edit
+  // handlers are attached by the time this attribute appears.
+  useEffect(() => {
+    document.documentElement.dataset.markdownHydrated = 'true';
+  }, []);
+
   const [content, setContent] = useState(SAMPLE_MARKDOWN);
   const [editableContent, setEditableContent] = useState(EDITABLE_MARKDOWN);
 

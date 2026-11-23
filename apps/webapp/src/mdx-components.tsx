@@ -39,22 +39,22 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     // Headings with GitHub-style hierarchy and spacing
     h1: ({ children }: HeadingProps) => (
-      <h1 className="scroll-m-20 text-3xl font-semibold tracking-tight text-foreground mb-6 mt-0 pb-2">
+      <h1 className="scroll-m-20 text-3xl font-semibold tracking-tight text-foreground mb-4 mt-0">
         {children}
       </h1>
     ),
     h2: ({ children }: HeadingProps) => (
-      <h2 className="scroll-m-20 border-b border-border pb-3 text-2xl font-semibold tracking-tight text-foreground mb-4 mt-8 first:mt-0">
+      <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight text-foreground mb-4 mt-8 first:mt-0">
         {children}
       </h2>
     ),
     h3: ({ children }: HeadingProps) => (
-      <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-foreground mb-3 mt-6">
+      <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-foreground mb-3 mt-6 first:mt-0">
         {children}
       </h3>
     ),
     h4: ({ children }: HeadingProps) => (
-      <h4 className="scroll-m-20 text-lg font-semibold tracking-tight text-foreground mb-3 mt-5">
+      <h4 className="scroll-m-20 text-lg font-semibold tracking-tight text-foreground mb-3 mt-5 first:mt-0">
         {children}
       </h4>
     ),
@@ -72,19 +72,19 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     p: ({ children }: ContentProps) => <p className="leading-7 text-foreground mb-4">{children}</p>,
     // GitHub-style lists with proper spacing
     ul: ({ children }: ContentProps) => (
-      <ul className="list-disc pl-6 mb-6 mt-2 space-y-1 text-foreground [&>li]:leading-7">
-        {children}
-      </ul>
+      <ul className="list-disc pl-6 mb-4 mt-0 space-y-1 text-foreground">{children}</ul>
     ),
     ol: ({ children }: ContentProps) => (
-      <ol className="list-decimal pl-6 mb-6 mt-2 space-y-1 text-foreground [&>li]:leading-7">
-        {children}
-      </ol>
+      <ol className="list-decimal pl-6 mb-4 mt-0 space-y-1 text-foreground">{children}</ol>
     ),
-    li: ({ children }: ContentProps) => <li className="text-foreground">{children}</li>,
-    // Clean blockquote with lighter gray text (GitHub-style)
+    li: ({ children }: ContentProps) => (
+      <li className="text-foreground leading-7 [&>p]:my-0 [&>p+p]:mt-2 [&>ul]:mt-1 [&>ul]:mb-0 [&>ol]:mt-1 [&>ol]:mb-0">
+        {children}
+      </li>
+    ),
+    // Blockquote: a 3px foreground bar with normal-colour text
     blockquote: ({ children }: ContentProps) => (
-      <blockquote className="border-l-4 border-border my-6 bg-muted/30 rounded-md px-5 py-3 text-muted-foreground/80 [&>p]:mb-0 [&>p]:text-muted-foreground/80">
+      <blockquote className="border-l-[3px] border-foreground my-4 py-0.5 pl-4 text-foreground [&>p]:mb-0">
         {children}
       </blockquote>
     ),
@@ -94,20 +94,20 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       if (isFenced) {
         // Let the parent <pre> own the background; keep code transparent
         return (
-          <code className={[className, 'font-mono text-sm'].filter(Boolean).join(' ')}>
+          <code className={[className, 'font-mono [font-size:inherit]'].filter(Boolean).join(' ')}>
             {children}
           </code>
         );
       }
       return (
-        <code className="relative rounded bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground border border-border/50">
+        <code className="relative rounded bg-muted px-1.5 py-0.5 font-mono text-[0.875em] text-foreground border border-border/50">
           {children}
         </code>
       );
     },
     // Improved code blocks with matching background
     pre: ({ children }: ContentProps) => (
-      <pre className="mb-6 mt-4 overflow-x-auto rounded-md border border-border bg-muted p-4 text-sm">
+      <pre className="my-4 overflow-x-auto rounded-md border border-border bg-muted p-4 text-[0.875rem]/[1.375rem] [&_code]:rounded-none [&_code]:border-0 [&_code]:bg-transparent [&_code]:p-0 [&_code]:[font-size:inherit]">
         {children}
       </pre>
     ),
@@ -124,8 +124,8 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     hr: () => <hr className="my-8 border-0 border-t border-border" />,
     // Table styling (GitHub-style) - Fixed rendering
     table: ({ children }: ContentProps) => (
-      <div className="my-6 overflow-x-auto rounded-md border border-border">
-        <table className="w-full border-collapse text-sm">{children}</table>
+      <div className="my-4 overflow-x-auto rounded-md border border-border">
+        <table className="w-full border-collapse text-[0.875rem]">{children}</table>
       </div>
     ),
     thead: ({ children }: ContentProps) => <thead className="bg-muted/50">{children}</thead>,
