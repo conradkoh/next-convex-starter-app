@@ -54,6 +54,22 @@ describe('markdown editor round trip', () => {
   });
 });
 
+describe('empty list item sentinel', () => {
+  const emptyListItem = { type: 'listItem', content: [{ type: 'paragraph' }] };
+
+  it.each([
+    '- a\n- &nbsp;\n- b', // middle
+    '- a\n- &nbsp;', // end
+    '- &nbsp;', // only item
+    '- a\n- \u00A0\n- b', // legacy NBSP from earlier saves
+  ])('loads %j with an empty listItem and no literal sentinel text', (markdown) => {
+    const json = withEditor(markdown, getEditorJson);
+    const items = json.content?.[0]?.content ?? [];
+    expect(items).toContainEqual(emptyListItem);
+    expect(JSON.stringify(json)).not.toContain('&nbsp;');
+  });
+});
+
 describe('nested list round trip', () => {
   it.each([
     '1. one\n   - nested\n   - nested two\n2. two',
