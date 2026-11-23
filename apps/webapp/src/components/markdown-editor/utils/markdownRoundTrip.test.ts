@@ -23,6 +23,23 @@ function withEditor<T>(markdown: string, read: (editor: Editor) => T): T {
   }
 }
 
+function withJsonEditor<T>(json: JSONContent, read: (editor: Editor) => T): T {
+  const editor = new Editor({ extensions: createMarkdownEditorExtensions(), content: json });
+  try {
+    return read(editor);
+  } finally {
+    editor.destroy();
+  }
+}
+
+function paragraphJson(...content: JSONContent[]): JSONContent {
+  return { type: 'doc', content: [{ type: 'paragraph', content }] };
+}
+
+function textJson(text: string): JSONContent {
+  return { type: 'text', text };
+}
+
 describe('markdown editor round trip', () => {
   it('keeps heading and list structure when the document ends with a raw tag', () => {
     const markdown = '# Title\n\n- a\n- b\n\n<div>x</div>';
@@ -146,6 +163,128 @@ describe('nested list round trip', () => {
       );
     } finally {
       warn.mockRestore();
+    }
+  });
+});
+
+describe('paragraph text that looks like block syntax', () => {
+  const blockTypes = ['horizontalRule', 'orderedList', 'bulletList', 'heading', 'blockquote'];
+
+  it.each([
+    '---',
+    '1. not a list',
+    '> not a quote',
+    '# not a heading',
+    '- not a bullet',
+    '+ plus',
+    '-',
+    '+',
+    '#',
+    '1)',
+  ])('reloads %j as paragraph text over two cycles', (text) => {
+    const saved = withJsonEditor(paragraphJson(textJson(text)), (editor) => editor.getMarkdown());
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content).toHaveLength(1);
+    expect(block?.content?.[0]?.type).toBe('text');
+    expect(block?.content?.[0]?.text).toBe(text);
+    expect(block?.content?.[0]?.marks ?? []).toEqual([]);
+    for (const type of blockTypes) {
+      expect(JSON.stringify(reloaded)).not.toContain(`"${type}"`);
+    }
+
+    const savedAgain = withEditor(saved, (editor) => editor.getMarkdown());
+    expect(savedAgain).toBe(saved);
+  });
+
+  it('reloads a hard break followed by block syntax as paragraph text', () => {
+    const json = paragraphJson(textJson('a'), { type: 'hardBreak' }, textJson('- hard'));
+    const saved = withJsonEditor(json, (editor) => editor.getMarkdown());
+    expect(saved).toBe('a  \n\\- hard');
+
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content?.map((child) => child.type)).toEqual(['text', 'hardBreak', 'text']);
+    expect(block?.content?.[0]?.text).toBe('a');
+    expect(block?.content?.[2]?.text).toBe('- hard');
+
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
+  });
+
+  it('reloads a newline inside one text node as paragraph text', () => {
+    const saved = withJsonEditor(paragraphJson(textJson('a\n- b')), (editor) =>
+      editor.getMarkdown()
+    );
+    expect(saved).toBe('a\n\\- b');
+
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content?.map((child) => child.text).join('')).toBe('a\n- b');
+  });
+
+  it.each([
+    ['<b>x</b>', '&lt;b&gt;x&lt;/b&gt;'],
+    ['<b>', '&lt;b&gt;'],
+    ['<div>literal</div>', '&lt;div&gt;literal&lt;/div&gt;'],
+  ])('reloads literal HTML text %j as the same text', (text, saved) => {
+    expect(withJsonEditor(paragraphJson(textJson(text)), (editor) => editor.getMarkdown())).toBe(
+      saved
+    );
+    // The save is entity-encoded text, never HTML markup.
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content?.map((child) => child.text).join('')).toBe(text);
+    expect(block?.content?.[0]?.marks ?? []).toEqual([]);
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
+  });
+
+  it('keeps a literal > at line start as paragraph text', () => {
+    const saved = withJsonEditor(paragraphJson(textJson('> not a quote')), (editor) =>
+      editor.getMarkdown()
+    );
+    expect(saved).toBe('&gt; not a quote');
+    const reloaded = withEditor(saved, getEditorJson);
+    expect(reloaded.content?.[0]?.type).toBe('paragraph');
+    expect(reloaded.content?.[0]?.content?.[0]?.text).toBe('> not a quote');
+  });
+
+  it('leaves text that is not actually a block start unescaped', () => {
+    for (const text of ['-- x', '#tag', '-5 degrees', '1.5 x']) {
+      expect(withJsonEditor(paragraphJson(textJson(text)), (editor) => editor.getMarkdown())).toBe(
+        text
+      );
+    }
+  });
+
+  it('does not escape a text node that starts mid-line after a mark', () => {
+    const json = paragraphJson(
+      { type: 'text', text: 'b', marks: [{ type: 'bold' }] },
+      textJson('- x')
+    );
+    expect(withJsonEditor(json, (editor) => editor.getMarkdown())).toBe('**b**- x');
+  });
+});
+
+describe('code is never escaped', () => {
+  it('keeps inline code byte-identical over three cycles', () => {
+    const markdown = 'Use `---` and `# x` and `1. x` and `> x` and `<b>` here';
+    let current = markdown;
+    for (let cycle = 1; cycle <= 3; cycle++) {
+      current = withEditor(current, (editor) => editor.getMarkdown());
+      expect(current, `cycle ${cycle}`).toBe(markdown);
+    }
+  });
+
+  it('keeps fenced code byte-identical over three cycles', () => {
+    const markdown = '```\n---\n# x\n1. x\n> x\n<b>\n```';
+    let current = markdown;
+    for (let cycle = 1; cycle <= 3; cycle++) {
+      current = withEditor(current, (editor) => editor.getMarkdown());
+      expect(current, `cycle ${cycle}`).toBe(markdown);
     }
   });
 });

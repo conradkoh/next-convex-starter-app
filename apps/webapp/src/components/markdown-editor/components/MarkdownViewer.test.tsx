@@ -61,6 +61,15 @@ describe('MarkdownViewer', () => {
     expect(screen.getByText('This is some content')).toBeInTheDocument();
     expect(screen.getByText('abc')).toBeInTheDocument();
   });
+
+  it('renders escaped block-start paragraph text without backslashes', () => {
+    const { container } = render(
+      <MarkdownViewer markdown={'\\---\n\n1\\. not a list\n\n\\# not a heading'} />
+    );
+    expect(container.textContent).not.toContain('\\');
+    expect(screen.getByText('1. not a list')).toBeInTheDocument();
+    expect(screen.getByText('# not a heading')).toBeInTheDocument();
+  });
 });
 
 describe('ordered list start', () => {
