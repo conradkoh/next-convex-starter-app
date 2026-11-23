@@ -1,5 +1,4 @@
 import type { JSONContent } from '@tiptap/core';
-import Link from '@tiptap/extension-link';
 import Paragraph from '@tiptap/extension-paragraph';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from '@tiptap/markdown';
@@ -72,12 +71,16 @@ export const ParagraphWithBlankLinePreservation = Paragraph.extend({
 
 export function createMarkdownEditorExtensions(placeholder?: string) {
   return [
-    StarterKit.configure({ heading: { levels: [1, 2, 3] }, paragraph: false, listItem: false }),
+    StarterKit.configure({
+      heading: { levels: [1, 2, 3] },
+      paragraph: false,
+      listItem: false,
+      link: { openOnClick: false },
+    }),
     CodeBlockLineBoundarySelection,
     ParagraphWithBlankLinePreservation,
     ListItemWithMarkerWidthIndent,
     ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
-    Link.configure({ openOnClick: false }),
     Markdown,
   ];
 }

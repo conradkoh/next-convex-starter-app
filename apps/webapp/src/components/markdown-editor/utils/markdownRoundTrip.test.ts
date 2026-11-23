@@ -152,15 +152,11 @@ describe('nested list round trip', () => {
     expect(nestedList?.content?.[0]?.content?.[1]?.type).toBe('bulletList');
   });
 
-  // The editor already registers a duplicate `link` extension (P4 scope), so this checks the
-  // property this suite owns: the custom list item must not add a second `listItem` node type.
-  it('does not log a duplicate list item extension warning when the editor loads', () => {
+  it('does not log a duplicate extension warning when the editor loads', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       withEditor('- a', (editor) => editor.getMarkdown());
-      expect(warn.mock.calls.flat().join('\n')).not.toMatch(
-        /Duplicate extension names found: \[[^\]]*'listItem'/
-      );
+      expect(warn.mock.calls.flat().join('\n')).not.toMatch(/Duplicate extension names/);
     } finally {
       warn.mockRestore();
     }
