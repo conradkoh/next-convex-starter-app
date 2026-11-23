@@ -50,8 +50,8 @@ describe('normalizeMarkdownContent', () => {
     expect(normalizeMarkdownContent('<p>Hello <strong>world</strong></p>')).toContain('**world**');
   });
 
-  it('keeps the temporary nbsp empty-paragraph conversion outside code', () => {
-    expect(normalizeMarkdownContent('a\n\n&nbsp;\n\nb')).toBe('a\n\n\u00A0\n\nb');
+  it('leaves the &nbsp; empty-paragraph sentinel as written, outside and inside code', () => {
+    expect(normalizeMarkdownContent('a\n\n&nbsp;\n\nb')).toBe('a\n\n&nbsp;\n\nb');
     expect(normalizeMarkdownContent('```\n&nbsp;\n```')).toBe('```\n&nbsp;\n```');
   });
 

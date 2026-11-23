@@ -8,7 +8,6 @@ const LEGACY_HTML_TAG_PATTERN =
 const HTML_DOCUMENT_START = /^<[a-zA-Z/!]/;
 // Fenced (``` and ~~~) and inline code spans; reused to skip code. No /g flag on tests.
 const CODE_PATTERN = /```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`/g;
-const NBSP = '\u00A0';
 
 export function containsFencedCode(text: string) {
   return /```[\s\S]*?```|~~~[\s\S]*?~~~/.test(text);
@@ -44,21 +43,10 @@ function isLegacyHtmlDocument(value: string) {
   );
 }
 
-// Temporary until P3: the empty-paragraph `&nbsp;` sentinel becomes U+00A0, outside code only.
-function decodeNbspOutsideCode(value: string) {
-  let result = '';
-  let cursor = 0;
-  for (const match of value.matchAll(CODE_PATTERN)) {
-    result += value.slice(cursor, match.index).replaceAll('&nbsp;', NBSP) + match[0];
-    cursor = match.index + match[0].length;
-  }
-  return result + value.slice(cursor).replaceAll('&nbsp;', NBSP);
-}
-
 export function normalizeMarkdownContent(input: string) {
   // Strip leading blank lines and trailing whitespace only: leading indentation of the first line is kept.
   const value = input.replace(/^(?:[ \t]*\r?\n)+/, '').trimEnd();
   if (!value) return '';
   if (isLegacyHtmlDocument(value)) return htmlToMarkdown(value);
-  return decodeNbspOutsideCode(value);
+  return value;
 }

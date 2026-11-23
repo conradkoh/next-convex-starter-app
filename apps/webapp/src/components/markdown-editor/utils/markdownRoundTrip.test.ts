@@ -70,6 +70,42 @@ describe('empty list item sentinel', () => {
   });
 });
 
+describe('empty paragraph and list item round trip', () => {
+  it('writes the empty item and blank line as the ASCII sentinel on the first save', () => {
+    expect(withEditor('- a\n-\n\nnext', (editor) => editor.getMarkdown())).toBe(
+      '- a\n- &nbsp;\n\nnext'
+    );
+  });
+
+  it('keeps the first save byte-identical across four more cycles', () => {
+    const first = withEditor('- a\n-\n\nnext', (editor) => editor.getMarkdown());
+    let current = first;
+    for (let cycle = 1; cycle <= 4; cycle++) {
+      current = withEditor(current, (editor) => editor.getMarkdown());
+      expect(current, `cycle ${cycle}`).toBe(first);
+    }
+  });
+
+  it.each([
+    '- a\n- &nbsp;\n- b',
+    '- a\n- &nbsp;',
+    '- &nbsp;',
+    '- &nbsp;\n  - nested',
+    'a\n\n&nbsp;\n\nb',
+    '- a\n\n&nbsp;\n\nnext',
+    '- a\n\n  second para\n- b',
+    '- a  \nhard\n- b',
+    '- a\n  ```\n  code\n  ```',
+  ])('keeps %j byte-identical over four save/load cycles with no U+00A0', (markdown) => {
+    let current = markdown;
+    for (let cycle = 1; cycle <= 4; cycle++) {
+      current = withEditor(current, (editor) => editor.getMarkdown());
+      expect(current, `cycle ${cycle}`).toBe(markdown);
+      expect(current).not.toContain('\u00A0');
+    }
+  });
+});
+
 describe('nested list round trip', () => {
   it.each([
     '1. one\n   - nested\n   - nested two\n2. two',
