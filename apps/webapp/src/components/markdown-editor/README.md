@@ -22,7 +22,7 @@ import { MarkdownEditor, defaultMarkdownEditorProseClassNames } from '@/componen
 />;
 ```
 
-`MarkdownEditor` provides WYSIWYG editing. `normalizeContent` can be injected for app-specific content boundaries; `fillHeight`, `placeholder`, and `initialClickCoords` support modal layouts.
+`MarkdownEditor` provides WYSIWYG editing. `normalizeContent` can be injected for app-specific content boundaries; `fillHeight`, `placeholder`, and `initialClickCoords` support modal layouts. In an empty editor, `defaultMarkdownEditorProseClassNames` paints the `placeholder` prop as muted, non-interactive text.
 
 `MarkdownViewer` is read-only rendering through react-markdown and remark-gfm:
 

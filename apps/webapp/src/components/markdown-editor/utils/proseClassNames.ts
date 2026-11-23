@@ -36,4 +36,8 @@ export const defaultMarkdownEditorProseClassNames = [
   '[&_:not(pre)>code]:rounded [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border/50 [&_:not(pre)>code]:bg-muted [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.875em] [&_:not(pre)>code]:font-normal [&_:not(pre)>code]:text-foreground [&_code]:before:content-none [&_code]:after:content-none',
   // Fenced code: 14px/22px on bg-muted, bordered, horizontal scroll. Covers fences with no language too.
   '[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:border [&_pre]:border-border [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:text-[0.875rem]/[1.375rem] [&_pre]:text-foreground',
+  // Empty editor: TipTap's Placeholder extension marks the block that holds the caret with
+  // `is-editor-empty` and `data-placeholder`. Paint that prompt as muted, non-interactive text.
+  // Tag-agnostic on purpose: the empty block is not always a <p> (see the brief's Key Knowledge).
+  '[&_.ProseMirror_.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]',
 ].join(' ');
