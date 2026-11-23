@@ -168,6 +168,8 @@ describe('paragraph text that looks like block syntax', () => {
 
   it.each([
     '---',
+    '===',
+    '--',
     '1. not a list',
     '> not a quote',
     '# not a heading',
@@ -208,6 +210,23 @@ describe('paragraph text that looks like block syntax', () => {
 
     expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
   });
+
+  it.each(['===', '--'])(
+    'reloads a hard break followed by a pure underline %j as paragraph text',
+    (underline) => {
+      const json = paragraphJson(textJson('foo'), { type: 'hardBreak' }, textJson(underline));
+      const saved = withJsonEditor(json, (editor) => editor.getMarkdown());
+      expect(saved).toBe(`foo  \n\\${underline}`);
+
+      const reloaded = withEditor(saved, getEditorJson);
+      const block = reloaded.content?.[0];
+      expect(block?.type).toBe('paragraph');
+      expect(block?.content?.map((child) => child.type)).toEqual(['text', 'hardBreak', 'text']);
+      expect(block?.content?.[2]?.text).toBe(underline);
+
+      expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
+    }
+  );
 
   it('reloads a newline inside one text node as paragraph text', () => {
     const saved = withJsonEditor(paragraphJson(textJson('a\n- b')), (editor) =>

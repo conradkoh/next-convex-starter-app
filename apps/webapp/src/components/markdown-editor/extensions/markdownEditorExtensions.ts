@@ -8,9 +8,11 @@ import { CodeBlockLineBoundarySelection } from './codeBlockLineBoundarySelection
 import { ListItemWithMarkerWidthIndent } from './markdownListItem';
 
 // Block-start markers at a line start (after up to three spaces): a bullet or thematic-break hyphen
-// run, `+`, an ATX `#` run (1–6), or a decimal number followed by `.` or `)` and then a space or end
-// of line. `-5`, `-- x`, `#tag`, and `1.5` are not block starts and are left alone.
-const BLOCK_START_PATTERN = /^( {0,3})(?:(-{3,}|-|\+|#{1,6})(?=\s|$)|(\d{1,9})([.)])(?=\s|$))/gm;
+// run, `+`, an ATX `#` run (1–6), a decimal number followed by `.` or `)` and then a space or end
+// of line, or a setext underline (a line that is only `=` or only `-`). `-5`, `-- x`, `#tag`, and
+// `1.5` are not block starts and are left alone.
+const BLOCK_START_PATTERN =
+  /^( {0,3})(?:(-{3,}|-|\+|#{1,6})(?=\s|$)|(\d{1,9})([.)])(?=\s|$)|(=+|-+)(?=[ \t]*$))/gm;
 
 // `rendered` is the already-encoded output of one plain text node. `atLineStart` says whether the
 // node begins a line; line starts after a `\n` inside the node are always checked.
@@ -23,13 +25,26 @@ function escapeBlockStarts(rendered: string, atLineStart: boolean): string {
       marker: string | undefined,
       digits: string | undefined,
       punct: string | undefined,
+      underline: string | undefined,
       offset: number
     ) => {
       // The regex also matches at offset 0; that is only a real line start when the node starts one.
       if (offset === 0 && !atLineStart) return match;
-      return marker ? `${indent}\\${marker}` : `${indent}${digits}\\${punct}`;
+      return escapeLineStart(indent, underline ?? marker, digits, punct);
     }
   );
+}
+
+// The setext run or block marker is escaped after the indent (`\---`); a decimal list number is
+// escaped between the digits and the punctuation (`1\.`), the same way the source parses it back.
+function escapeLineStart(
+  indent: string,
+  marker: string | undefined,
+  digits: string | undefined,
+  punct: string | undefined
+): string {
+  if (marker) return `${indent}\\${marker}`;
+  return `${indent}${digits}\\${punct}`;
 }
 
 // Placeholder for a code-marked text node while a marked run is escaped. U+E000 and U+E001 are
