@@ -82,9 +82,9 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         {children}
       </li>
     ),
-    // Clean blockquote with lighter gray text (GitHub-style)
+    // Blockquote: a 3px foreground bar with normal-colour text
     blockquote: ({ children }: ContentProps) => (
-      <blockquote className="border-l-4 border-border my-6 bg-muted/30 rounded-md px-5 py-3 text-muted-foreground/80 [&>p]:mb-0 [&>p]:text-muted-foreground/80">
+      <blockquote className="border-l-[3px] border-foreground my-4 py-0.5 pl-4 text-foreground [&>p]:mb-0">
         {children}
       </blockquote>
     ),

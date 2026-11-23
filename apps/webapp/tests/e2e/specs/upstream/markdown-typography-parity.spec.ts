@@ -15,6 +15,12 @@ async function metricsOf(locator: Locator) {
       paddingLeft: style.paddingLeft,
       paddingBottom: style.paddingBottom,
       borderBottomWidth: style.borderBottomWidth,
+      borderTopWidth: style.borderTopWidth,
+      borderRightWidth: style.borderRightWidth,
+      borderLeftWidth: style.borderLeftWidth,
+      borderLeftColor: style.borderLeftColor,
+      borderRadius: style.borderRadius,
+      color: style.color,
       backgroundColor: style.backgroundColor,
     };
   });
@@ -37,7 +43,7 @@ async function listPitch(items: Locator): Promise<number> {
 async function probeTokenValue(
   page: Page,
   className: string,
-  property: 'color' | 'backgroundColor'
+  property: 'color' | 'backgroundColor' | 'borderLeftColor'
 ): Promise<string> {
   return page.evaluate(
     ({ cls, prop }) => {
@@ -122,6 +128,27 @@ async function expectPlainFence(root: Locator): Promise<void> {
   expect(metrics.codeBorderTopWidth).toBe('0px');
   expect(metrics.codePaddingTop).toBe('0px');
   expect(metrics.codePaddingLeft).toBe('0px');
+}
+
+/** A blockquote is a 3px bar in the foreground token with normal-colour text, on no fill. */
+async function expectBlockquoteBar(page: Page, quote: Locator): Promise<void> {
+  const textProbe = await probeTokenValue(page, 'text-foreground', 'color');
+  const barProbe = await probeTokenValue(page, 'border-foreground', 'borderLeftColor');
+  const metrics = await metricsOf(quote);
+  expect(metrics.borderLeftWidth).toBe('3px');
+  expect(metrics.borderTopWidth).toBe('0px');
+  expect(metrics.borderRightWidth).toBe('0px');
+  expect(metrics.borderBottomWidth).toBe('0px');
+  expect(metrics.borderRadius).toBe('0px');
+  expect(metrics.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+  expect(metrics.color).toBe(textProbe);
+  expect(metrics.borderLeftColor).toBe(barProbe);
+
+  const paragraphMarginBottom = await quote
+    .locator('p')
+    .first()
+    .evaluate((element) => getComputedStyle(element).marginBottom);
+  expect(paragraphMarginBottom).toBe('0px');
 }
 
 /** An H2 keeps its size and weight with no rule, and stays one step above the H3 that follows it. */
@@ -333,6 +360,29 @@ for (const { name, viewport, h1: h1FontSize, h2: h2FontSize, h3: h3FontSize } of
               h3: h3FontSize,
             }
           );
+        });
+      }
+
+      for (const theme of ['light', 'dark'] as const) {
+        test(`blockquote is a 3px foreground bar on the demo page (${theme})`, async ({ page }) => {
+          await page.addInitScript((value) => localStorage.setItem('theme', value), theme);
+          const demo = new MarkdownEditorTestPage(page);
+          await demo.navigate();
+          const editor = demo.livePreviewSection
+            .getByTestId('markdown-editor')
+            .locator('.ProseMirror');
+          for (const root of [editor, demo.livePreviewViewer]) {
+            await expect(root.locator('blockquote').first()).toBeVisible();
+            await expectBlockquoteBar(page, root.locator('blockquote').first());
+          }
+        });
+
+        test(`blockquote is a 3px foreground bar on /test/mdx (${theme})`, async ({ page }) => {
+          await page.addInitScript((value) => localStorage.setItem('theme', value), theme);
+          await page.goto('/test/mdx');
+          const article = page.locator('.mdx-content').first();
+          await expect(article.locator('blockquote').first()).toBeVisible();
+          await expectBlockquoteBar(page, article.locator('blockquote').first());
         });
       }
     }

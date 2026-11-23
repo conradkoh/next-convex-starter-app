@@ -72,7 +72,7 @@ export const markdownComponents: Components = {
     </li>
   ),
   blockquote: ({ children }: ContentProps) => (
-    <blockquote className="border-l-4 border-border my-4 bg-muted/30 rounded-md px-5 py-3 text-muted-foreground/80 [&>p]:mb-0 [&>p]:text-muted-foreground/80">
+    <blockquote className="border-l-[3px] border-foreground my-4 py-0.5 pl-4 text-foreground [&>p]:mb-0">
       {children}
     </blockquote>
   ),

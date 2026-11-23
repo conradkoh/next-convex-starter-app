@@ -30,8 +30,8 @@ export const defaultMarkdownEditorProseClassNames = [
   '[&_a]:font-normal [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:decoration-1',
   // Horizontal rule: the viewer's 32px rhythm and border token, not prose's 3em margins.
   '[&_hr]:my-8 [&_hr]:border-border',
-  // Blockquote: tinted, bordered, body-size text, upright, no quote marks.
-  '[&_blockquote]:my-4 [&_blockquote]:rounded-md [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:bg-muted/30 [&_blockquote]:px-5 [&_blockquote]:py-3 [&_blockquote]:font-normal [&_blockquote]:not-italic [&_blockquote]:text-muted-foreground/80 [&_blockquote_p]:mb-0 [&_blockquote_p]:before:content-none [&_blockquote_p]:after:content-none',
+  // Blockquote: a 3px foreground bar with normal-colour body text, upright, no quote marks.
+  '[&_blockquote]:my-4 [&_blockquote]:border-l-[3px] [&_blockquote]:border-foreground [&_blockquote]:py-0.5 [&_blockquote]:pl-4 [&_blockquote]:font-normal [&_blockquote]:not-italic [&_blockquote]:text-foreground [&_blockquote_p]:mb-0 [&_blockquote_p]:before:content-none [&_blockquote_p]:after:content-none',
   // Inline code: a bg-muted chip at 0.875em with no backticks.
   '[&_:not(pre)>code]:rounded [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border/50 [&_:not(pre)>code]:bg-muted [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.875em] [&_:not(pre)>code]:font-normal [&_:not(pre)>code]:text-foreground [&_code]:before:content-none [&_code]:after:content-none',
   // Fenced code: 14px/22px on bg-muted, bordered, horizontal scroll. Covers fences with no language too.
