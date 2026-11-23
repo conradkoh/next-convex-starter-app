@@ -114,9 +114,9 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     await editable.click();
     const boldButton = editor.locator('button[title="Bold"]');
     await boldButton.click();
-    await editable.click();
     await page.keyboard.type('Bold E2E marker');
     await expect(editable).toContainText('Bold E2E marker');
+    await expect(editable.locator('strong', { hasText: 'Bold E2E marker' })).toHaveCount(1);
     await expect(boldButton).toHaveClass(/bg-foreground\/10/);
   });
 
