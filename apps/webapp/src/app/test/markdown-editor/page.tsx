@@ -45,6 +45,10 @@ plain fence, no language
 ---
 
 Closing paragraph after the rule.
+
+### Quoted text
+
+> A blockquote sits on a 3px foreground bar, with normal-colour text.
 `;
 
 const STATIC_MARKDOWN = `## Read-only example
