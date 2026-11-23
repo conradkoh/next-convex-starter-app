@@ -265,6 +265,51 @@ describe('paragraph text that looks like block syntax', () => {
   });
 });
 
+describe('marked text that contains block syntax', () => {
+  it('escapes a line-start marker inside a bold text node and keeps the bold mark', () => {
+    const json = paragraphJson({ type: 'text', text: 'a\n- b', marks: [{ type: 'bold' }] });
+    const saved = withJsonEditor(json, (editor) => editor.getMarkdown());
+    expect(saved).toBe('**a\n\\- b**');
+
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content?.map((child) => child.text).join('')).toBe('a\n- b');
+    for (const child of block?.content ?? []) {
+      expect(child.marks?.map((mark) => mark.type)).toEqual(['bold']);
+    }
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
+  });
+
+  it('escapes a line-start marker inside an italic text node', () => {
+    const json = paragraphJson({ type: 'text', text: 'a\n# b', marks: [{ type: 'italic' }] });
+    const saved = withJsonEditor(json, (editor) => editor.getMarkdown());
+    expect(saved).toBe('*a\n\\# b*');
+
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content?.map((child) => child.text).join('')).toBe('a\n# b');
+    for (const child of block?.content ?? []) {
+      expect(child.marks?.map((mark) => mark.type)).toEqual(['italic']);
+    }
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
+  });
+
+  it('does not escape a marked text node that starts with a marker at the run start', () => {
+    const json = paragraphJson({ type: 'text', text: '- b', marks: [{ type: 'bold' }] });
+    expect(withJsonEditor(json, (editor) => editor.getMarkdown())).toBe('**- b**');
+  });
+
+  it('escapes the bold text and leaves the code text raw in one run', () => {
+    const json = paragraphJson(
+      { type: 'text', text: 'a\n- b', marks: [{ type: 'bold' }] },
+      { type: 'text', text: 'c\n- d', marks: [{ type: 'code' }] }
+    );
+    expect(withJsonEditor(json, (editor) => editor.getMarkdown())).toBe('**a\n\\- b**`c\n- d`');
+  });
+});
+
 describe('code is never escaped', () => {
   it('keeps inline code byte-identical over three cycles', () => {
     const markdown = 'Use `---` and `# x` and `1. x` and `> x` and `<b>` here';
@@ -282,5 +327,10 @@ describe('code is never escaped', () => {
       current = withEditor(current, (editor) => editor.getMarkdown());
       expect(current, `cycle ${cycle}`).toBe(markdown);
     }
+  });
+
+  it('keeps a code-only paragraph with a line-start marker byte-identical', () => {
+    const json = paragraphJson({ type: 'text', text: 'c\n- d', marks: [{ type: 'code' }] });
+    expect(withJsonEditor(json, (editor) => editor.getMarkdown())).toBe('`c\n- d`');
   });
 });
