@@ -11,6 +11,11 @@ interface ContentProps {
   children?: ReactNode;
 }
 
+interface OrderedListProps {
+  start?: number;
+  children?: ReactNode;
+}
+
 interface AnchorProps {
   href?: string;
   children?: ReactNode;
@@ -63,8 +68,10 @@ export const markdownComponents: Components = {
   ul: ({ children }: ContentProps) => (
     <ul className="list-disc pl-6 mb-4 mt-0 space-y-1 text-foreground">{children}</ul>
   ),
-  ol: ({ children }: ContentProps) => (
-    <ol className="list-decimal pl-6 mb-4 mt-0 space-y-1 text-foreground">{children}</ol>
+  ol: ({ start, children }: OrderedListProps) => (
+    <ol start={start} className="list-decimal pl-6 mb-4 mt-0 space-y-1 text-foreground">
+      {children}
+    </ol>
   ),
   li: ({ children }: ContentProps) => (
     <li className="text-foreground leading-7 [&>p]:my-0 [&>p+p]:mt-2 [&>ul]:mt-1 [&>ul]:mb-0 [&>ol]:mt-1 [&>ol]:mb-0">

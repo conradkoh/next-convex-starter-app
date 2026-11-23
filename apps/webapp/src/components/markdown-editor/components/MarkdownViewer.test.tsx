@@ -62,3 +62,13 @@ describe('MarkdownViewer', () => {
     expect(screen.getByText('abc')).toBeInTheDocument();
   });
 });
+
+describe('ordered list start', () => {
+  it.each([
+    ['10. ten\n11. eleven', '10'],
+    ['3. three\n4. four', '3'],
+  ])('renders %j as <ol start="%s">', (markdown, start) => {
+    const { container } = render(<MarkdownViewer markdown={markdown} />);
+    expect(container.querySelector('ol')?.getAttribute('start')).toBe(start);
+  });
+});
