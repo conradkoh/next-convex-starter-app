@@ -28,7 +28,7 @@ export const markdownComponents: Components = {
     </h1>
   ),
   h2: ({ children }: HeadingProps) => (
-    <h2 className="scroll-m-20 border-b border-border pb-3 text-2xl font-semibold tracking-tight text-foreground mb-4 mt-8 first:mt-0">
+    <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight text-foreground mb-4 mt-8 first:mt-0">
       {children}
     </h2>
   ),

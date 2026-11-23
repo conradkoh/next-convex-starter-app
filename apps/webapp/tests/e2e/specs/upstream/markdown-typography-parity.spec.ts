@@ -13,6 +13,8 @@ async function metricsOf(locator: Locator) {
       marginTop: style.marginTop,
       marginBottom: style.marginBottom,
       paddingLeft: style.paddingLeft,
+      paddingBottom: style.paddingBottom,
+      borderBottomWidth: style.borderBottomWidth,
       backgroundColor: style.backgroundColor,
     };
   });
@@ -122,12 +124,31 @@ async function expectPlainFence(root: Locator): Promise<void> {
   expect(metrics.codePaddingLeft).toBe('0px');
 }
 
+/** An H2 keeps its size and weight with no rule, and stays one step above the H3 that follows it. */
+async function expectHeadingHierarchy(
+  h2: Locator,
+  h3: Locator,
+  sizes: { h2: string; h3: string }
+): Promise<void> {
+  const heading = await metricsOf(h2);
+  expect(heading.borderBottomWidth).toBe('0px');
+  expect(heading.paddingBottom).toBe('0px');
+  expect(heading.fontWeight).toBe('600');
+  expect(heading.fontSize).toBe(sizes.h2);
+  expect(heading.marginTop).toBe('32px');
+
+  const subheading = await metricsOf(h3);
+  expect(subheading.fontWeight).toBe('600');
+  expect(subheading.fontSize).toBe(sizes.h3);
+  expect(subheading.marginTop).toBe('24px');
+}
+
 const VIEWPORTS = [
-  { name: 'desktop', viewport: { width: 1280, height: 800 }, h1: '30px', h2: '24px' },
-  { name: 'mobile', viewport: { width: 390, height: 844 }, h1: '24px', h2: '20px' },
+  { name: 'desktop', viewport: { width: 1280, height: 800 }, h1: '30px', h2: '24px', h3: '20px' },
+  { name: 'mobile', viewport: { width: 390, height: 844 }, h1: '24px', h2: '20px', h3: '18px' },
 ] as const;
 
-for (const { name, viewport, h1: h1FontSize, h2: h2FontSize } of VIEWPORTS) {
+for (const { name, viewport, h1: h1FontSize, h2: h2FontSize, h3: h3FontSize } of VIEWPORTS) {
   test.describe(
     `Markdown typography parity (${name})`,
     { tag: [TAG_UPSTREAM, TAG_MARKDOWN] },
@@ -165,7 +186,7 @@ for (const { name, viewport, h1: h1FontSize, h2: h2FontSize } of VIEWPORTS) {
           expect(metrics.fontSize).toBe(h1FontSize);
         }
 
-        // H2: same token scale, hairline rule, 32px above and 16px below.
+        // H2: same token scale, no rule, 32px above and 16px below.
         const editorH2 = await metricsOf(editor.locator('h2').first());
         const viewerH2 = await metricsOf(viewer.locator('h2').first());
         for (const metrics of [editorH2, viewerH2]) {
@@ -277,6 +298,43 @@ for (const { name, viewport, h1: h1FontSize, h2: h2FontSize } of VIEWPORTS) {
         await expectPlainFence(demo.livePreviewViewer);
         expect(await mirrorOf(editor)).toEqual(await mirrorOf(demo.livePreviewViewer));
       });
+
+      for (const theme of ['light', 'dark'] as const) {
+        test(`H2 has no rule and stays above H3 on the demo page (${theme})`, async ({ page }) => {
+          await page.addInitScript((value) => localStorage.setItem('theme', value), theme);
+          const demo = new MarkdownEditorTestPage(page);
+          await demo.navigate();
+          await expect(page.locator('html')).toHaveClass(
+            theme === 'dark' ? /\bdark\b/ : /^(?!.*\bdark\b)/
+          );
+
+          const editor = demo.livePreviewSection
+            .getByTestId('markdown-editor')
+            .locator('.ProseMirror');
+          for (const root of [editor, demo.livePreviewViewer]) {
+            await expect(root.locator('h3').first()).toBeVisible();
+            await expectHeadingHierarchy(root.locator('h2').first(), root.locator('h3').first(), {
+              h2: h2FontSize,
+              h3: h3FontSize,
+            });
+          }
+        });
+
+        test(`H2 has no rule and stays above H3 on /test/mdx (${theme})`, async ({ page }) => {
+          await page.addInitScript((value) => localStorage.setItem('theme', value), theme);
+          await page.goto('/test/mdx');
+          const article = page.locator('.mdx-content').first();
+          await expect(article.locator('h3').first()).toBeVisible();
+          await expectHeadingHierarchy(
+            article.locator('h2').first(),
+            article.locator('h3').first(),
+            {
+              h2: h2FontSize,
+              h3: h3FontSize,
+            }
+          );
+        });
+      }
     }
   );
 }

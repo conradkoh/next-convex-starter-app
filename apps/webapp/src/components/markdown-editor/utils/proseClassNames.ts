@@ -20,7 +20,7 @@ export const defaultMarkdownEditorProseClassNames = [
   '[&_li::marker]:text-foreground',
   // Headings: the same token utilities as the viewer (they shrink under 640px via globals.css).
   '[&_h1]:mt-0 [&_h1]:mb-4 [&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-foreground',
-  '[&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:border-b [&_h2]:border-border [&_h2]:pb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:text-foreground',
+  '[&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:text-foreground',
   '[&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:tracking-tight [&_h3]:text-foreground',
   '[&_h4]:mt-5 [&_h4]:mb-3 [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:tracking-tight [&_h4]:text-foreground',
   '[&_h5]:mt-4 [&_h5]:mb-2 [&_h5]:text-base [&_h5]:font-semibold [&_h5]:tracking-tight [&_h5]:text-foreground',
