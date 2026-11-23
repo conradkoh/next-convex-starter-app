@@ -5,6 +5,7 @@ import { Markdown } from '@tiptap/markdown';
 import StarterKit from '@tiptap/starter-kit';
 
 import { CodeBlockLineBoundarySelection } from './codeBlockLineBoundarySelection';
+import { ListItemWithMarkerWidthIndent } from './markdownListItem';
 
 export const ParagraphWithBlankLinePreservation = Paragraph.extend({
   renderMarkdown(node, h) {
@@ -15,9 +16,10 @@ export const ParagraphWithBlankLinePreservation = Paragraph.extend({
 
 export function createMarkdownEditorExtensions(placeholder?: string) {
   return [
-    StarterKit.configure({ heading: { levels: [1, 2, 3] }, paragraph: false }),
+    StarterKit.configure({ heading: { levels: [1, 2, 3] }, paragraph: false, listItem: false }),
     CodeBlockLineBoundarySelection,
     ParagraphWithBlankLinePreservation,
+    ListItemWithMarkerWidthIndent,
     ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     Link.configure({ openOnClick: false }),
     Markdown,
