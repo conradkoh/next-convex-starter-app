@@ -117,7 +117,7 @@ test.describe('Markdown Editor Demo', { tag: [TAG_UPSTREAM, TAG_MARKDOWN] }, () 
     await editable.click();
     await page.keyboard.type('Bold E2E marker');
     await expect(editable).toContainText('Bold E2E marker');
-    await expect(boldButton).toHaveClass(/bg-muted/);
+    await expect(boldButton).toHaveClass(/bg-foreground\/10/);
   });
 
   test('click to edit: view → edit → save returns to pristine rendered view', async ({ page }) => {
