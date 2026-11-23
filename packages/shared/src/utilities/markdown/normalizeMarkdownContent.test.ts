@@ -41,6 +41,15 @@ describe('normalizeMarkdownContent', () => {
     expect(converted).toContain('**world**');
   });
 
+  it('keeps entity-encoded legacy HTML as literal text', () => {
+    expect(normalizeMarkdownContent('&lt;p&gt;Hello&lt;/p&gt;')).toBe('&lt;p&gt;Hello&lt;/p&gt;');
+  });
+
+  it('still converts raw legacy HTML at the start of a document', () => {
+    expect(normalizeMarkdownContent('<div>x</div>')).toBe('x');
+    expect(normalizeMarkdownContent('<p>Hello <strong>world</strong></p>')).toContain('**world**');
+  });
+
   it('keeps the temporary nbsp empty-paragraph conversion outside code', () => {
     expect(normalizeMarkdownContent('a\n\n&nbsp;\n\nb')).toBe('a\n\n\u00A0\n\nb');
     expect(normalizeMarkdownContent('```\n&nbsp;\n```')).toBe('```\n&nbsp;\n```');
