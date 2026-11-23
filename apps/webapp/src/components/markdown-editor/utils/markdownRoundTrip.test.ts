@@ -414,3 +414,29 @@ describe('code is never escaped', () => {
     expect(withJsonEditor(json, (editor) => editor.getMarkdown())).toBe('`c\n- d`');
   });
 });
+
+describe('ordered list type', () => {
+  it('saves an ordered list with a non-decimal type attribute as decimal markers', () => {
+    const json: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'orderedList',
+          attrs: { start: 1, type: 'a' },
+          content: [
+            { type: 'listItem', content: [{ type: 'paragraph', content: [textJson('one')] }] },
+            { type: 'listItem', content: [{ type: 'paragraph', content: [textJson('two')] }] },
+          ],
+        },
+      ],
+    };
+    const editor = new Editor({ extensions: createMarkdownEditorExtensions(), content: json });
+    try {
+      // Guard: the type attribute must survive into the editor, or the test proves nothing.
+      expect(getEditorJson(editor).content?.[0]?.attrs?.type).toBe('a');
+      expect(editor.getMarkdown()).toBe('1. one\n2. two');
+    } finally {
+      editor.destroy();
+    }
+  });
+});

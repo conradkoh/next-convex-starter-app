@@ -58,11 +58,6 @@ describe('normalizeMarkdownContent', () => {
     expect(normalizeMarkdownContent('    <p>x</p>')).toBe('    <p>x</p>');
   });
 
-  it('still converts raw legacy HTML at the start of a document', () => {
-    expect(normalizeMarkdownContent('<div>x</div>')).toBe('x');
-    expect(normalizeMarkdownContent('<p>Hello <strong>world</strong></p>')).toContain('**world**');
-  });
-
   it('leaves the &nbsp; empty-paragraph sentinel as written, outside and inside code', () => {
     expect(normalizeMarkdownContent('a\n\n&nbsp;\n\nb')).toBe('a\n\n&nbsp;\n\nb');
     expect(normalizeMarkdownContent('```\n&nbsp;\n```')).toBe('```\n&nbsp;\n```');

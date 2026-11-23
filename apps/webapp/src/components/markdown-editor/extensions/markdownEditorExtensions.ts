@@ -7,6 +7,8 @@ import StarterKit from '@tiptap/starter-kit';
 import { CodeBlockLineBoundarySelection } from './codeBlockLineBoundarySelection';
 import { ListItemWithMarkerWidthIndent } from './markdownListItem';
 
+// Known gap (pre-existing, not escaped): a paragraph line that begins with four or more spaces saves
+// as an indented code block and reloads as code. The ` {0,3}` indent below follows the markdown limit.
 // Block-start markers at a line start (after up to three spaces): a bullet or thematic-break hyphen
 // run, `+`, an ATX `#` run (1–6), a decimal number followed by `.` or `)` and then a space or end
 // of line, or a setext underline (a line that is only `=` or only `-`). `-5`, `-- x`, `#tag`, and
@@ -65,6 +67,7 @@ export const ParagraphWithBlankLinePreservation = Paragraph.extend({
     const content = Array.isArray(node.content) ? node.content : [];
     if (content.length === 0) return '&nbsp;';
 
+    // `renderChild` is optional on the @tiptap/core 3.30.1 helpers type, so keep the children-rendering fallback.
     const renderChild = h.renderChild ?? ((child: JSONContent) => h.renderChildren(child));
 
     // Renders one run of marked or non-text children and escapes its non-code text at real line

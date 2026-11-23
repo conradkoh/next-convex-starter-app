@@ -23,17 +23,21 @@ type ListItemRenderContext = Pick<RenderContext, 'index' | 'parentType'> & {
   meta?: { parentAttrs?: { start?: unknown } };
 };
 
-// Mirrors the marker @tiptap/extension-list writes for a list item: `- ` under a bullet list,
-// `N. ` under an ordered list where N = start + index (ordered lists parsed from markdown carry a
-// numeric `start` and a null `type`, i.e. decimal). Child lines are indented by the width of this
-// marker, so `- ` → 2, `1. ` → 3, `10. ` → 4, `100. ` → 5.
-//
-// The global `Markdown` `indentation` option must stay at its default: it applies one width to
-// every list item, which pulls 2-space children out of a `1. ` or `10. ` item on reload.
+// `start` attribute of the parent ordered list; defaults to 1, matching upstream `|| 1`.
 function orderedListStart(context: ListItemRenderContext): number {
   return Number(context.meta?.parentAttrs?.start) || 1;
 }
 
+// Mirrors the marker @tiptap/extension-list writes for a list item: `- ` under a bullet list,
+// `N. ` under an ordered list where N = start + index. Child lines are indented by the width of
+// this marker, so `- ` → 2, `1. ` → 3, `10. ` → 4, `100. ` → 5.
+//
+// The global `Markdown` `indentation` option must stay at its default: it applies one width to
+// every list item, which pulls 2-space children out of a `1. ` or `10. ` item on reload.
+//
+// Ordered lists always save with decimal markers. Markdown has no alpha or roman list syntax, so
+// the list `type` attribute (set from pasted HTML or JSON) is not written; a null `type` and a
+// numeric `start` are what a list parsed from markdown carries.
 function listItemMarker(context: ListItemRenderContext): string {
   if (context.parentType !== 'orderedList') {
     return '- ';
