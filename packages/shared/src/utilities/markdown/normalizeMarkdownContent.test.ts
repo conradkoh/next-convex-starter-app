@@ -45,6 +45,19 @@ describe('normalizeMarkdownContent', () => {
     expect(normalizeMarkdownContent('&lt;p&gt;Hello&lt;/p&gt;')).toBe('&lt;p&gt;Hello&lt;/p&gt;');
   });
 
+  it('leaves a document with a raw tag and a fenced block unconverted', () => {
+    const markdown = '<div>x</div>\n\n```\ncode\n```';
+    expect(normalizeMarkdownContent(markdown)).toBe(markdown);
+  });
+
+  it('converts a raw tag indented by up to three spaces', () => {
+    expect(normalizeMarkdownContent('  <p>x</p>')).toBe('x');
+  });
+
+  it('leaves a raw tag indented by four spaces as an indented code block', () => {
+    expect(normalizeMarkdownContent('    <p>x</p>')).toBe('    <p>x</p>');
+  });
+
   it('still converts raw legacy HTML at the start of a document', () => {
     expect(normalizeMarkdownContent('<div>x</div>')).toBe('x');
     expect(normalizeMarkdownContent('<p>Hello <strong>world</strong></p>')).toContain('**world**');
