@@ -20,6 +20,7 @@ describe('MDX ordered list start', () => {
   it.each([
     [10, '10'],
     [3, '3'],
+    [1, '1'],
   ])('renders start %i as <ol start="%s">', (start, expected) => {
     const { container } = render(<OrderedListWithStart start={start} />);
     expect(container.querySelector('ol')?.getAttribute('start')).toBe(expected);

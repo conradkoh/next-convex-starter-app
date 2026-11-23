@@ -80,4 +80,9 @@ describe('ordered list start', () => {
     const { container } = render(<MarkdownViewer markdown={markdown} />);
     expect(container.querySelector('ol')?.getAttribute('start')).toBe(start);
   });
+
+  it('renders a list starting at 1 with an effective start of 1', () => {
+    const { container } = render(<MarkdownViewer markdown={'1. one\n2. two'} />);
+    expect(container.querySelector('ol')?.getAttribute('start') ?? '1').toBe('1');
+  });
 });

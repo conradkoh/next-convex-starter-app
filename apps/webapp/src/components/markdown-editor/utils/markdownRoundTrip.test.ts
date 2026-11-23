@@ -65,6 +65,25 @@ describe('markdown editor round trip', () => {
     expect(withEditor(markdown, (editor) => editor.getMarkdown())).toBe(markdown);
   });
 
+  it('round-trips a link byte-identically over two cycles', () => {
+    const markdown = '[x](https://a)';
+    const saved = withEditor(markdown, (editor) => editor.getMarkdown());
+    expect(saved).toBe(markdown);
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(markdown);
+  });
+
+  it('configures the link mark so a click does not open the URL', () => {
+    const editor = new Editor({ extensions: createMarkdownEditorExtensions() });
+    try {
+      const link = editor.extensionManager.extensions.find(
+        (extension) => extension.name === 'link'
+      );
+      expect(link?.options.openOnClick).toBe(false);
+    } finally {
+      editor.destroy();
+    }
+  });
+
   it('round-trips inline code containing entities byte-identically', () => {
     const markdown = 'Use `&amp;` and `&lt;` here';
     expect(withEditor(markdown, (editor) => editor.getMarkdown())).toBe(markdown);
@@ -92,6 +111,35 @@ describe('empty paragraph and list item round trip', () => {
     expect(withEditor('- a\n-\n\nnext', (editor) => editor.getMarkdown())).toBe(
       '- a\n- &nbsp;\n\nnext'
     );
+  });
+
+  it('reloads a loose item whose first paragraph is empty and keeps the second paragraph', () => {
+    const json: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'bulletList',
+          content: [
+            {
+              type: 'listItem',
+              content: [
+                { type: 'paragraph', content: [] },
+                { type: 'paragraph', content: [textJson('para')] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const saved = withJsonEditor(json, (editor) => editor.getMarkdown());
+    expect(saved).toBe('- &nbsp;\n\n  para');
+
+    const reloaded = withEditor(saved, getEditorJson);
+    const item = reloaded.content?.[0]?.content?.[0];
+    expect(item?.content?.[0]?.type).toBe('paragraph');
+    expect(item?.content?.[0]?.content ?? []).toHaveLength(0);
+    expect(item?.content?.[1]?.content?.[0]?.text).toBe('para');
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
   });
 
   it('keeps the first save byte-identical across four more cycles', () => {
@@ -265,6 +313,19 @@ describe('paragraph text that looks like block syntax', () => {
     const reloaded = withEditor(saved, getEditorJson);
     expect(reloaded.content?.[0]?.type).toBe('paragraph');
     expect(reloaded.content?.[0]?.content?.[0]?.text).toBe('> not a quote');
+  });
+
+  it('reloads user-typed &nbsp; text as literal text, not an empty paragraph', () => {
+    const saved = withJsonEditor(paragraphJson(textJson('&nbsp;')), (editor) =>
+      editor.getMarkdown()
+    );
+    expect(saved).toBe('&amp;nbsp;');
+
+    const reloaded = withEditor(saved, getEditorJson);
+    const block = reloaded.content?.[0];
+    expect(block?.type).toBe('paragraph');
+    expect(block?.content?.[0]?.text).toBe('&nbsp;');
+    expect(withEditor(saved, (editor) => editor.getMarkdown())).toBe(saved);
   });
 
   it('leaves text that is not actually a block start unescaped', () => {
