@@ -40,7 +40,7 @@ export const getConfig = query({
   handler: async (ctx, args): Promise<GoogleAuthConfigData | null> => {
     const user = await getAuthUser(ctx, args);
     requireSystemAdminAccess(user, {
-      unauthorizedMessage: 'Only system administrators can view Google Auth configuration',
+      unauthorizedMessage: 'You must be logged in to view Google Auth configuration',
     });
 
     const config = await ctx.db
@@ -247,7 +247,7 @@ export const getClientSecretForTesting = internalMutation({
   handler: async (ctx, args): Promise<string | null> => {
     const user = await getAuthUser(ctx, args);
     requireSystemAdminAccess(user, {
-      unauthorizedMessage: 'Only system administrators can access client secret for testing',
+      unauthorizedMessage: 'You must be logged in to access the client secret for testing',
     });
 
     const config = await ctx.db

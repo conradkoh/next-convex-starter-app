@@ -166,7 +166,7 @@ const _defaults = createAuthHelpers([defaultSessionResolver]);
 export const getAuthUserId = _defaults.getAuthUserId;
 
 /**
- * Like {@link getAuthUserId} but throws `ConvexError NOT_AUTHENTICATED`
+ * Like {@link getAuthUserId} but throws `appError('NOT_AUTHENTICATED', …)`
  * when no `userId` can be resolved.
  */
 // fallow-ignore-next-line unused-export
@@ -183,7 +183,7 @@ export const requireAuthUserId = _defaults.requireAuthUserId;
 export const getAuthUser = _defaults.getAuthUser;
 
 /**
- * Like {@link getAuthUser} but throws `ConvexError NOT_AUTHENTICATED`
+ * Like {@link getAuthUser} but throws `appError('NOT_AUTHENTICATED', …)`
  * when no user can be resolved.
  */
 // fallow-ignore-next-line unused-export

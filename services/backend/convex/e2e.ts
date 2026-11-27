@@ -13,16 +13,19 @@ import { appError } from '../modules/errors/appError';
  *
  * Promotes the user bound to the given session to `system_admin` so e2e
  * specs can exercise the admin UI. Gated by E2E_SEEDING_ENABLED (must be "true").
- * When the gate is off, the mutation throws FORBIDDEN.
+ *
+ * Enable the gate for a deployment with:
+ *   cd services/backend && npx convex env set E2E_SEEDING_ENABLED true
+ *
+ * When the gate is off the mutation throws a neutral `FORBIDDEN`
+ * ("This action is not available"): the setup instruction must never appear in
+ * a message that any caller can read.
  */
 export const promoteSessionToSystemAdmin = mutation({
   args: { ...SessionIdArg },
   handler: async (ctx, args) => {
     if (process.env.E2E_SEEDING_ENABLED !== 'true') {
-      throw appError(
-        'FORBIDDEN',
-        'E2E seeding is disabled. Run: cd services/backend && npx convex env set E2E_SEEDING_ENABLED true'
-      );
+      throw appError('FORBIDDEN', 'This action is not available');
     }
 
     const session = await ctx.db

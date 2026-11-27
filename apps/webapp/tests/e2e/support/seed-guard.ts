@@ -20,9 +20,16 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function errorCode(error: unknown): string | null {
+  const data = (error as { data?: { code?: unknown } } | undefined)?.data;
+  return typeof data?.code === 'string' ? data.code : null;
+}
+
 function isSeedingDisabled(error: unknown): boolean {
-  const message = errorMessage(error);
-  return message.includes('FORBIDDEN') || message.includes('E2E seeding is disabled');
+  if (errorCode(error) === 'FORBIDDEN') return true;
+  // Fallback for deployments running the pre-follow-up backend, whose
+  // `message` still mentions the gate.
+  return errorMessage(error).includes('FORBIDDEN');
 }
 
 function isDeployRace(error: unknown): boolean {
