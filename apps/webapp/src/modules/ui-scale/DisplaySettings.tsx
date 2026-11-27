@@ -18,7 +18,12 @@ const LABEL_CLASS =
 
 function DisplaySettingsSkeleton() {
   return (
-    <div className={GRID_CLASS} aria-busy="true" aria-label="Loading display size preferences">
+    <div
+      className={GRID_CLASS}
+      role="group"
+      aria-busy="true"
+      aria-label="Loading display size preferences"
+    >
       {UI_SCALE_PRESETS.map((preset) => (
         <Skeleton key={preset} className={`${CARD_HEIGHT} rounded-md`} />
       ))}

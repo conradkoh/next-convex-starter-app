@@ -106,10 +106,8 @@ describe('DisplaySettings', () => {
     mocks.uiScale = null;
     render(<DisplaySettings />);
 
-    expect(screen.getByLabelText('Loading display size preferences')).toHaveAttribute(
-      'aria-busy',
-      'true'
-    );
+    const loadingGroup = screen.getByRole('group', { name: 'Loading display size preferences' });
+    expect(loadingGroup).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryAllByRole('radio')).toHaveLength(0);
   });
 
