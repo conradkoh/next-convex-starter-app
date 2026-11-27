@@ -99,7 +99,8 @@ describe('Discussion inline failures', () => {
 
     const alert = await within(dialog).findByRole('alert');
     expect(dialog).toBeInTheDocument();
-    expect(alert).toHaveTextContent('Failed to add message: Network down');
+    expect(alert).toHaveTextContent('Failed to add message');
+    expect(alert).not.toHaveTextContent('Network down');
     expect(within(dialog).getByLabelText('Your Name')).toHaveValue('Ada');
     expect(within(dialog).getByLabelText('Your Thoughts')).toHaveValue('Hello');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
@@ -112,7 +113,8 @@ describe('Discussion inline failures', () => {
     renderDiscussion();
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Failed to create discussion: Boom');
+    expect(alert).toHaveTextContent('Failed to create discussion');
+    expect(alert).not.toHaveTextContent('Boom');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -133,7 +135,8 @@ describe('Discussion inline failures', () => {
     await user.click(screen.getByRole('button', { name: 'Reopen Discussion' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Failed to reopen discussion: Nope');
+    expect(alert).toHaveTextContent('Failed to reopen discussion');
+    expect(alert).not.toHaveTextContent('Nope');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -152,7 +155,8 @@ describe('Discussion inline failures', () => {
 
     const alert = await within(dialog).findByRole('alert');
     expect(dialog).toBeInTheDocument();
-    expect(alert).toHaveTextContent('Failed to conclude discussion: Offline');
+    expect(alert).toHaveTextContent('Failed to conclude discussion');
+    expect(alert).not.toHaveTextContent('Offline');
     expect(within(dialog).getByPlaceholderText('Enter a conclusion')).toHaveValue('Ship it');
   });
 
@@ -167,7 +171,26 @@ describe('Discussion inline failures', () => {
 
     const alert = await within(dialog).findByRole('alert');
     expect(dialog).toBeInTheDocument();
-    expect(alert).toHaveTextContent('Failed to delete message: Denied');
+    expect(alert).toHaveTextContent('Failed to delete message');
+    expect(alert).not.toHaveTextContent('Denied');
+  });
+
+  it('shows the backend message for a coded failure instead of a raw error', async () => {
+    mocks.mutations.addDiscussionMessage.mockRejectedValueOnce({
+      data: { code: 'CONFLICT', message: 'Discussion is no longer active' },
+    });
+    const user = userEvent.setup();
+    renderDiscussion();
+    await waitForCardLoaded();
+
+    await user.click(screen.getByRole('button', { name: 'Add Contribution' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText('Your Name'), 'Ada');
+    await user.type(within(dialog).getByLabelText('Your Thoughts'), 'Hello');
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    const alert = await within(dialog).findByRole('alert');
+    expect(alert).toHaveTextContent('Failed to add message: Discussion is no longer active');
   });
 
   it('closes the delete dialog after a successful deletion', async () => {

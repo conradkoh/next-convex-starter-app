@@ -3,6 +3,8 @@ import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessions';
 import { useCallback, useState } from 'react';
 
+import { describeError } from '@/lib/errors';
+
 // Define the discussion state type
 type DiscussionState = {
   key: string;
@@ -52,14 +54,14 @@ export interface DiscussionError {
   message: string;
 }
 
-/** Builds the inline message `Title: detail`, or just `Title` when the error has no message. */
+/** Builds the inline message `Title: detail`, or just `Title` when no specific copy applies. */
 function toDiscussionError(
   scope: DiscussionErrorScope,
   title: string,
   error: unknown
 ): DiscussionError {
-  const detail = (error as Error | undefined)?.message;
-  return { scope, message: detail ? `${title}: ${detail}` : title };
+  const detail = describeError(error, { fallback: title }).message;
+  return { scope, message: detail === title ? title : `${title}: ${detail}` };
 }
 
 export function useDiscussionSync({ key, title }: { key: string; title: string }) {
