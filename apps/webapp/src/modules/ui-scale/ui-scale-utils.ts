@@ -1,10 +1,12 @@
 /**
  * Display Size (UI scale) preference utilities.
  *
- * The whole app scales from one seam: `applyUiScale` writes a unitless ratio to
- * `--ui-scale` on the document root and `globals.css` turns it into the root
- * font size. Switching the mechanism later (for example to CSS `zoom`) only
- * needs to change `applyUiScale`.
+ * The whole app scales from three touchpoints that must stay in sync:
+ * `applyUiScale` writes a unitless ratio to `--ui-scale` on the document root,
+ * `uiScaleScript` applies the stored value before first paint, and the `html`
+ * rule in `apps/webapp/src/app/globals.css` turns the ratio into the root font
+ * size. Switching the mechanism later (for example to CSS `zoom`) means
+ * changing all three, not only `applyUiScale`.
  */
 
 export const UI_SCALE_PRESETS = [67, 75, 80, 90, 100, 110, 125] as const;
