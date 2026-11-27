@@ -1,4 +1,4 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import {
@@ -7,6 +7,7 @@ import {
 } from '../../application/auth';
 import { hasPermission } from '../../application/auth/resolve';
 import { getAuthUser } from '../../modules/auth/session';
+import { appError } from '../../modules/errors/appError';
 import type { Doc, Id } from '../_generated/dataModel';
 import { mutation, query, type MutationCtx } from '../_generated/server';
 
@@ -77,10 +78,7 @@ async function assertNotLastSystemAdmin(
     (u) => u.accessLevel === 'system_admin'
   ).length;
   if (adminCount <= 1) {
-    throw new ConvexError({
-      code: 'FORBIDDEN',
-      message: 'Cannot remove the last system administrator',
-    });
+    throw appError('FORBIDDEN', 'Cannot remove the last system administrator');
   }
 }
 
@@ -137,16 +135,16 @@ export const updateUserRoles = mutation({
 
     const target = await ctx.db.get('users', args.userId);
     if (!target) {
-      throw new ConvexError({ code: 'NOT_FOUND', message: 'User not found' });
+      throw appError('NOT_FOUND', 'User not found', { resource: 'user' });
     }
 
     const actorCanManageSystemAdmins = hasPermission(actor, SYSTEM_ADMIN_ACCESS_PERMISSION);
     if (!actorCanManageSystemAdmins) {
       if (args.effectiveRole === 'system_admin' || target.accessLevel === 'system_admin') {
-        throw new ConvexError({
-          code: 'FORBIDDEN',
-          message: 'Only system administrators can manage the system administrator role',
-        });
+        throw appError(
+          'FORBIDDEN',
+          'Only system administrators can manage the system administrator role'
+        );
       }
     }
 

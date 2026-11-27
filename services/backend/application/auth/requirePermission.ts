@@ -1,11 +1,10 @@
-import { ConvexError } from 'convex/values';
-
 import type { Permission } from './permissions';
 import { SYSTEM_ADMIN_ACCESS_PERMISSION } from './permissions';
 import { hasPermission } from './resolve';
 import type { UserForPermissions } from './resolve';
 import type { Id } from '../../convex/_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../../convex/_generated/server';
+import { appError } from '../../modules/errors/appError';
 
 type AuthCtx = QueryCtx | MutationCtx;
 
@@ -19,7 +18,7 @@ export async function requirePermission(
 ): Promise<void> {
   const user = await ctx.db.get('users', userId);
   if (!user) {
-    throw new ConvexError('User not found');
+    throw appError('NOT_AUTHENTICATED', 'Not authenticated');
   }
   requirePermissionForUser(user, permission);
 }
@@ -29,9 +28,8 @@ export async function requirePermission(
  */
 export function requirePermissionForUser(user: UserForPermissions, permission: Permission): void {
   if (!hasPermission(user, permission)) {
-    throw new ConvexError({
-      code: 'FORBIDDEN',
-      message: `Forbidden: missing permission ${permission}`,
+    throw appError('FORBIDDEN', 'You do not have permission to perform this action', {
+      permission,
     });
   }
 }
@@ -45,10 +43,7 @@ export function requireAuthenticatedPermission<T extends UserForPermissions>(
   options?: { unauthorizedMessage?: string }
 ): asserts user is T {
   if (!user) {
-    throw new ConvexError({
-      code: 'UNAUTHORIZED',
-      message: options?.unauthorizedMessage ?? 'You must be logged in',
-    });
+    throw appError('NOT_AUTHENTICATED', options?.unauthorizedMessage ?? 'You must be logged in');
   }
   requirePermissionForUser(user, permission);
 }

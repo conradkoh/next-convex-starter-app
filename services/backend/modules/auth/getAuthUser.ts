@@ -26,6 +26,7 @@ import type { SessionId } from 'convex-helpers/server/sessions';
 import { getAuthUser as getAuthUserNullable } from './session';
 import type { Doc } from '../../convex/_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../../convex/_generated/server';
+import { appError } from '../errors/appError';
 
 /**
  * @deprecated Use `requireAuthUser` from `./session` instead.
@@ -45,17 +46,17 @@ export const getAuthUser = async (
     .withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
     .first();
   if (!session) {
-    throw new Error('Session not found');
+    throw appError('NOT_AUTHENTICATED', 'Session not found');
   }
 
   if (!session.userId) {
-    throw new Error('User not found');
+    throw appError('NOT_AUTHENTICATED', 'User not found');
   }
 
   const user = await ctx.db.get('users', session.userId);
 
   if (!user) {
-    throw new Error('User not found');
+    throw appError('NOT_AUTHENTICATED', 'User not found');
   }
 
   return user;

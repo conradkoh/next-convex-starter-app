@@ -287,7 +287,8 @@ test('createInvite requires invites:manage permission', async () => {
   ).rejects.toMatchObject({
     data: {
       code: 'FORBIDDEN',
-      message: 'Forbidden: missing permission invites:manage',
+      message: 'You do not have permission to perform this action',
+      details: { permission: 'invites:manage' },
     },
   });
 });

@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { featureFlags } from '../../config/featureFlags';
 import { isSelfSignupAllowed, isSignupAllowed } from '../../config/signupMethods';
+import { appError } from '../../modules/errors/appError';
 import { api } from '../_generated/api';
 import type { Doc, Id } from '../_generated/dataModel';
 import {
@@ -61,9 +62,8 @@ function _decodeOAuthState(encodedState: string): OAuthState {
     const parsed = JSON.parse(decoded);
     return OAuthStateSchema.parse(parsed);
   } catch (_error) {
-    throw new ConvexError({
-      code: 'INVALID_STATE',
-      message: 'Invalid or malformed OAuth state parameter',
+    throw appError('INVALID_INPUT', 'Invalid or malformed OAuth state parameter', {
+      field: 'state',
     });
   }
 }
@@ -121,10 +121,10 @@ export const exchangeGoogleCode = action({
     // Check if Google auth is enabled dynamically
     const authConfig = await _isGoogleAuthEnabledForActions(ctx);
     if (!authConfig.enabled || !authConfig.clientId || !authConfig.clientSecret) {
-      throw new ConvexError({
-        code: 'FEATURE_DISABLED',
-        message: 'Google authentication is currently disabled or not configured',
-      });
+      throw appError(
+        'FEATURE_DISABLED',
+        'Google authentication is currently disabled or not configured'
+      );
     }
 
     const { clientId, clientSecret } = authConfig;
@@ -147,10 +147,7 @@ export const exchangeGoogleCode = action({
 
       if (!tokenResponse.ok) {
         await tokenResponse.text(); // Read error response but don't store it
-        throw new ConvexError({
-          code: 'OAUTH_ERROR',
-          message: 'Failed to exchange authorization code for token',
-        });
+        throw appError('OAUTH_ERROR', 'Failed to exchange authorization code for token');
       }
 
       const tokenData = (await tokenResponse.json()) as _GoogleTokenResponse;
@@ -164,20 +161,14 @@ export const exchangeGoogleCode = action({
 
       if (!profileResponse.ok) {
         await profileResponse.text(); // Read error response but don't store it
-        throw new ConvexError({
-          code: 'OAUTH_ERROR',
-          message: 'Failed to fetch user profile from Google',
-        });
+        throw appError('OAUTH_ERROR', 'Failed to fetch user profile from Google');
       }
 
       const profile = (await profileResponse.json()) as _GoogleProfile;
 
       // Validate required profile fields
       if (!profile.id || !profile.email || !profile.name) {
-        throw new ConvexError({
-          code: 'OAUTH_ERROR',
-          message: 'Invalid Google profile data received',
-        });
+        throw appError('OAUTH_ERROR', 'Invalid Google profile data received');
       }
 
       return { profile, success: true };
@@ -185,10 +176,7 @@ export const exchangeGoogleCode = action({
       if (error instanceof ConvexError) {
         throw error;
       }
-      throw new ConvexError({
-        code: 'OAUTH_ERROR',
-        message: 'Google OAuth authentication failed',
-      });
+      throw appError('OAUTH_ERROR', 'Google OAuth authentication failed');
     }
   },
 });
@@ -203,10 +191,7 @@ async function _registerNewGoogleUser(
   profile: _GoogleProfile
 ): Promise<Id<'users'>> {
   if (!isSignupAllowed()) {
-    throw new ConvexError({
-      code: 'SIGNUP_DISABLED',
-      message: 'Sign-ups are currently disabled',
-    });
+    throw appError('SIGNUP_DISABLED', 'Sign-ups are currently disabled');
   }
 
   const session = await ctx.db
@@ -215,10 +200,7 @@ async function _registerNewGoogleUser(
     .first();
 
   if (!isSelfSignupAllowed() && !session?.pendingInviteId) {
-    throw new ConvexError({
-      code: 'SIGNUP_DISABLED',
-      message: 'Sign-up requires an invite code',
-    });
+    throw appError('SIGNUP_DISABLED', 'Sign-up requires an invite code');
   }
 
   const existingEmailUser = await ctx.db
@@ -227,10 +209,10 @@ async function _registerNewGoogleUser(
     .first();
 
   if (existingEmailUser) {
-    throw new ConvexError({
-      code: 'EMAIL_ALREADY_EXISTS',
-      message: 'An account with this email already exists with a different authentication method',
-    });
+    throw appError(
+      'EMAIL_ALREADY_EXISTS',
+      'An account with this email already exists with a different authentication method'
+    );
   }
 
   const newUserId = await ctx.db.insert('users', {
@@ -282,10 +264,10 @@ export const loginWithGoogle = mutation({
         ? await (async () => {
             // Update existing user with latest profile information
             if (existingUser.type !== 'full') {
-              throw new ConvexError({
-                code: 'USER_TYPE_MISMATCH',
-                message: 'User exists with different authentication type',
-              });
+              throw appError(
+                'USER_TYPE_MISMATCH',
+                'User exists with different authentication type'
+              );
             }
             await ctx.db.patch('users', existingUser._id, {
               email: profile.email,
@@ -327,10 +309,7 @@ export const loginWithGoogle = mutation({
       if (error instanceof ConvexError) {
         throw error;
       }
-      throw new ConvexError({
-        code: 'LOGIN_ERROR',
-        message: 'Failed to complete Google login',
-      });
+      throw appError('OAUTH_ERROR', 'Failed to complete Google login', { flow: 'login' });
     }
   },
 });
@@ -367,19 +346,13 @@ export const connectGoogle = mutation({
       .first();
 
     if (!session || !session.userId) {
-      throw new ConvexError({
-        code: 'UNAUTHORIZED',
-        message: 'You must be logged in to connect a Google account',
-      });
+      throw appError('NOT_AUTHENTICATED', 'You must be logged in to connect a Google account');
     }
 
     const currentUser = await ctx.db.get('users', session.userId);
 
     if (!currentUser) {
-      throw new ConvexError({
-        code: 'USER_NOT_FOUND',
-        message: 'Current user not found',
-      });
+      throw appError('NOT_FOUND', 'Current user not found', { resource: 'user' });
     }
 
     // Handle anonymous users by converting them to full users
@@ -402,10 +375,7 @@ export const connectGoogle = mutation({
 
     // Ensure current user is a full user (not anonymous)
     if (currentUser.type !== 'full') {
-      throw new ConvexError({
-        code: 'INVALID_USER_TYPE',
-        message: 'Only full user accounts can connect Google accounts',
-      });
+      throw appError('INVALID_USER_TYPE', 'Only full user accounts can connect Google accounts');
     }
 
     // Check if user already has Google connected
@@ -420,10 +390,10 @@ export const connectGoogle = mutation({
         };
       }
       // Different Google account is already connected
-      throw new ConvexError({
-        code: 'ALREADY_CONNECTED',
-        message: 'A different Google account is already connected to this user',
-      });
+      throw appError(
+        'ALREADY_CONNECTED',
+        'A different Google account is already connected to this user'
+      );
     }
 
     try {
@@ -434,10 +404,10 @@ export const connectGoogle = mutation({
         .first();
 
       if (existingGoogleUser && existingGoogleUser._id !== currentUser._id) {
-        throw new ConvexError({
-          code: 'GOOGLE_ACCOUNT_IN_USE',
-          message: 'This Google account is already connected to another user',
-        });
+        throw appError(
+          'GOOGLE_ACCOUNT_IN_USE',
+          'This Google account is already connected to another user'
+        );
       }
 
       // Check if another user has the same email
@@ -447,10 +417,10 @@ export const connectGoogle = mutation({
         .first();
 
       if (existingEmailUser && existingEmailUser._id !== currentUser._id) {
-        throw new ConvexError({
-          code: 'EMAIL_ALREADY_EXISTS',
-          message: 'Another user account already uses this email address',
-        });
+        throw appError(
+          'EMAIL_ALREADY_EXISTS',
+          'Another user account already uses this email address'
+        );
       }
 
       // Connect Google account to current user
@@ -469,10 +439,7 @@ export const connectGoogle = mutation({
       if (error instanceof ConvexError) {
         throw error;
       }
-      throw new ConvexError({
-        code: 'CONNECT_ERROR',
-        message: 'Failed to connect Google account',
-      });
+      throw appError('OAUTH_ERROR', 'Failed to connect Google account', { flow: 'connect' });
     }
   },
 });
@@ -493,27 +460,18 @@ export const disconnectGoogle = mutation({
       .first();
 
     if (!session || !session.userId) {
-      throw new ConvexError({
-        code: 'UNAUTHORIZED',
-        message: 'You must be logged in to disconnect Google account',
-      });
+      throw appError('NOT_AUTHENTICATED', 'You must be logged in to disconnect Google account');
     }
 
     const user = await ctx.db.get('users', session.userId);
 
     if (!user) {
-      throw new ConvexError({
-        code: 'USER_NOT_FOUND',
-        message: 'User not found',
-      });
+      throw appError('NOT_FOUND', 'User not found', { resource: 'user' });
     }
 
     // Check if user has Google authentication linked
     if (user.type !== 'full' || !user.google) {
-      throw new ConvexError({
-        code: 'NO_GOOGLE_ACCOUNT',
-        message: 'No Google account is linked to this user',
-      });
+      throw appError('NO_GOOGLE_ACCOUNT', 'No Google account is linked to this user');
     }
 
     // Ensure user has other authentication methods or recovery options
@@ -523,11 +481,10 @@ export const disconnectGoogle = mutation({
     const hasEmail = !!user.email;
 
     if (!hasRecoveryCode && !hasEmail) {
-      throw new ConvexError({
-        code: 'UNSAFE_DISCONNECT',
-        message:
-          'Cannot disconnect Google account without recovery options. Please set up a recovery code first.',
-      });
+      throw appError(
+        'UNSAFE_DISCONNECT',
+        'Cannot disconnect Google account without recovery options. Please set up a recovery code first.'
+      );
     }
 
     // Remove Google data from user
@@ -982,10 +939,7 @@ async function _convertAnonymousToFullUser(
   googleProfile: _GoogleProfile
 ): Promise<void> {
   if (anonymousUser.type !== 'anonymous') {
-    throw new ConvexError({
-      code: 'INVALID_CONVERSION',
-      message: 'Only anonymous users can be converted to full users',
-    });
+    throw appError('INVALID_CONVERSION', 'Only anonymous users can be converted to full users');
   }
 
   // Check if this Google account is already linked to another user
@@ -995,10 +949,10 @@ async function _convertAnonymousToFullUser(
     .first();
 
   if (existingGoogleUser) {
-    throw new ConvexError({
-      code: 'GOOGLE_ACCOUNT_IN_USE',
-      message: 'This Google account is already connected to another user',
-    });
+    throw appError(
+      'GOOGLE_ACCOUNT_IN_USE',
+      'This Google account is already connected to another user'
+    );
   }
 
   // Check if another user has the same email
@@ -1008,10 +962,7 @@ async function _convertAnonymousToFullUser(
     .first();
 
   if (existingEmailUser) {
-    throw new ConvexError({
-      code: 'EMAIL_ALREADY_EXISTS',
-      message: 'Another user account already uses this email address',
-    });
+    throw appError('EMAIL_ALREADY_EXISTS', 'Another user account already uses this email address');
   }
 
   // Generate username from email
@@ -1058,10 +1009,10 @@ async function _convertAnonymousToFullUser(
 async function _assertGoogleAuthEnabled(ctx: QueryCtx | MutationCtx): Promise<void> {
   const isEnabled = await _isGoogleAuthEnabled(ctx);
   if (!isEnabled) {
-    throw new ConvexError({
-      code: 'FEATURE_DISABLED',
-      message: 'Google authentication is currently disabled or not configured',
-    });
+    throw appError(
+      'FEATURE_DISABLED',
+      'Google authentication is currently disabled or not configured'
+    );
   }
 }
 

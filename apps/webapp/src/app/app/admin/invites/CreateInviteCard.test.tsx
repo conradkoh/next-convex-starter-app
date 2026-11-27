@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ConvexError } from 'convex/values';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CreateInviteCard } from './CreateInviteCard';
@@ -61,7 +62,12 @@ describe('CreateInviteCard', () => {
   });
 
   it('keeps typed values and shows the create error above submit when creation fails', async () => {
-    onCreate.mockRejectedValueOnce(new Error('Invitee email is already registered'));
+    onCreate.mockRejectedValueOnce(
+      new ConvexError({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Invitee email is already registered',
+      })
+    );
     const user = userEvent.setup();
     render(<CreateInviteCard onCreate={onCreate} />);
     await openDialogAndFill(user);
@@ -73,6 +79,21 @@ describe('CreateInviteCard', () => {
     );
     expect(screen.getByLabelText('Invitee name')).toHaveValue('Jane Doe');
     expect(screen.getByLabelText('Invitee email')).toHaveValue('jane@example.com');
+  });
+
+  it('shows only the fallback for a plain Convex server error', async () => {
+    onCreate.mockRejectedValueOnce(
+      new Error('[CONVEX M(admin/invites:createInvite)] [Request ID: abc] Server Error')
+    );
+    const user = userEvent.setup();
+    render(<CreateInviteCard onCreate={onCreate} />);
+    await openDialogAndFill(user);
+
+    await user.click(getSubmitButton());
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Operation failed');
+    expect(alert).not.toHaveTextContent('Server Error');
   });
 
   it('shows Operation failed when the rejection has no message', async () => {
@@ -87,7 +108,12 @@ describe('CreateInviteCard', () => {
   });
 
   it('clears the create error when a field is edited', async () => {
-    onCreate.mockRejectedValueOnce(new Error('Invitee email is already registered'));
+    onCreate.mockRejectedValueOnce(
+      new ConvexError({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Invitee email is already registered',
+      })
+    );
     const user = userEvent.setup();
     render(<CreateInviteCard onCreate={onCreate} />);
     await openDialogAndFill(user);
@@ -100,7 +126,12 @@ describe('CreateInviteCard', () => {
   });
 
   it('clears the create error at the start of the next submit', async () => {
-    onCreate.mockRejectedValueOnce(new Error('Invitee email is already registered'));
+    onCreate.mockRejectedValueOnce(
+      new ConvexError({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Invitee email is already registered',
+      })
+    );
     onCreate.mockReturnValueOnce(new Promise(() => {})); // second attempt stays pending
     const user = userEvent.setup();
     render(<CreateInviteCard onCreate={onCreate} />);
@@ -115,7 +146,12 @@ describe('CreateInviteCard', () => {
   });
 
   it('clears the create error when the dialog is closed and reopened', async () => {
-    onCreate.mockRejectedValueOnce(new Error('Invitee email is already registered'));
+    onCreate.mockRejectedValueOnce(
+      new ConvexError({
+        code: 'EMAIL_ALREADY_EXISTS',
+        message: 'Invitee email is already registered',
+      })
+    );
     const user = userEvent.setup();
     render(<CreateInviteCard onCreate={onCreate} />);
     await openDialogAndFill(user);

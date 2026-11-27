@@ -8,7 +8,16 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 import globals from 'globals';
 
+import noRawConvexError from './eslint-rules/no-raw-convex-error.mjs';
 import noToast from './eslint-rules/no-toast.mjs';
+
+/** Repo-local rules (eslint-rules/). One shared plugin object: flat config forbids redefining `local` with a different object. */
+const localPlugin = {
+  rules: {
+    'no-toast': noToast,
+    'no-raw-convex-error': noRawConvexError,
+  },
+};
 
 /**
  * ESLint Configuration
@@ -417,15 +426,22 @@ export default [
   // The local/no-toast rule blocks toast libraries and shadcn toast modules in product code.
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
-    plugins: {
-      local: {
-        rules: {
-          'no-toast': noToast,
-        },
-      },
-    },
+    plugins: { local: localPlugin },
     rules: {
       'local/no-toast': 'error',
     },
+  },
+
+  // Backend errors go through appError() (docs/developer/error-handling.md).
+  {
+    files: ['services/backend/**/*.ts'],
+    ignores: [
+      'services/backend/modules/errors/**',
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/_generated/**',
+    ],
+    plugins: { local: localPlugin },
+    rules: { 'local/no-raw-convex-error': 'error' },
   },
 ];

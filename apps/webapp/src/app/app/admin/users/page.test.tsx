@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
+import { ConvexError } from 'convex/values';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import UserRolesPage from './page';
@@ -78,7 +79,9 @@ async function chooseRole(
 
 describe('UserRolesPage role update failure feedback', () => {
   it('shows one destructive alert above the list when a role update is rejected', async () => {
-    mocks.updateUserRoles.mockRejectedValueOnce(new Error('Cannot change role'));
+    mocks.updateUserRoles.mockRejectedValueOnce(
+      new ConvexError({ code: 'FORBIDDEN', message: 'Cannot change role' })
+    );
     const user = userEvent.setup();
     render(<UserRolesPage />);
 
@@ -108,7 +111,9 @@ describe('UserRolesPage role update failure feedback', () => {
   });
 
   it('clears the alert as soon as the next role change starts', async () => {
-    mocks.updateUserRoles.mockRejectedValueOnce(new Error('Cannot change role'));
+    mocks.updateUserRoles.mockRejectedValueOnce(
+      new ConvexError({ code: 'FORBIDDEN', message: 'Cannot change role' })
+    );
     let resolveNext!: () => void;
     mocks.updateUserRoles.mockReturnValueOnce(
       new Promise<void>((resolve) => {

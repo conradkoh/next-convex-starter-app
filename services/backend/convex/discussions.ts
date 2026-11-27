@@ -1,7 +1,31 @@
 import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
-import { mutation, query } from './_generated/server';
+import { type MutationCtx, mutation, type QueryCtx, query } from './_generated/server';
+import { appError } from '../modules/errors/appError';
+
+const _CONCLUSIONS_ARG = v.array(v.object({ text: v.string(), tags: v.array(v.string()) }));
+const _CONCLUSIONS_MUTATION_ARGS = {
+  discussionKey: v.string(),
+  conclusions: _CONCLUSIONS_ARG,
+  ...SessionIdArg,
+};
+
+/**
+ * Loads a discussion by key, throwing the shared NOT_FOUND contract on miss.
+ */
+async function _getDiscussionByKey(ctx: QueryCtx | MutationCtx, discussionKey: string) {
+  const discussion = await ctx.db
+    .query('discussionState')
+    .withIndex('by_key', (q) => q.eq('key', discussionKey))
+    .first();
+
+  if (!discussion) {
+    throw appError('NOT_FOUND', 'Discussion not found', { resource: 'discussion' });
+  }
+
+  return discussion;
+}
 
 // Get the current state of a discussion
 export const getDiscussionState = query({
@@ -118,17 +142,13 @@ export const addDiscussionMessage = mutation({
   },
   handler: async (ctx, args) => {
     // Check if the discussion exists and is active
-    const discussion = await ctx.db
-      .query('discussionState')
-      .withIndex('by_key', (q) => q.eq('key', args.discussionKey))
-      .first();
-
-    if (!discussion) {
-      throw new Error('Discussion not found');
-    }
+    const discussion = await _getDiscussionByKey(ctx, args.discussionKey);
 
     if (!discussion.isActive) {
-      throw new Error('Discussion is no longer active');
+      throw appError('CONFLICT', 'Discussion is no longer active', {
+        resource: 'discussion',
+        reason: 'inactive',
+      });
     }
 
     // Add the message
@@ -144,26 +164,10 @@ export const addDiscussionMessage = mutation({
 
 // Conclude a discussion
 export const concludeDiscussion = mutation({
-  args: {
-    discussionKey: v.string(),
-    conclusions: v.array(
-      v.object({
-        text: v.string(),
-        tags: v.array(v.string()),
-      })
-    ),
-    ...SessionIdArg,
-  },
+  args: _CONCLUSIONS_MUTATION_ARGS,
   handler: async (ctx, args) => {
     // Check if the discussion exists
-    const discussion = await ctx.db
-      .query('discussionState')
-      .withIndex('by_key', (q) => q.eq('key', args.discussionKey))
-      .first();
-
-    if (!discussion) {
-      throw new Error('Discussion not found');
-    }
+    const discussion = await _getDiscussionByKey(ctx, args.discussionKey);
 
     // Mark the discussion as inactive and add conclusions
     return await ctx.db.patch('discussionState', discussion._id, {
@@ -195,14 +199,7 @@ export const reopenDiscussion = mutation({
   },
   handler: async (ctx, args) => {
     // Check if the discussion exists
-    const discussion = await ctx.db
-      .query('discussionState')
-      .withIndex('by_key', (q) => q.eq('key', args.discussionKey))
-      .first();
-
-    if (!discussion) {
-      throw new Error('Discussion not found');
-    }
+    const discussion = await _getDiscussionByKey(ctx, args.discussionKey);
 
     // Already active
     if (discussion.isActive) {
@@ -227,21 +224,17 @@ export const deleteDiscussionMessage = mutation({
     const message = await ctx.db.get('discussionMessages', args.messageId);
 
     if (!message) {
-      throw new Error('Message not found');
+      throw appError('NOT_FOUND', 'Message not found', { resource: 'discussionMessage' });
     }
 
     // Get the discussion to check if it's active
-    const discussion = await ctx.db
-      .query('discussionState')
-      .withIndex('by_key', (q) => q.eq('key', message.discussionKey))
-      .first();
-
-    if (!discussion) {
-      throw new Error('Discussion not found');
-    }
+    const discussion = await _getDiscussionByKey(ctx, message.discussionKey);
 
     if (!discussion.isActive) {
-      throw new Error('Cannot delete messages from a concluded discussion');
+      throw appError('CONFLICT', 'Cannot delete messages from a concluded discussion', {
+        resource: 'discussion',
+        reason: 'concluded',
+      });
     }
 
     // Delete the message
@@ -253,26 +246,10 @@ export const deleteDiscussionMessage = mutation({
 
 // Update conclusions for a discussion
 export const updateConclusions = mutation({
-  args: {
-    discussionKey: v.string(),
-    conclusions: v.array(
-      v.object({
-        text: v.string(),
-        tags: v.array(v.string()),
-      })
-    ),
-    ...SessionIdArg,
-  },
+  args: _CONCLUSIONS_MUTATION_ARGS,
   handler: async (ctx, args) => {
     // Check if the discussion exists
-    const discussion = await ctx.db
-      .query('discussionState')
-      .withIndex('by_key', (q) => q.eq('key', args.discussionKey))
-      .first();
-
-    if (!discussion) {
-      throw new Error('Discussion not found');
-    }
+    const discussion = await _getDiscussionByKey(ctx, args.discussionKey);
 
     // Update the conclusions (works whether discussion is active or concluded)
     return await ctx.db.patch('discussionState', discussion._id, {

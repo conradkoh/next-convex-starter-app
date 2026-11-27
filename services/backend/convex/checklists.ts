@@ -1,7 +1,9 @@
 import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
+import type { Id } from './_generated/dataModel';
 import { type MutationCtx, mutation, type QueryCtx, query } from './_generated/server';
+import { appError } from '../modules/errors/appError';
 
 /**
  * Internal type for checklist update data when toggling completion status.
@@ -124,11 +126,14 @@ export const addChecklistItem = mutation({
       .first();
 
     if (!checklist) {
-      throw new Error('Checklist not found');
+      throw appError('NOT_FOUND', 'Checklist not found', { resource: 'checklist' });
     }
 
     if (!checklist.isActive) {
-      throw new Error('Checklist is no longer active');
+      throw appError('CONFLICT', 'Checklist is no longer active', {
+        resource: 'checklist',
+        reason: 'inactive',
+      });
     }
 
     // Get the current max order to append the new item at the end
@@ -163,14 +168,7 @@ export const toggleChecklistItem = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    // Get the item
-    const item = await ctx.db.get('checklistItems', args.itemId);
-    if (!item) {
-      throw new Error('Checklist item not found');
-    }
-
-    // Check if the checklist is still active
-    await _getActiveChecklist(ctx, item.checklistKey);
+    const item = await _getChecklistItemFromActiveChecklist(ctx, args.itemId);
 
     // Toggle the completion status
     const updateData = _buildToggleUpdateData(!item.isCompleted, args.sessionId);
@@ -190,14 +188,7 @@ export const deleteChecklistItem = mutation({
     ...SessionIdArg,
   },
   handler: async (ctx, args) => {
-    // Get the item
-    const item = await ctx.db.get('checklistItems', args.itemId);
-    if (!item) {
-      throw new Error('Checklist item not found');
-    }
-
-    // Check if the checklist is still active
-    await _getActiveChecklist(ctx, item.checklistKey);
+    await _getChecklistItemFromActiveChecklist(ctx, args.itemId);
 
     // Delete the item
     await ctx.db.delete('checklistItems', args.itemId);
@@ -352,7 +343,7 @@ async function _getChecklistByKey(ctx: QueryCtx | MutationCtx, checklistKey: str
     .first();
 
   if (!checklist) {
-    throw new Error('Checklist not found');
+    throw appError('NOT_FOUND', 'Checklist not found', { resource: 'checklist' });
   }
 
   return checklist;
@@ -366,8 +357,29 @@ async function _getActiveChecklist(ctx: QueryCtx | MutationCtx, checklistKey: st
   const checklist = await _getChecklistByKey(ctx, checklistKey);
 
   if (!checklist.isActive) {
-    throw new Error('Checklist is no longer active');
+    throw appError('CONFLICT', 'Checklist is no longer active', {
+      resource: 'checklist',
+      reason: 'inactive',
+    });
   }
 
   return checklist;
+}
+
+/**
+ * Loads a checklist item and verifies its checklist is still active.
+ * Shared by the item mutations so the not-found/conflict contract stays identical.
+ */
+async function _getChecklistItemFromActiveChecklist(
+  ctx: QueryCtx | MutationCtx,
+  itemId: Id<'checklistItems'>
+) {
+  const item = await ctx.db.get('checklistItems', itemId);
+  if (!item) {
+    throw appError('NOT_FOUND', 'Checklist item not found', { resource: 'checklistItem' });
+  }
+
+  await _getActiveChecklist(ctx, item.checklistKey);
+
+  return item;
 }

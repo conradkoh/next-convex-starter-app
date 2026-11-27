@@ -1,4 +1,4 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 import type { SessionId } from 'convex-helpers/server/sessions';
 
@@ -6,6 +6,7 @@ import { INVITES_MANAGE_PERMISSION, requireAuthenticatedPermission } from '../..
 import { isInviteSignupAllowed } from '../../config/signupMethods';
 import { generateLoginCode } from '../../modules/auth/codeUtils';
 import { getAuthUser } from '../../modules/auth/session';
+import { appError } from '../../modules/errors/appError';
 import type { Doc, Id } from '../_generated/dataModel';
 import { mutation, query, type MutationCtx, type QueryCtx } from '../_generated/server';
 
@@ -87,23 +88,16 @@ function _validateInviteeInput(
   const trimmedEmail = inviteeEmail.trim();
 
   if (!trimmedName) {
-    throw new ConvexError({
-      code: 'INVALID_INPUT',
-      message: 'Invitee name is required',
-    });
+    throw appError('INVALID_INPUT', 'Invitee name is required', { field: 'inviteeName' });
   }
 
   if (!trimmedEmail) {
-    throw new ConvexError({
-      code: 'INVALID_INPUT',
-      message: 'Invitee email is required',
-    });
+    throw appError('INVALID_INPUT', 'Invitee email is required', { field: 'inviteeEmail' });
   }
 
   if (!trimmedEmail.includes('@')) {
-    throw new ConvexError({
-      code: 'INVALID_INPUT',
-      message: 'Invitee email must be a valid email address',
+    throw appError('INVALID_INPUT', 'Invitee email must be a valid email address', {
+      field: 'inviteeEmail',
     });
   }
 
@@ -130,20 +124,14 @@ async function _setInviteDisabled(
 ): Promise<InviteSummary> {
   const invite = await ctx.db.get('invites', inviteId);
   if (!invite) {
-    throw new ConvexError({
-      code: 'NOT_FOUND',
-      message: 'Invite not found',
-    });
+    throw appError('NOT_FOUND', 'Invite not found', { resource: 'invite' });
   }
 
   await ctx.db.patch('invites', inviteId, { disabled });
 
   const updated = await ctx.db.get('invites', inviteId);
   if (!updated) {
-    throw new ConvexError({
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to load updated invite',
-    });
+    throw appError('INTERNAL_ERROR', 'Failed to load updated invite');
   }
 
   return _toInviteSummary(updated, Date.now());
@@ -189,19 +177,13 @@ async function _insertInviteWithUniqueCode(
       });
       const invite = await ctx.db.get('invites', inviteId);
       if (!invite) {
-        throw new ConvexError({
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to load created invite',
-        });
+        throw appError('INTERNAL_ERROR', 'Failed to load created invite');
       }
       return invite;
     }
   }
 
-  throw new ConvexError({
-    code: 'INTERNAL_ERROR',
-    message: 'Failed to generate unique invite code',
-  });
+  throw appError('INTERNAL_ERROR', 'Failed to generate unique invite code');
 }
 
 type InvalidInviteReason = Extract<ValidateInviteResult, { valid: false }>['reason'];
@@ -368,27 +350,21 @@ export async function redeemPendingInvite(
     .first();
 
   if (!session?.pendingInviteId) {
-    throw new ConvexError({
-      code: 'SIGNUP_DISABLED',
-      message: 'Sign-up requires an invite code',
-    });
+    throw appError('SIGNUP_DISABLED', 'Sign-up requires an invite code');
   }
 
   const now = Date.now();
   const invite = await ctx.db.get('invites', session.pendingInviteId);
   if (!invite || !_isInviteActive(invite, now) || invite.usedAt) {
     await ctx.db.patch('sessions', session._id, { pendingInviteId: undefined });
-    throw new ConvexError({
-      code: 'INVITE_INVALID',
-      message: 'Invite code is no longer valid',
-    });
+    throw appError('INVITE_INVALID', 'Invite code is no longer valid');
   }
 
   if (userEmail.toLowerCase() !== invite.inviteeEmail.toLowerCase()) {
-    throw new ConvexError({
-      code: 'INVITE_EMAIL_MISMATCH',
-      message: 'Google account email does not match the invited email address',
-    });
+    throw appError(
+      'INVITE_EMAIL_MISMATCH',
+      'Google account email does not match the invited email address'
+    );
   }
 
   await ctx.db.patch('invites', invite._id, { usedAt: now, usedByUserId: userId });
@@ -476,10 +452,7 @@ export const deleteInvite = mutation({
 
     const invite = await ctx.db.get('invites', args.inviteId);
     if (!invite) {
-      throw new ConvexError({
-        code: 'NOT_FOUND',
-        message: 'Invite not found',
-      });
+      throw appError('NOT_FOUND', 'Invite not found', { resource: 'invite' });
     }
 
     await ctx.db.delete('invites', args.inviteId);
