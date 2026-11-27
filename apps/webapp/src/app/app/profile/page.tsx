@@ -26,6 +26,7 @@ import { useAuthState } from '@/modules/auth/AuthProvider';
 import { LoginCodeGenerator } from '@/modules/auth/LoginCodeGenerator';
 import { NameEditForm } from '@/modules/profile/NameEditForm';
 import { ThemeSettings } from '@/modules/theme/ThemeSettings';
+import { DisplaySettings } from '@/modules/ui-scale/DisplaySettings';
 
 /**
  * Displays the user profile page with account management, theme settings, and recovery options.
@@ -68,6 +69,8 @@ function ProfilePageContent() {
         </div>
 
         <ThemeSettings />
+
+        <DisplaySettings />
 
         <RecoveryCodeSection />
       </div>
