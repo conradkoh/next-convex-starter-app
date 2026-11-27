@@ -125,6 +125,16 @@ When adding flags:
 - **Friction**: Good defaults with few props beat many mandatory props
 - **Testing**: Simple functions are easier to test than complex classes
 
+### Error handling
+
+- Backend throws expected failures with `appError(code, message, details?)` from `services/backend/modules/errors/appError.ts` — never `new ConvexError` (lint-enforced); plain `Error` only for invariants.
+- Codes come from `@workspace/shared/domain/errors`, are additive only, and UI branches on `code` — never on message text.
+- Messages are static and user-safe; `details` is flat and non-sensitive (`ConvexError.data` is public, even in production).
+- Frontend shows errors via `describeError()` from `@/lib/errors` — never `error.message`. Mutations and actions fail inline (`role="alert"`); render failures go to boundaries; no toasts.
+- Boundaries live at `app/global-error.tsx`, the root-layout provider/navigation/banner `ErrorBoundary`s, `app/error.tsx`, the admin and system-admin `error.tsx`, and `app/not-found.tsx` — add new ones only per the doc.
+
+Full reference: [docs/developer/error-handling.md](docs/developer/error-handling.md). Agent skill: [.claude/skills/error-handling/SKILL.md](.claude/skills/error-handling/SKILL.md) — auto-discovered by Claude Code and OpenCode; other agents should read it before touching error handling.
+
 ---
 
 ## Common Tasks
