@@ -72,7 +72,7 @@ const record = await ctx.db.get('attendanceRecords', args.recordId);
 // Get the record to check permissions
 const record = await ctx.db.get(args.recordId);
 if (!record) {
-  throw new ConvexError('Attendance record not found');
+  throw appError('NOT_FOUND', 'Attendance record not found', { resource: 'attendanceRecord' });
 ```
 
 **Should become:**
@@ -81,7 +81,7 @@ if (!record) {
 // Get the record to check permissions
 const record = await ctx.db.get('attendanceRecords', args.recordId);
 if (!record) {
-  throw new ConvexError('Attendance record not found');
+  throw appError('NOT_FOUND', 'Attendance record not found', { resource: 'attendanceRecord' });
 }
 ```
 

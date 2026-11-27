@@ -30,6 +30,8 @@ before changing the contract; this skill is the checklist.
   permission keys, table names or stacks.
 - `details`: flat `string | number | boolean | null | string[]`. Reserved keys: `field`, `fields`,
   `reason`, `resource`, `limit`, `retryAfterMs`, `flow`, `permission`.
+- `details.permission` is machine-readable backend/ops context on `FORBIDDEN`. No frontend consumer
+  branches on it today; never render it and never put a permission key in `message`.
 - Never put PII, secrets, codes, session ids, other users' document ids or diagnostics in details.
 - `ConvexError.data` is public to the client even in production.
 - No `undefined` values, `Date`, `Map`, `Set`, class instances or functions. Keep payloads under

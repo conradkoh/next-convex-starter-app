@@ -15,7 +15,7 @@ test('promoteSessionToSystemAdmin throws FORBIDDEN when env disabled', async () 
   await expect(
     t.mutation(api.e2e.promoteSessionToSystemAdmin, { sessionId })
   ).rejects.toMatchObject({
-    data: { code: 'FORBIDDEN' },
+    data: { code: 'FORBIDDEN', message: 'This action is not available' },
   });
 });
 

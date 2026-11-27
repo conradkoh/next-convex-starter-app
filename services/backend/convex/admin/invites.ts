@@ -143,7 +143,7 @@ async function _requireInvitesManager(
 ): Promise<NonNullable<Awaited<ReturnType<typeof getAuthUser>>>> {
   const user = await getAuthUser(ctx, args);
   requireAuthenticatedPermission(user, INVITES_MANAGE_PERMISSION, {
-    unauthorizedMessage: 'You do not have permission to manage invites',
+    unauthorizedMessage: 'You must be logged in to manage invites',
   });
   return user;
 }

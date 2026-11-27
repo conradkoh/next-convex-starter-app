@@ -40,7 +40,10 @@ export function requirePermissionForUser(user: UserForPermissions, permission: P
 export function requireAuthenticatedPermission<T extends UserForPermissions>(
   user: T | null | undefined,
   permission: Permission,
-  options?: { unauthorizedMessage?: string }
+  options?: {
+    /** Copy for the unauthenticated case. Must read as "not signed in", never as a permission failure. */
+    unauthorizedMessage?: string;
+  }
 ): asserts user is T {
   if (!user) {
     throw appError('NOT_AUTHENTICATED', options?.unauthorizedMessage ?? 'You must be logged in');
@@ -54,7 +57,10 @@ export function requireAuthenticatedPermission<T extends UserForPermissions>(
  */
 export function requireSystemAdminAccess<T extends UserForPermissions>(
   user: T | null | undefined,
-  options?: { unauthorizedMessage?: string }
+  options?: {
+    /** Copy for the unauthenticated case. Must read as "not signed in", never as a permission failure. */
+    unauthorizedMessage?: string;
+  }
 ): asserts user is T {
   requireAuthenticatedPermission(user, SYSTEM_ADMIN_ACCESS_PERMISSION, options);
 }

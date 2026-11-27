@@ -16,17 +16,16 @@ map. These items still bypass part of it. Each is independently shippable.
 These components and pages catch an error and keep a generic string (or read `error.message`)
 instead of using `describeError`.
 
-| Site                                                                        | Remediation                                                      |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `apps/webapp/src/modules/auth/LoginWithCode.tsx`                            | Replace the local message with `describeError(e, { fallback })`. |
-| `apps/webapp/src/app/recover/page.tsx`                                      | Same; keep the fallback specific to recovery.                    |
-| `apps/webapp/src/app/app/profile/page.tsx`                                  | Same for profile actions.                                        |
-| `apps/webapp/src/modules/profile/NameEditForm.tsx`                          | Inline `role="alert"` with `describeError`.                      |
-| `apps/webapp/src/modules/auth/AnonymousLoginButton.tsx`                     | Inline `role="alert"` with `describeError`.                      |
-| `apps/webapp/src/modules/auth/LoginCodeGenerator.tsx`                       | Inline `role="alert"` with `describeError`.                      |
-| Attendance dialogs under `apps/webapp/src/modules/attendance/`              | Inline `role="alert"` with `describeError`.                      |
-| `apps/webapp/src/modules/checklist/checklist.tsx` (`use-checklist-sync`)    | Report or describe the sync failure instead of a generic string. |
-| `apps/webapp/src/modules/discussion/discussion.tsx` (`use-discussion-sync`) | Same.                                                            |
+| Site                                                                     | Remediation                                                      |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `apps/webapp/src/modules/auth/LoginWithCode.tsx`                         | Replace the local message with `describeError(e, { fallback })`. |
+| `apps/webapp/src/app/recover/page.tsx`                                   | Same; keep the fallback specific to recovery.                    |
+| `apps/webapp/src/app/app/profile/page.tsx`                               | Same for profile actions.                                        |
+| `apps/webapp/src/modules/profile/NameEditForm.tsx`                       | Inline `role="alert"` with `describeError`.                      |
+| `apps/webapp/src/modules/auth/AnonymousLoginButton.tsx`                  | Inline `role="alert"` with `describeError`.                      |
+| `apps/webapp/src/modules/auth/LoginCodeGenerator.tsx`                    | Inline `role="alert"` with `describeError`.                      |
+| Attendance dialogs under `apps/webapp/src/modules/attendance/`           | Inline `role="alert"` with `describeError`.                      |
+| `apps/webapp/src/modules/checklist/checklist.tsx` (`use-checklist-sync`) | Report or describe the sync failure instead of a generic string. |
 
 ## OAuth callback errors
 
@@ -75,7 +74,35 @@ Once all throwers and clients move off a deprecated code, remove it from
 `packages/shared/src/domain/errors/codes.ts` and the doc table after the one-release deprecation
 window. Do not reuse the name.
 
+## Boundary wiring test coverage
+
+The provider, navigation and install-banner `ErrorBoundary`s in `apps/webapp/src/app/layout.tsx` are
+covered only by unit tests that build their own tree (`apps/webapp/src/modules/errors/ErrorBoundary.test.tsx`).
+No test mounts the real root layout, so whether a real provider or `Navigation` failure reaches its
+fallback is unverified. Add an RTL test that renders the layout's inner tree with a throwing
+`Navigation` mock, or an e2e scenario that breaks the navigation tier, when the layout can be
+structured for it without turning it into a client component.
+
+## NavigationFallback auth dead end
+
+A `NOT_AUTHENTICATED` thrown inside `<Navigation />` lands in `NavigationFallback`, which offers only
+Reload. It is reported, not swallowed, but it is a dead end for an expired session. Let
+`NavigationFallback` use `useErrorBoundaryState()` and link to `/login` for the auth case, or accept
+the dead end.
+
+## ESLint rule alias and member-expression matching
+
+`eslint-rules/no-raw-convex-error.mjs` matches `new ConvexError(...)` only when the callee is the
+`ConvexError` identifier. Aliased imports (`import { ConvexError as CE }`), member expressions
+(`new convex.ConvexError(...)`) and `.tsx` files are not flagged. Acceptable for the first pass;
+extend the rule to member-expression callees ending in `ConvexError` if tighter enforcement is
+needed.
+
 ## References
 
 - [Error-handling contract and boundary architecture](/architecture/error-handling-contract.md)
 - [Error-handling conventions](../../docs/developer/error-handling.md)
+
+OKF rule 4 asks for `/…` bundle-relative links for targets inside `memory/`. The links above point at
+`docs/` outside the bundle, so they stay repo-relative (`../../docs/…`); a `/…` path would not
+resolve.

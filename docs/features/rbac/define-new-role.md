@@ -19,13 +19,13 @@ Port that diff when bringing the same capability into another repo.
 
 ## Architecture
 
-| Concept                 | Location                                    | Purpose                                                       |
-| ----------------------- | ------------------------------------------- | ------------------------------------------------------------- |
-| **Permission registry** | `permissions.ts`                            | Canonical list of permission keys and descriptions            |
-| **Role definitions**    | `roles.ts`                                  | Maps each role to permission grants                           |
-| **Resolution**          | `resolve.ts`                                | Derives roles from the user, unions grants, matches wildcards |
-| **Backend guards**      | `requirePermission.ts`                      | Throws `FORBIDDEN` / `UNAUTHORIZED` in Convex handlers        |
-| **Frontend hooks**      | `usePermission.ts`, `RequirePermission.tsx` | UI gating from server-resolved `AuthState.permissions`        |
+| Concept                 | Location                                    | Purpose                                                                    |
+| ----------------------- | ------------------------------------------- | -------------------------------------------------------------------------- |
+| **Permission registry** | `permissions.ts`                            | Canonical list of permission keys and descriptions                         |
+| **Role definitions**    | `roles.ts`                                  | Maps each role to permission grants                                        |
+| **Resolution**          | `resolve.ts`                                | Derives roles from the user, unions grants, matches wildcards              |
+| **Backend guards**      | `requirePermission.ts`                      | Throws `NOT_AUTHENTICATED` / `FORBIDDEN` via `appError` in Convex handlers |
+| **Frontend hooks**      | `usePermission.ts`, `RequirePermission.tsx` | UI gating from server-resolved `AuthState.permissions`                     |
 
 **Backend:** `services/backend/application/auth/`  
 **Frontend:** `apps/webapp/src/application/auth/` (mirrors backend)
@@ -162,7 +162,9 @@ import { requirePermission } from '../../../application/auth';
 await requirePermission(ctx, userId, 'reports:read');
 ```
 
-On failure, callers receive a `ConvexError` with `code: 'FORBIDDEN'` or `'UNAUTHORIZED'`.
+On failure, callers receive an `appError` payload: `NOT_AUTHENTICATED` when there is no session, and
+`FORBIDDEN` (with `details.permission`) when the user lacks the permission. See
+[Error handling](../../developer/error-handling.md).
 
 **Reference:** `services/backend/convex/system/auth/google.ts` — all handlers require `system_admin:access` via `requireSystemAdminAccess`.
 

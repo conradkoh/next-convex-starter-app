@@ -49,7 +49,7 @@ test('a missing checklist rejects with the NOT_FOUND payload', async () => {
   expectSerializablePayload(error.data);
 });
 
-test('a standard user cannot create invites (FORBIDDEN, no permission leak)', async () => {
+test('a standard user cannot create invites (FORBIDDEN keeps the permission key in details)', async () => {
   const { sessionId } = await loginAsStandardUser();
 
   const error = await captureError(() =>
@@ -62,12 +62,40 @@ test('a standard user cannot create invites (FORBIDDEN, no permission leak)', as
 
   const data = error.data as { code: string; message: string; details?: { permission?: string } };
   expect(data.code).toBe('FORBIDDEN');
+  expect(data.message).toBe('You do not have permission to perform this action');
   expect(data.message).not.toContain('invites:manage');
   expect(data.details?.permission).toBe('invites:manage');
   expectSerializablePayload(error.data);
 });
 
-test('an unknown session rejects with NOT_AUTHENTICATED', async () => {
+test('a concluded checklist rejects with the CONFLICT payload', async () => {
+  const { sessionId } = await loginAsStandardUser();
+  const checklistKey = `contract-conflict-${Math.random().toString(36).slice(2)}`;
+
+  await t.mutation(api.checklists.createChecklist, {
+    key: checklistKey,
+    title: 'Contract spec checklist',
+    sessionId,
+  });
+  await t.mutation(api.checklists.concludeChecklist, { checklistKey, sessionId });
+
+  const error = await captureError(() =>
+    t.mutation(api.checklists.addChecklistItem, {
+      checklistKey,
+      text: 'x',
+      sessionId,
+    })
+  );
+
+  expect(error.data).toStrictEqual({
+    code: 'CONFLICT',
+    message: 'Checklist is no longer active',
+    details: { resource: 'checklist', reason: 'inactive' },
+  });
+  expectSerializablePayload(error.data);
+});
+
+test('an unknown session rejects with a neutral NOT_AUTHENTICATED message', async () => {
   const sessionId = 'never-logged-in' as SessionId;
 
   const error = await captureError(() =>
@@ -78,6 +106,9 @@ test('an unknown session rejects with NOT_AUTHENTICATED', async () => {
     })
   );
 
-  expect(error.data).toMatchObject({ code: 'NOT_AUTHENTICATED' });
+  expect(error.data).toStrictEqual({
+    code: 'NOT_AUTHENTICATED',
+    message: 'You must be logged in to manage invites',
+  });
   expectSerializablePayload(error.data);
 });
