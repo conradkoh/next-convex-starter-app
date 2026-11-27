@@ -56,7 +56,7 @@ export function UiScaleProvider({ children }: UiScaleProviderProps) {
     applyUiScale(stored);
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-initialize-state -- intentional: the stored scale is unavailable during SSR; read after mount to keep hydration output identical
     _setUiScale(stored);
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-initialize-state -- intentional: children are gated on isUiScaleReady so they never render with an unresolved scale
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-initialize-state -- intentional: the provider renders children immediately; only the Display Size control gates on isUiScaleReady
     setIsUiScaleReady(true);
   }, []);
 
