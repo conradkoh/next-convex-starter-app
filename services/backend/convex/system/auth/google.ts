@@ -1,8 +1,9 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { requireSystemAdminAccess } from '../../../application/auth';
 import { getAuthUser } from '../../../modules/auth/session';
+import { appError } from '../../../modules/errors/appError';
 import { api, internal } from '../../_generated/api';
 import type { Id } from '../../_generated/dataModel';
 import { action, internalMutation, mutation, query } from '../../_generated/server';
@@ -93,18 +94,14 @@ export const updateConfig = mutation({
       .first();
 
     if (!args.clientId.trim()) {
-      throw new ConvexError({
-        code: 'VALIDATION_ERROR',
-        message: 'Client ID is required',
-      });
+      throw appError('INVALID_INPUT', 'Client ID is required', { field: 'clientId' });
     }
 
     const hasExistingSecret = existingConfig && !!existingConfig.clientSecret;
 
     if (!hasExistingSecret && !args.clientSecret.trim()) {
-      throw new ConvexError({
-        code: 'VALIDATION_ERROR',
-        message: 'Client Secret is required for new configuration',
+      throw appError('INVALID_INPUT', 'Client Secret is required for new configuration', {
+        field: 'clientSecret',
       });
     }
 
@@ -112,10 +109,7 @@ export const updateConfig = mutation({
       try {
         new URL(uri);
       } catch {
-        throw new ConvexError({
-          code: 'VALIDATION_ERROR',
-          message: `Invalid redirect URI: ${uri}`,
-        });
+        throw appError('INVALID_INPUT', 'Invalid redirect URI', { field: 'redirectUris' });
       }
     }
 
@@ -210,10 +204,10 @@ export const testConfig = action({
   }> => {
     const authState = await ctx.runQuery(api.auth.getState, { sessionId: args.sessionId });
     if (authState.state !== 'authenticated') {
-      throw new ConvexError({
-        code: 'UNAUTHORIZED',
-        message: 'You must be logged in to test Google Auth configuration',
-      });
+      throw appError(
+        'NOT_AUTHENTICATED',
+        'You must be logged in to test Google Auth configuration'
+      );
     }
 
     requireSystemAdminAccess(authState.user);

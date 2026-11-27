@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { mutation, query } from './_generated/server';
+import { appError } from '../modules/errors/appError';
 
 // Get the current state of a presentation
 export const getPresentationState = query({
@@ -127,7 +128,7 @@ export const stopPresenting = mutation({
 
     // Verify the requester is the presenter
     if (state.activePresentation.presenterId !== args.sessionId) {
-      throw new Error('Only the presenter can stop the presentation');
+      throw appError('FORBIDDEN', 'Only the presenter can stop the presentation');
     }
 
     // Remove the activePresentation field

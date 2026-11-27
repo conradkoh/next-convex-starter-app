@@ -1,4 +1,4 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { featureFlags } from '../config/featureFlags';
@@ -11,6 +11,7 @@ import { getResolvedPermissionsForUser } from '../application/auth/resolve';
 import { getAccessLevel } from '../modules/auth/accessControl';
 import { generateLoginCode, getCodeExpirationTime, isCodeExpired } from '../modules/auth/codeUtils';
 import type { AuthState } from '../modules/auth/types/AuthState';
+import { appError } from '../modules/errors/appError';
 
 /**
  * Retrieves the current authentication state for a session.
@@ -72,17 +73,11 @@ export const loginAnon = mutation({
   handler: async (ctx, args) => {
     // Check if login is disabled
     if (featureFlags.disableLogin) {
-      throw new ConvexError({
-        code: 'FEATURE_DISABLED',
-        message: 'Login functionality is currently disabled',
-      });
+      throw appError('FEATURE_DISABLED', 'Login functionality is currently disabled');
     }
 
     if (!isSelfSignupAllowed()) {
-      throw new ConvexError({
-        code: 'SIGNUP_DISABLED',
-        message: 'Self-signup is not enabled',
-      });
+      throw appError('SIGNUP_DISABLED', 'Self-signup is not enabled');
     }
 
     // Check if the session exists
@@ -264,10 +259,7 @@ export const createLoginCode = mutation({
   handler: async (ctx, args) => {
     // Check if login is disabled
     if (featureFlags.disableLogin) {
-      throw new ConvexError({
-        code: 'FEATURE_DISABLED',
-        message: 'Login functionality is currently disabled',
-      });
+      throw appError('FEATURE_DISABLED', 'Login functionality is currently disabled');
     }
 
     // Find the session by sessionId
@@ -277,19 +269,13 @@ export const createLoginCode = mutation({
       .first();
 
     if (!existingSession || !existingSession.userId) {
-      throw new ConvexError({
-        code: 'UNAUTHORIZED',
-        message: 'You must be logged in to generate a login code',
-      });
+      throw appError('NOT_AUTHENTICATED', 'You must be logged in to generate a login code');
     }
 
     // Get the user
     const user = await ctx.db.get('users', existingSession.userId);
     if (!user) {
-      throw new ConvexError({
-        code: 'NOT_FOUND',
-        message: 'User not found',
-      });
+      throw appError('NOT_FOUND', 'User not found', { resource: 'user' });
     }
 
     const now = Date.now();

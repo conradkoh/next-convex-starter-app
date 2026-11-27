@@ -1,9 +1,10 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import { getAuthUser } from '../modules/auth/session';
+import { appError } from '../modules/errors/appError';
 
 // Hardcoded attendance key
 const ATTENDANCE_KEY = 'default-attendance';
@@ -35,7 +36,9 @@ export const recordAttendance = mutation({
 
     // Name is required if not authenticated or not self
     if (!attendanceUserId && !name) {
-      throw new ConvexError('Name is required for anonymous attendance');
+      throw appError('INVALID_INPUT', 'Name is required for anonymous attendance', {
+        field: 'name',
+      });
     }
 
     // delete any records already associated with this user
@@ -85,7 +88,7 @@ export const deleteAttendanceRecord = mutation({
     // Get the record to check permissions
     const record = await ctx.db.get('attendanceRecords', args.recordId);
     if (!record) {
-      throw new ConvexError('Attendance record not found');
+      throw appError('NOT_FOUND', 'Attendance record not found', { resource: 'attendance' });
     }
 
     // Check if the user is authorized to delete this record
@@ -95,7 +98,7 @@ export const deleteAttendanceRecord = mutation({
     // 1. The user is the owner of the record (their userId matches)
     // 2. The record doesn't have a userId (anonymous entry)
     if (record.userId && (!user || record.userId !== user._id)) {
-      throw new ConvexError('Not authorized to delete this attendance record');
+      throw appError('FORBIDDEN', 'Not authorized to delete this attendance record');
     }
 
     // Delete the record

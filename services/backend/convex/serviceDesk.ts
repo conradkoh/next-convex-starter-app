@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { featureFlags } from '../config/featureFlags';
 import { internalMutation } from './_generated/server';
 import { generateLoginCode } from '../modules/auth/codeUtils';
+import { appError } from '../modules/errors/appError';
 
 /**
  * Find users by exact name match and retrieve their session information
@@ -52,13 +53,13 @@ export const generateTempLoginCode = internalMutation({
   handler: async (ctx, args) => {
     // Check if login is disabled
     if (featureFlags.disableLogin) {
-      throw new Error('Login functionality is currently disabled');
+      throw appError('FEATURE_DISABLED', 'Login functionality is currently disabled');
     }
 
     // Verify the user exists
     const user = await ctx.db.get('users', args.userId);
     if (!user) {
-      throw new Error('User not found');
+      throw appError('NOT_FOUND', 'User not found', { resource: 'user' });
     }
 
     // Check for existing login codes and delete them to avoid confusion

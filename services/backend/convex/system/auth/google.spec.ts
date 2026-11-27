@@ -39,7 +39,8 @@ test('getConfig blocks business admin', async () => {
   await expect(t.query(api.system.auth.google.getConfig, { sessionId })).rejects.toMatchObject({
     data: {
       code: 'FORBIDDEN',
-      message: 'Forbidden: missing permission system_admin:access',
+      message: 'You do not have permission to perform this action',
+      details: { permission: 'system_admin:access' },
     },
   });
 });

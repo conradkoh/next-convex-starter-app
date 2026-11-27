@@ -3,7 +3,7 @@
  *
  * Naming convention (matches the rest of the codebase):
  *   - `get…`     → returns `null` on miss (non-throwing, fail-open).
- *   - `require…` → throws `ConvexError NOT_AUTHENTICATED` on miss (fail-closed).
+ *   - `require…` → throws `appError('NOT_AUTHENTICATED', …)` on miss (fail-closed).
  *
  * Cost-aware variants:
  *   - `…AuthUserId` → 1× `sessions` read, 0× `users` reads.
@@ -21,11 +21,11 @@
  * @see docs/developer/auth-session-helpers.md for the full guide.
  */
 
-import { ConvexError } from 'convex/values';
 import type { SessionId } from 'convex-helpers/server/sessions';
 
 import type { Doc, Id } from '../../convex/_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../../convex/_generated/server';
+import { appError } from '../errors/appError';
 
 // ─── Resolver extension point ────────────────────────────────────────────────
 
@@ -99,7 +99,7 @@ export interface AuthHelpers {
 }
 
 function throwUnauthenticated(): never {
-  throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+  throw appError('NOT_AUTHENTICATED', 'Not authenticated');
 }
 
 /**

@@ -1,7 +1,7 @@
-import { ConvexError } from 'convex/values';
 import { SessionIdArg } from 'convex-helpers/server/sessions';
 
 import { mutation } from './_generated/server';
+import { appError } from '../modules/errors/appError';
 
 /**
  * E2E-only seeding mutation — dev tooling, not a real feature.
@@ -19,11 +19,10 @@ export const promoteSessionToSystemAdmin = mutation({
   args: { ...SessionIdArg },
   handler: async (ctx, args) => {
     if (process.env.E2E_SEEDING_ENABLED !== 'true') {
-      throw new ConvexError({
-        code: 'FORBIDDEN',
-        message:
-          'E2E seeding is disabled. Run: cd services/backend && npx convex env set E2E_SEEDING_ENABLED true',
-      });
+      throw appError(
+        'FORBIDDEN',
+        'E2E seeding is disabled. Run: cd services/backend && npx convex env set E2E_SEEDING_ENABLED true'
+      );
     }
 
     const session = await ctx.db
@@ -32,7 +31,7 @@ export const promoteSessionToSystemAdmin = mutation({
       .first();
 
     if (!session?.userId) {
-      throw new ConvexError({ code: 'NOT_FOUND', message: 'Session has no user' });
+      throw appError('NOT_FOUND', 'Session has no user', { resource: 'user' });
     }
 
     await ctx.db.patch('users', session.userId, {
