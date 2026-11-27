@@ -93,7 +93,10 @@ Stage 1 replaced these codes and message-only errors. They no longer exist in th
 | plain `"inactive"` / `"concluded"` `Error` | `CONFLICT` with `{ resource, reason }`              |
 
 `FORBIDDEN` messages are now static. The permission key moved from the message into
-`details.permission`.
+`details.permission`, where it is machine-readable context for backend and ops debugging. No
+frontend consumer branches on it today and it is never rendered. A permission key is an internal
+capability name, not PII or a secret, so keeping it out of `message` (which users read) is the
+point, while keeping it in `details` (which the UI treats as untrusted) is safe and useful.
 
 ## Messages and details
 
@@ -110,8 +113,10 @@ Stage 1 replaced these codes and message-only errors. They no longer exist in th
 
 - Reserved keys: `field`, `fields`, `reason`, `resource`, `limit`, `retryAfterMs`, `flow`,
   `permission`. Domain keys such as `issues` are allowed when they follow the same rules.
-- Allowed: field names, reason enums, resource type names, numeric limits, permission keys for
-  internal branching.
+- Allowed: field names, reason enums, resource type names, numeric limits, and permission keys as
+  machine-readable context for backend/ops debugging (`FORBIDDEN` sets `details.permission`). The
+  frontend does not branch on `details.permission` today; do not start relying on it without a
+  product need.
 - Forbidden: PII (email, name), secrets, authorisation codes, session ids, other users' document
   ids, and any internal diagnostics.
 - The frontend treats `details` as optional and untrusted for display.

@@ -33,7 +33,8 @@ rendered raw `Error.message`, which for a Convex error is stringified JSON.
   Rationale: clients branch on the condition, not on historical names.
 - **Static messages, flat non-sensitive details.** `ConvexError.data` is public to the client even
   in production, so PII, secrets, session ids, other users' document ids and diagnostics stay out.
-  The `FORBIDDEN` permission key moved from the message into `details.permission`.
+  The `FORBIDDEN` permission key moved from the message into `details.permission`, where it is
+  machine-readable backend/ops context with no frontend consumer today.
 - **No `correlationId` field.** Convex already returns a Request ID inside the client error message;
   the client extracts it best-effort and shows `Reference: <id>`. Convex handlers have no
   request-id API, so a payload field would need invented ids.

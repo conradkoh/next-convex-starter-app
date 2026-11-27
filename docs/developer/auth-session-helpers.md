@@ -32,7 +32,7 @@ The naming convention matches the rest of the codebase:
 
 - **`get…`** returns `null` on miss (fail-open). Use it when an unauthenticated
   caller is a valid case (e.g. public data with optional personalization).
-- **`require…`** throws `ConvexError({ code: 'NOT_AUTHENTICATED' })` on miss
+- **`require…`** throws `appError('NOT_AUTHENTICATED', …)` on miss
   (fail-closed). Use it when authentication is mandatory.
 - **`…UserId`** costs a single `sessions` read. Prefer it whenever the caller
   only needs the `userId`.
@@ -119,11 +119,11 @@ helpers instead of the upstream defaults. The upstream defaults are exactly
 `modules/auth/getAuthUser.ts` is a back-compat shim kept for one release. Move
 call sites to `modules/auth/session.ts`:
 
-| Deprecated (`modules/auth/getAuthUser`) | Replacement (`modules/auth/session`)  | Notes                                                                              |
-| --------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------- |
-| `getAuthUser` (throws)                  | `requireAuthUser`                     | Same throwing semantics, clearer name. Now throws `ConvexError NOT_AUTHENTICATED`. |
-| `getAuthUserOptional` (nullable)        | `getAuthUser`                         | `get…` now returns `null` on miss — drop the `try/catch`.                          |
-| either, when only the id is read        | `getAuthUserId` / `requireAuthUserId` | Skips the `users` read entirely. Preferred for ownership and indexed lookups.      |
+| Deprecated (`modules/auth/getAuthUser`) | Replacement (`modules/auth/session`)  | Notes                                                                                 |
+| --------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------- |
+| `getAuthUser` (throws)                  | `requireAuthUser`                     | Same throwing semantics, clearer name. Now throws `appError('NOT_AUTHENTICATED', …)`. |
+| `getAuthUserOptional` (nullable)        | `getAuthUser`                         | `get…` now returns `null` on miss — drop the `try/catch`.                             |
+| either, when only the id is read        | `getAuthUserId` / `requireAuthUserId` | Skips the `users` read entirely. Preferred for ownership and indexed lookups.         |
 
 ### Step by step
 
@@ -175,13 +175,15 @@ Review the diff, then run `pnpm typecheck && pnpm test`. Sites that only need
 
 ## Error handling
 
-The `require…` helpers throw a structured error:
+The `require…` helpers throw through `appError`:
 
 ```ts
-throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+import { appError } from '../../modules/errors/appError';
+
+throw appError('NOT_AUTHENTICATED', 'Not authenticated');
 ```
 
-Catch it on the client (or in calling functions) by inspecting
-`error.data.code === 'NOT_AUTHENTICATED'`. The `get…` helpers never throw for a
-missing session — they return `null`, leaving the authentication decision to the
-caller.
+Catch it on the client with `describeError` from `@/lib/errors`, or with `toClientError` when you need
+the code. Branch on `code === 'NOT_AUTHENTICATED'`, never on message text. The `get…` helpers never
+throw for a missing session — they return `null`, leaving the authentication decision to the caller.
+See [Error handling](./error-handling.md).
