@@ -30,6 +30,7 @@ vi.mock('@/modules/auth/AuthProvider', () => ({
 vi.mock('@/modules/auth/LoginCodeGenerator', () => ({ LoginCodeGenerator: () => null }));
 vi.mock('@/modules/profile/NameEditForm', () => ({ NameEditForm: () => null }));
 vi.mock('@/modules/theme/ThemeSettings', () => ({ ThemeSettings: () => null }));
+vi.mock('@/modules/ui-scale/DisplaySettings', () => ({ DisplaySettings: () => null }));
 
 const RECOVERY_CODE = 'ABCD-EFGH-IJKL';
 const NEW_RECOVERY_CODE = 'WXYZ-1234-QRST';
