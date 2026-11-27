@@ -113,6 +113,12 @@ html {
   transition: background-color var(--theme-transition-duration) var(--theme-transition-ease);
 }
 
+/* Display Size preference (src/modules/ui-scale): scale every rem-based utility
+   from the root. `--ui-scale` is a unitless ratio (0.67-1.25); 1 = 100%. */
+html {
+  font-size: calc(var(--ui-scale, 1) * 100%);
+}
+
 /* Apply transitions to specific elements that change with theme */
 body {
   transition:

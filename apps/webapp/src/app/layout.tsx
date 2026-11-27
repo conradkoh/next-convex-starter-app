@@ -14,6 +14,8 @@ import { ErrorBoundary } from '@/modules/errors/ErrorBoundary';
 import { NavigationFallback } from '@/modules/errors/NavigationFallback';
 import { PwaInstallProvider, InstallAppMobileBanner } from '@/modules/pwa-install';
 import { ThemeProvider, themeScript } from '@/modules/theme/ThemeProvider';
+import { uiScaleScript } from '@/modules/ui-scale/ui-scale-script';
+import { UiScaleProvider } from '@/modules/ui-scale/UiScaleProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -28,7 +30,6 @@ const geistMono = Geist_Mono({
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   themeColor: '#ffffff',
 };
 
@@ -71,6 +72,9 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {themeScript}
         </Script>
+        <Script id="ui-scale-init" strategy="beforeInteractive">
+          {uiScaleScript}
+        </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ErrorBoundary scope="app-providers" fallback={<AppUnavailable />}>
@@ -79,19 +83,21 @@ export default function RootLayout({
               <AppInfoProvider>
                 <AuthProvider>
                   <ThemeProvider>
-                    <PwaInstallProvider>
-                      <div className="flex h-dvh flex-col overflow-hidden">
-                        <ErrorBoundary scope="navigation" fallback={<NavigationFallback />}>
-                          <Navigation />
-                        </ErrorBoundary>
-                        <AppMain>
-                          <ErrorBoundary scope="install-banner" fallback={null}>
-                            <InstallAppMobileBanner />
+                    <UiScaleProvider>
+                      <PwaInstallProvider>
+                        <div className="flex h-dvh flex-col overflow-hidden">
+                          <ErrorBoundary scope="navigation" fallback={<NavigationFallback />}>
+                            <Navigation />
                           </ErrorBoundary>
-                          {children}
-                        </AppMain>
-                      </div>
-                    </PwaInstallProvider>
+                          <AppMain>
+                            <ErrorBoundary scope="install-banner" fallback={null}>
+                              <InstallAppMobileBanner />
+                            </ErrorBoundary>
+                            {children}
+                          </AppMain>
+                        </div>
+                      </PwaInstallProvider>
+                    </UiScaleProvider>
                   </ThemeProvider>
                 </AuthProvider>
               </AppInfoProvider>

@@ -115,7 +115,6 @@ import type { Metadata } from 'next';
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   themeColor: '#ffffff',
 };
 
@@ -155,6 +154,8 @@ export default function RootLayout({
   );
 }
 ```
+
+> **Keep browser zoom available.** Do not set `maximumScale` below `2` (or `user-scalable=no`): a `maximum-scale` below 2 fails the WCAG ACT rule "Meta viewport allows for zoom" (b4f0c3) and blocks pinch-zoom for users who need it. This starter leaves zoom uncapped and offers an in-app Display Size preference instead — see [Display Size](../../docs/application/design/display-size.md).
 
 ## Step 5: Testing Your PWA
 
