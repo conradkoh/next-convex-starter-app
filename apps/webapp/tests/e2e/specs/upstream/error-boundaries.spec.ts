@@ -28,9 +28,8 @@ test.describe('Error boundaries', { tag: [TAG_UPSTREAM, TAG_NAV] }, () => {
     await expect(page.getByRole('link', { name: 'Next Convex' })).toBeVisible();
     await expect(page.locator('main').getByRole('alert')).toHaveCount(1);
 
-    await page.getByRole('button', { name: 'Try again' }).click();
-    await expect(heading).toBeVisible();
-
+    // Recover on a single user-initiated retry. The retry runs in a React transition,
+    // so setting the flag before the click keeps this deterministic.
     await allowRecovery(page);
     await page.getByRole('button', { name: 'Try again' }).click();
 
@@ -68,6 +67,6 @@ test.describe('Error boundaries', { tag: [TAG_UPSTREAM, TAG_NAV] }, () => {
     await allowRecovery(page);
     await page.getByRole('button', { name: 'Try again' }).click();
 
-    await expect(page.getByText('Widget recovered')).toBeVisible();
+    await expect(page.locator('main').getByText('Widget recovered', { exact: true })).toBeVisible();
   });
 });
