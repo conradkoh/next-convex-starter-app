@@ -4,7 +4,6 @@ import { formatLoginCode } from '@workspace/backend/modules/auth/codeUtils';
 import { Plus } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
-import { getErrorMessage } from '@/app/app/admin/convexError';
 import {
   CreateInviteForm,
   type ExpiryMode,
@@ -29,6 +28,7 @@ import {
 } from '@/components/ui/drawer';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { describeError } from '@/lib/errors';
 
 const INVITE_COPY_KEY = 'invite';
 
@@ -102,7 +102,7 @@ export function CreateInviteCard({ onCreate }: CreateInviteCardProps) {
         setLastCreatedCode(invite.code);
       } catch (caughtError) {
         // Typed values are kept on failure so the user can retry without retyping.
-        setError(getErrorMessage(caughtError, 'Operation failed'));
+        setError(describeError(caughtError, { fallback: 'Operation failed' }).message);
       } finally {
         setIsCreating(false);
       }

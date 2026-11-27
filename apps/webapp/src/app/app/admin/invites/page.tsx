@@ -7,11 +7,11 @@ import { useSessionMutation, useSessionQuery } from 'convex-helpers/react/sessio
 import { AlertCircle } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
-import { getErrorMessage } from '@/app/app/admin/convexError';
 import { CreateInviteCard } from '@/app/app/admin/invites/CreateInviteCard';
 import { DeleteInviteDialog } from '@/app/app/admin/invites/DeleteInviteDialog';
 import { InviteListCard } from '@/app/app/admin/invites/InviteListCard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { describeError } from '@/lib/errors';
 
 export default function InvitesPage() {
   const invites = useSessionQuery(api.admin.invites.listInvites);
@@ -38,7 +38,7 @@ export default function InvitesPage() {
       try {
         await disableInvite({ inviteId });
       } catch (error) {
-        setListError(getErrorMessage(error, 'Operation failed'));
+        setListError(describeError(error, { fallback: 'Operation failed' }).message);
       } finally {
         setActioningInviteId(null);
       }
@@ -53,7 +53,7 @@ export default function InvitesPage() {
       try {
         await enableInvite({ inviteId });
       } catch (error) {
-        setListError(getErrorMessage(error, 'Operation failed'));
+        setListError(describeError(error, { fallback: 'Operation failed' }).message);
       } finally {
         setActioningInviteId(null);
       }
@@ -85,7 +85,7 @@ export default function InvitesPage() {
       await deleteInvite({ inviteId: deleteTarget._id });
       setDeleteTarget(null);
     } catch (error) {
-      setDeleteError(getErrorMessage(error, 'Operation failed'));
+      setDeleteError(describeError(error, { fallback: 'Operation failed' }).message);
     } finally {
       setIsDeleting(false);
     }

@@ -9,6 +9,9 @@ import { ConvexClientProvider } from '@/app/ConvexClientProvider';
 import { Navigation } from '@/components/Navigation';
 import { AppInfoProvider } from '@/modules/app/AppInfoProvider';
 import { AuthProvider } from '@/modules/auth/AuthProvider';
+import { AppUnavailable } from '@/modules/errors/AppUnavailable';
+import { ErrorBoundary } from '@/modules/errors/ErrorBoundary';
+import { NavigationFallback } from '@/modules/errors/NavigationFallback';
 import { PwaInstallProvider, InstallAppMobileBanner } from '@/modules/pwa-install';
 import { ThemeProvider, themeScript } from '@/modules/theme/ThemeProvider';
 
@@ -47,6 +50,8 @@ export const metadata: Metadata = {
 /**
  * Root layout component that wraps the entire application with providers and global structure.
  * Sets up authentication, theming, and navigation for all pages.
+ * Contains three error boundaries: providers (whole-app screen), navigation (minimal header),
+ * and install banner (silent removal), so a render failure is contained to its smallest region.
  */
 export default function RootLayout({
   children,
@@ -68,25 +73,31 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ConvexClientProvider>
-          <ConvexQueryCacheProvider>
-            <AppInfoProvider>
-              <AuthProvider>
-                <ThemeProvider>
-                  <PwaInstallProvider>
-                    <div className="flex h-dvh flex-col overflow-hidden">
-                      <Navigation />
-                      <AppMain>
-                        <InstallAppMobileBanner />
-                        {children}
-                      </AppMain>
-                    </div>
-                  </PwaInstallProvider>
-                </ThemeProvider>
-              </AuthProvider>
-            </AppInfoProvider>
-          </ConvexQueryCacheProvider>
-        </ConvexClientProvider>
+        <ErrorBoundary scope="app-providers" fallback={<AppUnavailable />}>
+          <ConvexClientProvider>
+            <ConvexQueryCacheProvider>
+              <AppInfoProvider>
+                <AuthProvider>
+                  <ThemeProvider>
+                    <PwaInstallProvider>
+                      <div className="flex h-dvh flex-col overflow-hidden">
+                        <ErrorBoundary scope="navigation" fallback={<NavigationFallback />}>
+                          <Navigation />
+                        </ErrorBoundary>
+                        <AppMain>
+                          <ErrorBoundary scope="install-banner" fallback={null}>
+                            <InstallAppMobileBanner />
+                          </ErrorBoundary>
+                          {children}
+                        </AppMain>
+                      </div>
+                    </PwaInstallProvider>
+                  </ThemeProvider>
+                </AuthProvider>
+              </AppInfoProvider>
+            </ConvexQueryCacheProvider>
+          </ConvexClientProvider>
+        </ErrorBoundary>
         {/* React Grab for development */}
         {process.env.NODE_ENV === 'development' && (
           <Script

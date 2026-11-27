@@ -66,6 +66,17 @@ export const UPSTREAM_FLOWS = {
     description: 'Non-admin visit shows Access Denied',
     specFile: 'specs/upstream/admin-unauthorized.spec.ts',
   },
+  errorBoundaries: {
+    path: '/test/errors',
+    description:
+      'Dev-only error scenarios: route errors, auth expiry, forbidden and region containment',
+    specFile: 'specs/upstream/error-boundaries.spec.ts',
+  },
+  notFound: {
+    path: '/this-route-does-not-exist',
+    description: 'Unknown URL shows the not-found panel inside the app shell',
+    specFile: 'specs/upstream/error-boundaries.spec.ts',
+  },
 } as const;
 
 export type UpstreamFlowKey = keyof typeof UPSTREAM_FLOWS;

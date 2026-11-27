@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Id } from '@workspace/backend/convex/_generated/dataModel';
 import type { InviteSummary } from '@workspace/backend/convex/admin/invites';
+import { ConvexError } from 'convex/values';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import InvitesPage from './page';
@@ -80,7 +81,9 @@ beforeEach(() => {
 
 describe('InvitesPage disable and enable failure feedback', () => {
   it('shows one alert above the list when disable is rejected', async () => {
-    mocks.disableInvite.mockRejectedValueOnce(new Error('Cannot disable'));
+    mocks.disableInvite.mockRejectedValueOnce(
+      new ConvexError({ code: 'CONFLICT', message: 'Cannot disable' })
+    );
     const user = userEvent.setup();
     render(<InvitesPage />);
 
@@ -107,7 +110,9 @@ describe('InvitesPage disable and enable failure feedback', () => {
 
   it('shows the same list alert when enable is rejected', async () => {
     mocks.invites = [disabledInvite];
-    mocks.enableInvite.mockRejectedValueOnce(new Error('Cannot enable'));
+    mocks.enableInvite.mockRejectedValueOnce(
+      new ConvexError({ code: 'CONFLICT', message: 'Cannot enable' })
+    );
     const user = userEvent.setup();
     render(<InvitesPage />);
 
@@ -118,7 +123,9 @@ describe('InvitesPage disable and enable failure feedback', () => {
   });
 
   it('clears the list alert when the next action starts', async () => {
-    mocks.disableInvite.mockRejectedValueOnce(new Error('Cannot disable'));
+    mocks.disableInvite.mockRejectedValueOnce(
+      new ConvexError({ code: 'CONFLICT', message: 'Cannot disable' })
+    );
     const user = userEvent.setup();
     render(<InvitesPage />);
     const disable = getRow('Ada · ada@example.com').getByRole('button', { name: 'Disable' });
@@ -149,7 +156,9 @@ describe('InvitesPage disable and enable failure feedback', () => {
 
 describe('InvitesPage delete failure feedback', () => {
   it('keeps the dialog open with one alert inside it when delete is rejected', async () => {
-    mocks.deleteInvite.mockRejectedValueOnce(new Error('Cannot delete'));
+    mocks.deleteInvite.mockRejectedValueOnce(
+      new ConvexError({ code: 'CONFLICT', message: 'Cannot delete' })
+    );
     const user = userEvent.setup();
     render(<InvitesPage />);
     const dialog = await openDeleteDialog(user);
@@ -162,7 +171,9 @@ describe('InvitesPage delete failure feedback', () => {
   });
 
   it('clears the dialog alert when the delete is retried', async () => {
-    mocks.deleteInvite.mockRejectedValueOnce(new Error('Cannot delete'));
+    mocks.deleteInvite.mockRejectedValueOnce(
+      new ConvexError({ code: 'CONFLICT', message: 'Cannot delete' })
+    );
     const user = userEvent.setup();
     render(<InvitesPage />);
     const dialog = await openDeleteDialog(user);
@@ -176,7 +187,9 @@ describe('InvitesPage delete failure feedback', () => {
   });
 
   it('clears the dialog alert and target when the dialog is cancelled', async () => {
-    mocks.deleteInvite.mockRejectedValueOnce(new Error('Cannot delete'));
+    mocks.deleteInvite.mockRejectedValueOnce(
+      new ConvexError({ code: 'CONFLICT', message: 'Cannot delete' })
+    );
     const user = userEvent.setup();
     render(<InvitesPage />);
     const dialog = await openDeleteDialog(user);
@@ -210,7 +223,7 @@ describe('InvitesPage delete failure feedback', () => {
 
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
 
-    rejectDelete(new Error('Cannot delete'));
+    rejectDelete(new ConvexError({ code: 'CONFLICT', message: 'Cannot delete' }));
     await waitFor(() =>
       expect(within(dialog).getByRole('alert')).toHaveTextContent('Cannot delete')
     );

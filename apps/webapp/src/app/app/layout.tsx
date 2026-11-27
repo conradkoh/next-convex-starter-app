@@ -3,7 +3,6 @@
 import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 
-import { AuthErrorBoundary } from '@/modules/auth/AuthErrorBoundary';
 import { RequireLogin } from '@/modules/auth/RequireLogin';
 
 /**
@@ -22,15 +21,10 @@ function LoadingFallback() {
 
 /**
  * Authenticated application layout.
- *
- * This layout provides a layered authentication system:
- * 1. RequireLogin - Primary auth gate, shows UnauthorizedPage if not logged in
- * 2. AuthErrorBoundary - Catches stale session errors and redirects to login
- * 3. Suspense - Provides loading state while content loads
- *
- * The AuthErrorBoundary handles edge cases where the frontend auth state
- * is stale (says authenticated) but the backend rejects the session.
- * Instead of crashing, users are gracefully redirected to login.
+ * 1. RequireLogin - primary auth gate (UnauthorizedPage when logged out)
+ * 2. Suspense - loading state while content loads
+ * Render failures (including a stale session, NOT_AUTHENTICATED) are handled by the nearest
+ * error.tsx via RouteError, which redirects expired sessions to /login.
  */
 export default function AppLayout({
   children,
@@ -39,9 +33,7 @@ export default function AppLayout({
 }>) {
   return (
     <RequireLogin>
-      <AuthErrorBoundary>
-        <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
-      </AuthErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
     </RequireLogin>
   );
 }

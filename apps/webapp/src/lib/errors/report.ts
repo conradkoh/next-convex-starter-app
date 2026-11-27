@@ -1,4 +1,3 @@
-// fallow-ignore-file unused-file
 export interface ErrorReport {
   error: unknown;
   /** Where it was caught, e.g. 'route:root', 'navigation', 'app-providers', 'global'. */
@@ -18,6 +17,7 @@ const consoleReporter: ErrorReporter = (report) => {
 let activeReporter: ErrorReporter = consoleReporter;
 
 /** Swap the reporter (vendor adapter in forks; spies in tests). Returns a restore function. */
+// fallow-ignore-next-line unused-export
 export function setErrorReporter(reporter: ErrorReporter): () => void {
   const previous = activeReporter;
   activeReporter = reporter;

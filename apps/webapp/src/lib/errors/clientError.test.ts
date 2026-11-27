@@ -102,7 +102,7 @@ describe('toClientError', () => {
       { data: payload }
     );
 
-    // The old AuthErrorBoundary matched `error.message` for "not authenticated"; the Convex
+    // The removed auth boundary matched `error.message` for "not authenticated"; the Convex
     // client only puts the JSON payload there, so that check never fired.
     expect(isAuthExpiredError(error)).toBe(true);
     expect(error.message.includes('not authenticated')).toBe(false);

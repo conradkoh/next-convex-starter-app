@@ -1,8 +1,6 @@
-// fallow-ignore-file unused-file
 import type { CommonErrorCode } from '@workspace/shared/domain/errors';
 
 /** Default user-facing copy per common code (frontend-owned). */
-// fallow-ignore-next-line unused-export
 export const COMMON_ERROR_COPY: Record<CommonErrorCode, string> = {
   NOT_AUTHENTICATED: 'Your session has expired. Please sign in again.',
   FORBIDDEN: "You don't have permission to do this.",

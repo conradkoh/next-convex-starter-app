@@ -7,7 +7,6 @@ import { AlertCircle, Users } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { AdminListSkeleton } from '@/app/app/admin/AdminListSkeleton';
-import { getErrorMessage } from '@/app/app/admin/convexError';
 import { SYSTEM_ADMIN_ACCESS_PERMISSION, useHasPermission } from '@/application/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { describeError } from '@/lib/errors';
 
 type EffectiveRole = 'standard_user' | 'admin' | 'system_admin';
 
@@ -50,7 +50,7 @@ export default function UserRolesPage() {
       try {
         await updateRoles({ userId, effectiveRole });
       } catch (error) {
-        setRoleError(getErrorMessage(error, 'Failed to update role'));
+        setRoleError(describeError(error, { fallback: 'Failed to update role' }).message);
       } finally {
         setSavingUserId(null);
       }
